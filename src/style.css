@@ -13,7 +13,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 /* ── Bildschirme ─────────────────────────────── */
 .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; z-index: 20;
   background: radial-gradient(ellipse at center, rgba(40, 6, 6, 0.55), rgba(0, 0, 0, 0.92) 70%); }
-#loading, #menu { background: radial-gradient(ellipse at 50% 40%, #2a0606 0%, #0a0303 55%, #000 100%); }
+#loading { background: radial-gradient(ellipse at 50% 40%, #2a0606 0%, #0a0303 55%, #000 100%); }
+#menu { background: radial-gradient(ellipse at 50% 45%, rgba(30, 4, 4, 0.35) 0%, rgba(5, 1, 1, 0.65) 60%, rgba(0, 0, 0, 0.92) 100%); }
 .title { font-family: Creepster, Impact, serif; font-size: clamp(64px, 12vw, 160px); letter-spacing: 6px; color: var(--red);
   text-shadow: 0 0 18px rgba(255, 30, 20, 0.55), 0 0 60px rgba(160, 0, 0, 0.6), 3px 3px 0 #000; animation: flick 6s infinite; }
 .title.red { font-size: clamp(48px, 9vw, 110px); }

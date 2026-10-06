@@ -19,8 +19,8 @@ export class PowerUps {
     for (let i = 0; i < 4; i++) {
       const g = new THREE.Group();
       const icon = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.75), new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false, color: new THREE.Color(1.8, 1.8, 1.8) }));
-      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: M.tex.glow, color: new THREE.Color(0.4, 2.2, 0.4), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-      halo.scale.set(2.2, 2.2, 1);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: M.tex.glow, color: new THREE.Color(0.12, 0.8, 0.12), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+      halo.scale.set(1.5, 1.5, 1);
       g.add(halo, icon);
       g.visible = false;
       game.scene.add(g);
@@ -88,7 +88,7 @@ export class PowerUps {
       it.icon.rotation.y += dt * 1.8;
       const blink = it.t > 22 ? (Math.sin(it.t * (it.t > 27 ? 30 : 14)) > 0 ? 1 : 0) : 1;
       it.group.visible = blink > 0;
-      if (Math.random() < 0.3) this.g.effects.energy(gp, [0.5, 2.5, 0.5], 1, 0.3);
+      if (Math.random() < 0.2) this.g.effects.energy(gp, [0.3, 1.5, 0.3], 1, 0.3);
       if (Math.hypot(p.pos.x - gp.x, p.pos.z - gp.z) < 1.3 && !p.downed) {
         it.active = false; it.group.visible = false;
         this.apply(it.type);

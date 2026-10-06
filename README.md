@@ -20,6 +20,9 @@ npm run preview    # Build lokal testen
 
 Benötigt einen aktuellen Desktop-Browser mit WebGL2 (Chrome, Edge, Firefox). Maus + Tastatur.
 
+**Online spielen (GitHub Pages):** Der Workflow `.github/workflows/deploy.yml` baut das Spiel bei jedem
+Push auf `main` und veröffentlicht es. Einmalig unter *Settings → Pages → Source* „GitHub Actions“ wählen.
+
 ## Steuerung
 
 | Taste | Aktion |

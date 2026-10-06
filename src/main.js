@@ -20,6 +20,8 @@ let backTo = 'menu';
 function requestPlay() {
   hideAll();
   $('clickToPlay').classList.add('hidden');
+  if (game.state === 'menu') game.start();
+  else if (game.state === 'paused') game.resume();
   game.input.lock();
 }
 
@@ -33,12 +35,12 @@ game.input.onUnlock = () => {
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement === $('game')) {
     hideAll();
-    if (game.state === 'menu') game.start();
-    else if (game.state === 'paused') game.resume();
+    $('clickToPlay').classList.add('hidden');
   }
 });
 document.addEventListener('pointerlockerror', () => {
-  $('clickToPlay').classList.remove('hidden');
+  // Browser verweigert den Maus-Fang (z. B. direkt nach Esc) → erneut klicken
+  if (game.state === 'playing') $('clickToPlay').classList.remove('hidden');
 });
 $('game').addEventListener('click', () => {
   if (game.state === 'playing' && !game.input.locked) game.input.lock();

@@ -221,14 +221,15 @@ export class Effects {
     }
   }
 
-  explosion(pos, radius = 4, color = [3, 1.6, 0.5]) {
+  explosion(pos, radius = 4, color = [3, 1.6, 0.5], energy = false) {
     this.blastLight.position.copy(pos).setY(Math.max(pos.y, 0.8));
     this.blastLight.color.setRGB(color[0] / 3, color[1] / 3, color[2] / 3);
     this.blastLight.intensity = 60;
     this.blastT = 0.45;
-    for (let i = 0; i < 40; i++) {
+    const k = energy ? 0.45 : 1;
+    for (let i = 0; i < (energy ? 24 : 40); i++) {
       const a = rand(0, Math.PI * 2), e = rand(-0.2, 1), s = rand(2, 9) * (radius / 4);
-      this.add.spawn({ x: pos.x, y: pos.y + 0.2, z: pos.z, vx: Math.cos(a) * s, vy: e * s, vz: Math.sin(a) * s, life: rand(0.2, 0.55), size: rand(0.25, 0.6), size1: 0.05, r: color[0], g: color[1], b: color[2], drag: 3 });
+      this.add.spawn({ x: pos.x, y: pos.y + 0.2, z: pos.z, vx: Math.cos(a) * s, vy: e * s, vz: Math.sin(a) * s, life: rand(0.2, 0.5), size: rand(0.2, 0.5) * k, size1: 0.03, r: color[0] * k, g: color[1] * k, b: color[2] * k, drag: 3 });
     }
     for (let i = 0; i < 25; i++) {
       this.add.spawn({ x: pos.x, y: pos.y + 0.2, z: pos.z, vx: rand(-8, 8), vy: rand(2, 9), vz: rand(-8, 8), life: rand(0.5, 1.2), size: 0.03, r: 3, g: 2, b: 0.8, grav: 14, bounce: 0.3, drag: 0.5 });

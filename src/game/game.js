@@ -175,7 +175,7 @@ export class Game {
   }
 
   explode(pos, radius, damage, opts = {}) {
-    this.effects.explosion(pos, opts.small ? radius * 0.7 : radius, opts.color);
+    this.effects.explosion(pos, opts.small ? radius * 0.7 : radius, opts.color, !!opts.energy);
     if (!opts.energy || !opts.small) this.audio.explosion(pos, opts.small ? 0.6 : 1);
     else this.audio.explosion(pos, 0.45);
     if (!opts.small) this.effects.bloodDecal(pos.x, pos.z, 0.6);

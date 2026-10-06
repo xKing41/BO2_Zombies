@@ -6,7 +6,7 @@ export function buildGun(id, M, pap = false) {
   const g = new THREE.Group();
   const metal = pap ? M.papGun : M.gunMetal;
   const poly = M.gunPolymer, wood = M.gunWood, dark = M.dark;
-  const glow = new THREE.MeshBasicMaterial({ color: pap ? new THREE.Color(4, 0.4, 0.8) : new THREE.Color(0.5, 4, 0.8) });
+  const glow = new THREE.MeshBasicMaterial({ color: pap ? new THREE.Color(1.8, 0.2, 0.4) : new THREE.Color(0.25, 1.8, 0.4) });
   const B = (w, h, d, mat, x, y, z, rx = 0, parent = g) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.set(x, y, z); m.rotation.x = rx; parent.add(m); return m;
