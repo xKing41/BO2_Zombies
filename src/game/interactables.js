@@ -7,13 +7,15 @@ import { buildGun } from '../weapons/guns.js';
 import * as T from '../core/textures.js';
 import { rand, smooth, weightedPick, clamp } from '../core/utils.js';
 
-const F = 'F';
-
 class Interactable {
   constructor(game, pos, radius) { this.g = game; this.pos = pos; this.radius = radius; }
+  // Gerätegerechte Hinweise: "Drücke F", "Drücke X", "Tippe auf „Benutzen“"
+  get press() { return this.g.input.verb(false); }
+  get holdV() { return this.g.input.verb(true); }
   prompt() { return null; }
   use() { }
   update() { }
+  reset() { }
 }
 
 function frontOf(map, cx, cy, wall, dist) {
@@ -30,7 +32,7 @@ class DoorBuy extends Interactable {
   }
   prompt() {
     if (this.door.open) return null;
-    return `Drücke ${F}, um die Tür zu öffnen [Kosten: ${this.door.cost}]`;
+    return `${this.press}, um die Tür zu öffnen [Kosten: ${this.door.cost}]`;
   }
   use() {
     if (this.door.open) return;
@@ -53,8 +55,9 @@ class Barricade extends Interactable {
   prompt() {
     if (this.win.boards >= 6) return null;
     if (!this.g.map.openZones.has(this.win.zone)) return null;
-    return `Halte ${F}, um die Barrikade zu reparieren`;
+    return `${this.holdV}, um die Barrikade zu reparieren`;
   }
+  reset() { this.t = 0; }
   holdUse(dt) {
     if (this.win.boards >= 6) return;
     this.t -= dt;
@@ -92,10 +95,10 @@ class WallBuy extends Interactable {
   }
   prompt() {
     const w = this.g.weapons;
-    if (this.id === 'grenade') return w.grenades >= 4 ? null : `Drücke ${F} für ${this.name} [Kosten: ${this.cost}]`;
+    if (this.id === 'grenade') return w.grenades >= 4 ? null : `${this.press} für ${this.name} [Kosten: ${this.cost}]`;
     const own = w.has(this.id);
-    if (own) return `Drücke ${F} für Munition [Kosten: ${own.pap ? 4500 : Math.round(this.cost / 2)}]`;
-    return `Drücke ${F} für ${this.name} [Kosten: ${this.cost}]`;
+    if (own) return `${this.press} für Munition [Kosten: ${own.pap ? 4500 : Math.round(this.cost / 2)}]`;
+    return `${this.press} für ${this.name} [Kosten: ${this.cost}]`;
   }
   use() {
     const w = this.g.weapons;
@@ -149,7 +152,7 @@ class PerkMachine extends Interactable {
     const light = new THREE.PointLight(col, 4, 5, 1.8);
     light.position.set(lp.x, 2.3, lp.z);
     game.scene.add(light);
-    this.light = map.addLight(light, { poweredOnly: id !== 'phoenix', flicker: 0.1 });
+    this.light = map.addLight(light, { poweredOnly: id !== 'phoenix', flicker: 0.1, tier: 3 });
     this.col = col;
   }
   get powered() { return this.g.map.power || this.id === 'phoenix'; }
@@ -159,7 +162,7 @@ class PerkMachine extends Interactable {
     if (this.id === 'phoenix' && p.selfRevives >= 3) return 'Phönix-Soda ist ausverkauft';
     if (!this.powered) return 'Kein Strom';
     if (p.perks.size >= PERK_LIMIT) return `Perk-Limit erreicht (${PERK_LIMIT})`;
-    return `Drücke ${F} für ${P.name} – ${P.desc} [Kosten: ${P.cost}]`;
+    return `${this.press} für ${P.name} – ${P.desc} [Kosten: ${P.cost}]`;
   }
   use() {
     const g = this.g, p = g.player, P = PERKS[this.id];
@@ -194,19 +197,21 @@ class PowerSwitch extends Interactable {
     const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.38, 0.05), M.chrome); arm.position.y = 0.17; this.lever.add(arm);
     const knob = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), M.paintRed); knob.position.y = 0.36; this.lever.add(knob);
     this.lever.rotation.x = -0.6;
+    this.lever.userData.dynamic = true;
     g.add(this.lever);
     this.lamp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 0.1, 0.05) }));
     this.lamp.position.set(0.25, 1.85, 0.13); g.add(this.lamp);
     map.place(g, s.cx, s.cy, s.wall, 0.25);
     this.anim = 0;
   }
-  prompt() { return this.g.map.power ? null : `Drücke ${F}, um den Strom einzuschalten`; }
+  prompt() { return this.g.map.power ? null : `${this.press}, um den Strom einzuschalten`; }
   use() {
     if (this.g.map.power) return;
     this.anim = 0.0001;
     this.g.audio.lever();
     setTimeout(() => this.g.powerOn(), 700);
   }
+  reset() { this.anim = 0; this.lever.rotation.x = -0.6; }
   update(dt) {
     if (this.anim > 0 && this.anim < 1) {
       this.anim = Math.min(1, this.anim + dt / 0.6);
@@ -252,6 +257,7 @@ class MysteryBox extends Interactable {
     add(new THREE.BoxGeometry(1.8, 0.04, 0.82), M.metal, 0, 0.1, 0.39, this.lid);
     this.inner = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.68), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 1.4, 2.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.inner.rotation.x = -Math.PI / 2; this.inner.position.y = 0.74; body.add(this.inner);
+    g.userData.dynamic = true;
     game.scene.add(g);
 
     // Lichtsäule (sichtbar über die Mauern hinweg)
@@ -264,18 +270,32 @@ class MysteryBox extends Interactable {
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
     });
     this.beam = new THREE.Mesh(beamGeo, this.beamMat);
+    this.beam.userData.dynamic = true;
     game.scene.add(this.beam);
     this.light = new THREE.PointLight(0x66ccff, 0, 6, 1.6);
+    this.light.userData.tier = 2;
     game.scene.add(this.light);
 
     // Teddy
     this.teddy = this.buildTeddy(M);
     this.teddy.visible = false;
+    this.teddy.userData.dynamic = true;
     game.scene.add(this.teddy);
 
     this.display = new THREE.Group();
+    this.display.userData.dynamic = true;
     game.scene.add(this.display);
     this.moveTo(this.spot);
+  }
+
+  reset() {
+    this.state = 'idle'; this.t = 0;
+    this.uses = 0; this.totalUses = 0;
+    this.teddy.visible = false;
+    this.showWeapon(null);
+    this.group.rotation.set(0, 0, 0);
+    this.inner.material.opacity = 0;
+    this.moveTo(BOX_START);
   }
 
   buildTeddy(M) {
@@ -324,8 +344,8 @@ class MysteryBox extends Interactable {
   }
 
   prompt() {
-    if (this.state === 'idle') return `Drücke ${F} für eine Zufallswaffe [Kosten: ${BOX_COST}]`;
-    if (this.state === 'offer') return `Drücke ${F} für ${WEAPONS[this.result].name}`;
+    if (this.state === 'idle') return `${this.press} für eine Zufallswaffe [Kosten: ${BOX_COST}]`;
+    if (this.state === 'offer') return `${this.press} für ${WEAPONS[this.result].name}`;
     return null;
   }
 
@@ -459,6 +479,7 @@ class PackAPunch extends Interactable {
     for (const s of [-1, 1]) {
       const gear = add(new THREE.TorusGeometry(0.32, 0.06, 6, 18), M.chrome, s * 0.78, 0.85, 0);
       gear.rotation.y = Math.PI / 2;
+      gear.userData.dynamic = true;
       this.gears.push(gear);
     }
     const trim = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.35, 2.2) });
@@ -483,19 +504,22 @@ class PackAPunch extends Interactable {
     const light = new THREE.PointLight(0xa040ff, 9, 9, 1.7);
     light.position.set(c.x, 2.6, c.z);
     game.scene.add(light);
-    this.light = map.addLight(light, { poweredOnly: true, flicker: 0.3 });
+    this.light = map.addLight(light, { poweredOnly: true, flicker: 0.3, tier: 2 });
     this.state = 'idle'; this.t = 0;
-    this.display = new THREE.Group(); game.scene.add(this.display);
+    this.display = new THREE.Group();
+    this.display.userData.dynamic = true;
+    game.scene.add(this.display);
     this.slot = null;
   }
+  reset() { this.state = 'idle'; this.t = 0; this.slot = null; this.display.clear(); this.display.visible = true; }
   prompt() {
     const g = this.g, w = g.weapons.weapon;
     if (!g.map.power) return 'Kein Strom';
-    if (this.state === 'ready') return `Drücke ${F} für ${this.slot.stats.name}`;
+    if (this.state === 'ready') return `${this.press} für ${this.slot.stats.name}`;
     if (this.state !== 'idle') return null;
     if (!w) return null;
     if (w.pap) return 'Diese Waffe ist bereits verbessert';
-    return `Drücke ${F}, um deine Waffe zu verbessern [Kosten: ${PAP_COST}]`;
+    return `${this.press}, um deine Waffe zu verbessern [Kosten: ${PAP_COST}]`;
   }
   use() {
     const g = this.g;
@@ -576,10 +600,17 @@ export class Interactables {
       }
     }
     this.current = best;
-    g.hud.prompt(best ? best.prompt() : null);
-    if (best) {
-      if (best.hold) { if (input.down('KeyF')) best.holdUse(dt); }
-      else if (input.hit('KeyF')) best.use();
+    const text = best ? best.prompt() : null;
+    g.hud.prompt(text);
+    // Nur echte Aktionen (nicht "Kein Strom" o. Ä.) zeigen den Benutzen-Knopf
+    const actionable = !!text && (text.startsWith(input.verb(false)) || text.startsWith(input.verb(true)));
+    input.useAvailable = actionable;
+    if (g.touch) g.touch.setUse(actionable ? 'Benutzen' : null);
+    if (best && actionable) {
+      if (best.hold) { if (input.held('use')) best.holdUse(dt); }
+      else if (input.hit('use')) best.use();
     }
   }
+
+  reset() { for (const it of this.list) it.reset(); }
 }

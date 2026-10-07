@@ -2,8 +2,17 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nachtfall – Zombies</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Nachtfall</title>
+  <meta name="description" content="Rundenbasierter 3D-Zombie-Survival-Shooter – spielbar mit Maus & Tastatur, Controller oder Touch." />
+  <meta name="theme-color" content="#0a0303" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nachtfall" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Oswald:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
@@ -49,8 +58,10 @@
       <button id="btnPlay">Spielen</button>
       <button id="btnSettings">Einstellungen</button>
       <button id="btnControls">Steuerung</button>
+      <button id="btnInstall" class="hidden">Als App installieren</button>
     </div>
     <div class="hint">Überlebe so viele Runden wie möglich. Kaufe Türen, Waffen und Perks mit Punkten.</div>
+    <div id="iosHint" class="hint hidden">Tipp: In Safari über „Teilen“ → „Zum Home-Bildschirm“ als App installieren – dann läuft es im Vollbild.</div>
   </div>
 
   <!-- Pause -->
@@ -67,14 +78,21 @@
   <!-- Einstellungen -->
   <div id="settings" class="screen hidden panel">
     <h2>Einstellungen</h2>
-    <label>Mausempfindlichkeit <input id="sSens" type="range" min="0.2" max="3" step="0.05" /><span></span></label>
+    <label>Empfindlichkeit (Umsehen) <input id="sSens" type="range" min="0.2" max="3" step="0.05" /><span></span></label>
     <label>Sichtfeld (FOV) <input id="sFov" type="range" min="65" max="100" step="1" /><span></span></label>
     <label>Gesamtlautstärke <input id="sVol" type="range" min="0" max="1" step="0.05" /><span></span></label>
-    <label>Musik & Atmosphäre <input id="sMus" type="range" min="0" max="1" step="0.05" /><span></span></label>
+    <label>Musik &amp; Atmosphäre <input id="sMus" type="range" min="0" max="1" step="0.05" /><span></span></label>
     <label>Grafikqualität
-      <select id="sQual"><option value="hoch">Hoch</option><option value="mittel">Mittel</option><option value="niedrig">Niedrig</option></select>
+      <select id="sQual">
+        <option value="auto">Automatisch</option>
+        <option value="hoch">Hoch</option>
+        <option value="mittel">Mittel</option>
+        <option value="niedrig">Niedrig</option>
+        <option value="minimal">Minimal</option>
+      </select>
     </label>
-    <label class="check">Maus Y invertieren <input id="sInv" type="checkbox" /></label>
+    <label class="check">Zielhilfe (Controller &amp; Touch) <input id="sAim" type="checkbox" /></label>
+    <label class="check">Y-Achse invertieren <input id="sInv" type="checkbox" /></label>
     <label class="check">FPS anzeigen <input id="sFps" type="checkbox" /></label>
     <div class="buttons"><button class="back">Zurück</button></div>
   </div>
@@ -82,21 +100,53 @@
   <!-- Steuerung -->
   <div id="controls" class="screen hidden panel">
     <h2>Steuerung</h2>
-    <table>
-      <tr><td>W A S D</td><td>Bewegen</td></tr>
-      <tr><td>Maus</td><td>Umsehen</td></tr>
-      <tr><td>Linke Maustaste</td><td>Schießen</td></tr>
-      <tr><td>Rechte Maustaste</td><td>Zielen (ADS)</td></tr>
-      <tr><td>Shift</td><td>Sprinten</td></tr>
-      <tr><td>Leertaste</td><td>Springen</td></tr>
-      <tr><td>C / Strg</td><td>Ducken</td></tr>
-      <tr><td>R</td><td>Nachladen</td></tr>
-      <tr><td>F</td><td>Interagieren / Kaufen (halten: Barrikade reparieren)</td></tr>
-      <tr><td>V / Maus 4</td><td>Messer</td></tr>
-      <tr><td>G</td><td>Granate werfen</td></tr>
-      <tr><td>1 / 2 / Q / Mausrad</td><td>Waffe wechseln</td></tr>
-      <tr><td>Esc</td><td>Pause</td></tr>
-    </table>
+    <div class="ctl-grid">
+      <section>
+        <h3>Tastatur &amp; Maus</h3>
+        <table>
+          <tr><td>W A S D</td><td>Bewegen</td></tr>
+          <tr><td>Maus / Pfeiltasten</td><td>Umsehen</td></tr>
+          <tr><td>Linke Maustaste</td><td>Schießen</td></tr>
+          <tr><td>Rechte Maustaste</td><td>Zielen</td></tr>
+          <tr><td>Shift</td><td>Sprinten</td></tr>
+          <tr><td>Leertaste</td><td>Springen</td></tr>
+          <tr><td>C / Strg</td><td>Ducken</td></tr>
+          <tr><td>R</td><td>Nachladen</td></tr>
+          <tr><td>F</td><td>Kaufen / Benutzen (halten: Barrikade reparieren)</td></tr>
+          <tr><td>V / Maus 4</td><td>Messer</td></tr>
+          <tr><td>G</td><td>Granate</td></tr>
+          <tr><td>1 / 2 / Q / Mausrad</td><td>Waffe wechseln</td></tr>
+          <tr><td>Esc</td><td>Pause</td></tr>
+        </table>
+      </section>
+      <section>
+        <h3>Controller</h3>
+        <table>
+          <tr><td>Linker Stick</td><td>Bewegen (drücken: Sprinten)</td></tr>
+          <tr><td>Rechter Stick</td><td>Umsehen (drücken: Messer)</td></tr>
+          <tr><td>RT / R2</td><td>Schießen</td></tr>
+          <tr><td>LT / L2</td><td>Zielen</td></tr>
+          <tr><td>A / ✕</td><td>Springen</td></tr>
+          <tr><td>B / ○</td><td>Ducken</td></tr>
+          <tr><td>X / ▢</td><td>Nachladen · Kaufen / Benutzen</td></tr>
+          <tr><td>Y / △ · Steuerkreuz</td><td>Waffe wechseln</td></tr>
+          <tr><td>RB / R1</td><td>Granate</td></tr>
+          <tr><td>LB / L1</td><td>Messer</td></tr>
+          <tr><td>Start / Options</td><td>Pause</td></tr>
+        </table>
+      </section>
+      <section>
+        <h3>Touch (Handy &amp; Tablet)</h3>
+        <table>
+          <tr><td>Linke Bildschirmhälfte</td><td>Joystick: Bewegen – ganz nach vorne schieben zum Sprinten</td></tr>
+          <tr><td>Rechte Bildschirmhälfte</td><td>Wischen zum Umsehen</td></tr>
+          <tr><td>Feuerknopf</td><td>Schießen – gedrückt halten und ziehen zum Nachzielen</td></tr>
+          <tr><td>Zielfernrohr</td><td>Zielen an / aus</td></tr>
+          <tr><td>Benutzen</td><td>Erscheint, wenn du etwas kaufen oder benutzen kannst</td></tr>
+          <tr><td>Weitere Knöpfe</td><td>Nachladen, Springen, Ducken, Messer, Granate, Waffe wechseln, Pause</td></tr>
+        </table>
+      </section>
+    </div>
     <div class="buttons"><button class="back">Zurück</button></div>
   </div>
 
@@ -109,6 +159,12 @@
   </div>
 
   <div id="clickToPlay" class="hidden">Klicken, um fortzufahren</div>
+
+  <!-- Hochformat-Hinweis (nur Touch-Geräte) -->
+  <div id="rotate">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="44" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M50 40a18 18 0 0 1-16 14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M30 50l4 4-4 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p>Bitte drehe dein Gerät ins Querformat.</p>
+  </div>
 
   <script type="module" src="./src/main.js"></script>
 </body>

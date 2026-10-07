@@ -4,7 +4,9 @@ import { ValueNoise, mulberry32 } from './noise.js';
 import { clamp, smoothstep } from './utils.js';
 
 let ANISO = 4;
+let SCALE = 1; // < 1 auf Mobilgeräten: kleinere Texturen, schnellerer Start, weniger Speicher
 export function setAnisotropy(a) { ANISO = a; }
+export function setTextureScale(s) { SCALE = s; }
 
 function canvas(w, h = w) {
   const c = document.createElement('canvas');
@@ -24,6 +26,7 @@ export function toTexture(cv, { srgb = true, repeat = true } = {}) {
 
 // Pixel-Generator: fn(u, v, out) setzt out.r/g/b (0..1) und out.h (Höhe für Bump)
 function pixels(size, fn) {
+  size = Math.max(128, Math.round(size * SCALE));
   const col = canvas(size), bmp = canvas(size);
   const cc = col.getContext('2d'), bc = bmp.getContext('2d');
   const ci = cc.createImageData(size, size), bi = bc.createImageData(size, size);
@@ -162,12 +165,13 @@ export function planks(seed = 7, tint = [1, 1, 1], count = 4) {
     o.r += (r() - 0.5) * 0.03;
   });
   // Nägel
-  const { cc, bc } = p;
+  const { cc, bc, size } = p;
+  const k = size / 512;
   for (let i = 0; i < count; i++) {
-    for (const x of [24, 488]) {
-      const y = (i + 0.5) * (512 / count);
-      cc.fillStyle = '#2a2622'; cc.beginPath(); cc.arc(x, y, 4, 0, 7); cc.fill();
-      bc.fillStyle = '#fff'; bc.beginPath(); bc.arc(x, y, 4, 0, 7); bc.fill();
+    for (const x of [24 * k, 488 * k]) {
+      const y = (i + 0.5) * (size / count);
+      cc.fillStyle = '#2a2622'; cc.beginPath(); cc.arc(x, y, 4 * k, 0, 7); cc.fill();
+      bc.fillStyle = '#fff'; bc.beginPath(); bc.arc(x, y, 4 * k, 0, 7); bc.fill();
     }
   }
   return finish(p);
@@ -254,12 +258,12 @@ export function metal(seed = 19, rust = 0.4, base = [0.32, 0.33, 0.35]) {
     o.h = 0.5 + rs * 0.3 + (f - 0.5) * 0.2;
   });
   // Kratzer
-  const { cc } = p;
+  const { cc, size } = p;
   for (let i = 0; i < 60; i++) {
     cc.strokeStyle = `rgba(200,200,205,${0.05 + r() * 0.12})`;
     cc.lineWidth = 0.5 + r();
-    const x = r() * 512, y = r() * 512, a = r() * Math.PI;
-    cc.beginPath(); cc.moveTo(x, y); cc.lineTo(x + Math.cos(a) * 40 * r(), y + Math.sin(a) * 40 * r()); cc.stroke();
+    const x = r() * size, y = r() * size, a = r() * Math.PI, l = (size / 512) * 40;
+    cc.beginPath(); cc.moveTo(x, y); cc.lineTo(x + Math.cos(a) * l * r(), y + Math.sin(a) * l * r()); cc.stroke();
   }
   return finish(p);
 }

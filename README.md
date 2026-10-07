@@ -9,36 +9,51 @@ Animationen und Sounds werden prozedural im Code erzeugt.
 > Inhalte, Namen, Modelle, Sounds oder Musik von Activision/Treyarch. Perks, Waffen, Karte und
 > die Pack-a-Punch-Entsprechung („Äther-Schmiede“) sind eigene Schöpfungen.
 
+## Auf jedem Gerät spielbar
+
+| Plattform | Steuerung | Hinweise |
+|---|---|---|
+| Windows, macOS, Linux (Chrome, Edge, Firefox, Safari) | Maus & Tastatur oder Controller | Grafik „Hoch“, Maus-Fang per Klick |
+| Android-Handys & -Tablets (Chrome) | Touch oder Bluetooth-Controller | Grafik automatisch angepasst, Vollbild + Querformat |
+| iPhone & iPad (Safari) | Touch oder Bluetooth-Controller | Über „Teilen → Zum Home-Bildschirm“ als App im Vollbild |
+| Steam Deck, Handhelds, Fernseher mit Browser | Controller | Menüs komplett per Controller bedienbar |
+
+- **Automatische Erkennung:** Touch-Steuerung erscheint bei der ersten Berührung, Controller werden beim ersten Tastendruck erkannt; Hinweise passen sich an („Drücke F“, „Drücke X/▢“, „Tippe auf Benutzen“).
+- **Leistung:** Qualitätsstufe „Automatisch“ wählt passend zum Gerät; eine dynamische Auflösung hält die Bildrate flüssig. Zombies werden per Instancing gezeichnet, statische Deko zusammengefasst – ein Frame mit 24 Zombies braucht so ca. 460 statt über 10 000 Draw-Calls.
+- **Als App installierbar (PWA)** und danach **offline spielbar**: Menüpunkt „Als App installieren“ (Chrome/Edge/Android) bzw. „Zum Home-Bildschirm“ (iOS).
+- **Zielhilfe** für Controller und Touch (abschaltbar), Bildschirm bleibt während des Spiels an, Pause beim App-Wechsel.
+
 ## Starten
 
 ```bash
 npm install
-npm run dev        # Entwicklungsserver → http://localhost:5173
-npm run build      # Produktions-Build nach dist/
-npm run preview    # Build lokal testen
+npm run dev           # Entwicklungsserver → http://localhost:5173 (im WLAN auch vom Handy: npm run dev -- --host)
+npm run build         # Produktions-Build nach dist/ (inkl. App-Manifest und Offline-Cache)
+npm run preview       # Build lokal testen
+npm run build:single  # zusätzlich dist/nachtfall.html: das ganze Spiel in EINER Datei
 ```
 
-Benötigt einen aktuellen Desktop-Browser mit WebGL2 (Chrome, Edge, Firefox). Maus + Tastatur.
+Die Einzeldatei `dist/nachtfall.html` läuft ohne Server – zum Weitergeben, Hochladen (z. B. itch.io)
+oder direkt Öffnen im Browser.
 
 **Online spielen (GitHub Pages):** Der Workflow `.github/workflows/deploy.yml` baut das Spiel bei jedem
 Push auf `main` und veröffentlicht es. Einmalig unter *Settings → Pages → Source* „GitHub Actions“ wählen.
 
 ## Steuerung
 
-| Taste | Aktion |
-|---|---|
-| W A S D | Bewegen |
-| Maus | Umsehen |
-| Linke / Rechte Maustaste | Schießen / Zielen (ADS) |
-| Shift | Sprinten |
-| Leertaste | Springen |
-| C / Strg | Ducken |
-| R | Nachladen |
-| F | Kaufen / Interagieren (halten: Barrikade reparieren) |
-| V / Maus 4 | Messer |
-| G | Granate |
-| 1 / 2 / Q / Mausrad | Waffe wechseln |
-| Esc | Pause |
+| Aktion | Tastatur & Maus | Controller (Xbox / PlayStation) | Touch |
+|---|---|---|---|
+| Bewegen | W A S D | Linker Stick | Joystick links (erscheint unter dem Daumen) |
+| Umsehen | Maus / Pfeiltasten | Rechter Stick | Rechte Bildschirmhälfte wischen |
+| Schießen | Linke Maustaste | RT / R2 | Feuerknopf (halten + ziehen zum Nachzielen) |
+| Zielen | Rechte Maustaste | LT / L2 | Zielfernrohr-Knopf (an/aus) |
+| Sprinten | Shift | Linken Stick drücken | Joystick ganz nach vorne |
+| Springen / Ducken | Leertaste / C | A ✕ / B ○ | Knöpfe |
+| Nachladen | R | X ▢ | Knopf |
+| Kaufen / Benutzen | F (halten: reparieren) | X ▢ (wenn etwas in Reichweite ist) | „Benutzen“-Knopf erscheint automatisch |
+| Messer / Granate | V / G | R3 oder LB / RB | Knöpfe |
+| Waffe wechseln | 1 / 2 / Q / Mausrad | Y △ / Steuerkreuz | Knopf |
+| Pause | Esc | Start / Options | Pause-Knopf |
 
 ## Was schon drin ist
 
@@ -84,7 +99,9 @@ src/
   player/              Bewegung, Kamera, Gesundheit, Perks
   game/                Spiel-Loop, Runden, Interaktionen (Kiste, Perks, Türen …), Power-Ups
   audio/               Prozedurales Sound-Design
-  ui/                  HUD
+  ui/                  HUD und Touch-Steuerung
+public/                App-Manifest, Service Worker (offline), Icons
+scripts/               Einzeldatei-Build
 ```
 
 Neue Waffen, Perks oder Kartenbereiche lassen sich größtenteils über `src/config.js` hinzufügen –
@@ -109,5 +126,9 @@ damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Anima
    mit autoritativem Server, Wiederbeleben von Mitspielern.
 4. **Mehr Inhalt:** weitere Karten, Höllenhund-Runden, Easter-Egg-Quest, buildables, Spezialzombies,
    Wunderwaffen, Bank/Waffenkammer, Rangsystem und Statistiken.
-5. **Verbesserungen ggü. BO2:** Controller-Support, Barrierefreiheit (Untertitel, Farbfilter),
+5. **Verbesserungen ggü. BO2:** Barrierefreiheit (Untertitel, Farbfilter, frei belegbare Tasten),
    Speichern zwischen Runden, Mod-Support über die Konfigurationsdatei.
+6. **App-Stores & Konsolen:** Für Google Play und den App Store lässt sich das Spiel mit Capacitor
+   verpacken, für Steam mit Electron oder Tauri. PlayStation, Xbox und Nintendo verlangen offizielle
+   Entwicklerverträge und Dev-Kits – ein Browser-Spiel kann dort nicht direkt veröffentlicht werden.
+   Im Browser einer Konsole (z. B. Edge auf der Xbox) sollte es mit Controller laufen; das ist ungetestet.

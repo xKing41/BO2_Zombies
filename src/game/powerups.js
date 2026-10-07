@@ -23,6 +23,7 @@ export class PowerUps {
       halo.scale.set(1.5, 1.5, 1);
       g.add(halo, icon);
       g.visible = false;
+      g.userData.dynamic = true;
       game.scene.add(g);
       this.items.push({ group: g, icon, halo, active: false, type: null, t: 0 });
     }

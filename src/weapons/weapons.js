@@ -64,16 +64,19 @@ export class Weapons {
       halo.scale.set(0.7, 0.7, 1);
       core.add(halo);
       core.visible = false;
+      core.userData.dynamic = true;
       game.scene.add(core);
       this.projectiles.push({ mesh: core, halo, active: false, pos: core.position, vel: new THREE.Vector3(), life: 0 });
     }
     this.projLight = new THREE.PointLight(0x55ff66, 0, 7, 1.6);
+    this.projLight.userData.tier = 2;
     game.scene.add(this.projLight);
     // Granaten-Pool (Welt)
     for (let i = 0; i < 6; i++) {
       const m = buildGrenade(this.M);
       m.scale.setScalar(1.3);
       m.visible = false;
+      m.userData.dynamic = true;
       game.scene.add(m);
       this.thrown.push({ mesh: m, active: false, pos: m.position, vel: new THREE.Vector3(), fuse: 0 });
     }
@@ -379,21 +382,22 @@ export class Weapons {
 
     if (canAct) {
       // Waffenwechsel
-      const wantSwitch = input.hit('Digit1') ? 0 : input.hit('Digit2') ? 1 : input.wheel !== 0 || input.hit('KeyQ') ? 1 - this.cur : -1;
+      const wantSwitch = input.hit('slot1') ? 0 : input.hit('slot2') ? 1 : input.hit('switch') ? 1 - this.cur : -1;
       if (wantSwitch >= 0 && wantSwitch !== this.cur && this.slots[wantSwitch] && !this.busy && this.state !== 'lower') {
         this.setState('lower', 0.28);
         this.pendingSlot = wantSwitch;
       }
-      if (input.hit('KeyR')) this.reload();
-      if (input.hit('KeyV') || input.click(3) || input.click(4)) this.knifeAttack();
-      if (input.hit('KeyG')) this.throwGrenade();
+      if (input.hit('reload')) this.reload();
+      if (input.hit('knife')) this.knifeAttack();
+      if (input.hit('grenade')) this.throwGrenade();
 
-      const wantFire = w && (w.stats.auto ? input.mouse(0) : input.click(0));
+      // Touch: Halbautomaten feuern beim Gedrückthalten wiederholt (Takt durch fireCd begrenzt)
+      const wantFire = w && (w.stats.auto || input.device === 'touch' ? input.held('fire') : input.hit('fire'));
       if (wantFire && player.sprinting) player.stopSprint();
       if (wantFire && this.state === 'idle' && this.fireCd <= 0 && !player.sprinting) {
         if (w.mag > 0) this.fire();
         else if (w.reserve > 0) this.reload();
-        else if (input.click(0)) g.audio.emptyClick();
+        else if (input.hit('fire')) g.audio.emptyClick();
       }
       // Automatisch nachladen, wenn Magazin leer
       if (w && w.mag === 0 && w.reserve > 0 && this.state === 'idle' && this.fireCd <= -0.15) this.reload();
@@ -428,7 +432,7 @@ export class Weapons {
     }
 
     // ADS
-    const adsWanted = canAct && input.mouse(2) && w && (this.state === 'idle') && !player.sprinting;
+    const adsWanted = canAct && input.held('ads') && w && (this.state === 'idle') && !player.sprinting;
     this.ads = damp(this.ads, adsWanted ? 1 : 0, w && w.stats.scope ? 9 : 14, dt);
     if (adsWanted && player.sprinting) player.stopSprint();
 
@@ -454,8 +458,8 @@ export class Weapons {
     const ads = smooth(this.ads);
     this.kick = damp(this.kick, 0, 13, dt);
     this.sprintBlend = damp(this.sprintBlend, player.sprinting ? 1 : 0, 8, dt);
-    this.swayX = damp(this.swayX, clamp(-input.dx * 0.0006, -0.05, 0.05), 9, dt);
-    this.swayY = damp(this.swayY, clamp(input.dy * 0.0006, -0.05, 0.05), 9, dt);
+    this.swayX = damp(this.swayX, clamp(-input.lookX * 0.27, -0.05, 0.05), 9, dt);
+    this.swayY = damp(this.swayY, clamp(input.lookY * 0.27, -0.05, 0.05), 9, dt);
 
     const sightY = info ? info.sightY : 0.07;
     const back = info ? info.back : 0;
@@ -584,6 +588,13 @@ export class Weapons {
   reset() {
     this.slots = [null, null];
     this.grenades = 2;
+    this.cur = 0;
+    this.setState('idle');
+    this.ads = 0; this.kick = 0; this.fireCd = 0;
+    this.pumpT = 0; this.boltT = 0; this.slideT = 0;
+    if (this.bottle) { this.scene.remove(this.bottle); this.bottle = null; }
+    this.flash.visible = false; this.knife.visible = false; this.nade.visible = false;
+    this.projLight.intensity = 0;
     for (const p of this.projectiles) { p.active = false; p.mesh.visible = false; }
     for (const n of this.thrown) { n.active = false; n.mesh.visible = false; }
     this.give('p45');

@@ -12,9 +12,12 @@ export class AudioEngine {
     this.ctx = null;
     this.volumes = { master: 0.8, music: 0.6, sfx: 1.0 };
     this.voices = 0;
+    this.panningModel = 'HRTF'; // auf Mobilgeräten 'equalpower' (spart viel CPU)
   }
 
   init() {
+    // iOS: Ton auch bei aktiviertem Stummschalter abspielen
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* */ }
     if (this.ctx) { this.ctx.resume(); return; }
     const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)());
     this.master = ctx.createGain();
@@ -88,7 +91,7 @@ export class AudioEngine {
     let node = g;
     if (pos) {
       const p = ctx.createPanner();
-      p.panningModel = 'HRTF';
+      p.panningModel = this.panningModel;
       p.distanceModel = 'inverse';
       p.refDistance = 2.5;
       p.maxDistance = 80;

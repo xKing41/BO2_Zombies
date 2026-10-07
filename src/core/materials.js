@@ -70,16 +70,20 @@ export function buildMaterials(onProgress = () => {}) {
   M.papGun = std({ map: M.tex.papCamo, color: 0x8070a0, emissive: 0x5020d0, emissiveMap: M.tex.papCamo, emissiveIntensity: 0.3, roughness: 0.3, metalness: 0.8 });
 
   step('Zombies');
+  // Neutrale Texturen + Farbton pro Instanz (spart Speicher und Draw-Calls)
+  const tint = (base) => (c) => new THREE.Color().setRGB(c[0] / base, c[1] / base, c[2] / base, THREE.SRGBColorSpace);
+  const zs = T.skin(60, [0.62, 0.62, 0.6]);
+  const zsh = T.fabric(70, [0.72, 0.72, 0.72], 0.7);
+  const zp = T.fabric(80, [0.6, 0.6, 0.6], 0.35);
   M.zombie = {
-    skins: [
-      [0.47, 0.49, 0.4], [0.42, 0.42, 0.37], [0.5, 0.45, 0.38], [0.36, 0.37, 0.32],
-    ].map((c, i) => { const s = T.skin(60 + i, c); return std({ map: s.map, bumpMap: s.bump, bumpScale: 1.5, roughness: 0.75 }); }),
-    shirts: [
-      [0.36, 0.33, 0.27], [0.16, 0.2, 0.28], [0.32, 0.1, 0.08], [0.3, 0.3, 0.31], [0.2, 0.24, 0.16], [0.4, 0.38, 0.32],
-    ].map((c, i) => { const s = T.fabric(70 + i, c, 0.7); return std({ map: s.map, bumpMap: s.bump, bumpScale: 1, roughness: 0.95 }); }),
-    pants: [
-      [0.15, 0.17, 0.22], [0.28, 0.24, 0.18], [0.12, 0.12, 0.12], [0.3, 0.32, 0.28],
-    ].map((c, i) => { const s = T.fabric(80 + i, c, 0.35); return std({ map: s.map, bumpMap: s.bump, bumpScale: 1, roughness: 0.95 }); }),
+    skin: std({ map: zs.map, bumpMap: zs.bump, bumpScale: 1.5, roughness: 0.75 }),
+    shirt: std({ map: zsh.map, bumpMap: zsh.bump, bumpScale: 1, roughness: 0.95 }),
+    pants: std({ map: zp.map, bumpMap: zp.bump, bumpScale: 1, roughness: 0.95 }),
+    tints: {
+      skin: [[0.47, 0.49, 0.4], [0.42, 0.42, 0.37], [0.5, 0.45, 0.38], [0.36, 0.37, 0.32]].map(tint(0.62)),
+      shirt: [[0.36, 0.33, 0.27], [0.16, 0.2, 0.28], [0.32, 0.1, 0.08], [0.3, 0.3, 0.31], [0.2, 0.24, 0.16], [0.4, 0.38, 0.32]].map(tint(0.72)),
+      pants: [[0.15, 0.17, 0.22], [0.28, 0.24, 0.18], [0.12, 0.12, 0.12], [0.3, 0.32, 0.28]].map(tint(0.6)),
+    },
     eye: new THREE.MeshBasicMaterial({ color: new THREE.Color(6.0, 2.4, 0.3) }),
     teeth: std({ color: 0x8f8466, roughness: 0.5 }),
     mouth: std({ color: 0x1a0505, roughness: 0.6 }),

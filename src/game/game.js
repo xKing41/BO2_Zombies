@@ -3,12 +3,13 @@
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RenderSystem } from '../core/renderer.js';
-import { setAnisotropy } from '../core/textures.js';
+import { RenderSystem, QUALITY, resolveQuality } from '../core/renderer.js';
+import { setAnisotropy, setTextureScale } from '../core/textures.js';
 import { buildMaterials } from '../core/materials.js';
 import { Input } from '../core/input.js';
 import { AudioEngine } from '../audio/audio.js';
 import { GameMap } from '../world/map.js';
+import { batchStatic } from '../world/batch.js';
 import { Effects } from '../fx/effects.js';
 import { Player } from '../player/player.js';
 import { Weapons } from '../weapons/weapons.js';
@@ -16,11 +17,14 @@ import { ZombieManager } from '../zombies/manager.js';
 import { Interactables } from './interactables.js';
 import { PowerUps } from './powerups.js';
 import { HUD } from '../ui/hud.js';
-import { clamp, damp, rand } from '../core/utils.js';
+import { clamp, damp } from '../core/utils.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-export const DEFAULT_SETTINGS = { sensitivity: 1, fov: 80, master: 0.8, music: 0.6, quality: 'hoch', invertY: false, showFps: false };
+export const DEFAULT_SETTINGS = {
+  sensitivity: 1, fov: 80, master: 0.8, music: 0.6, quality: 'auto',
+  invertY: false, showFps: false, aimAssist: true,
+};
 
 export class Game {
   constructor(canvas, settings) {
@@ -33,14 +37,19 @@ export class Game {
     this.flash = 0;
     this.time = 0;
     this.lightLevel = 0.5;
+    this.repairPoints = 0;
     this.input = new Input(canvas);
+    this.touch = null; // wird von main.js gesetzt
+    this.perf = { acc: 0, n: 0 };
   }
 
   async init(progress) {
     const step = async (pct, text) => { progress(pct, text); await nextFrame(); };
     await step(5, 'Grafik wird initialisiert …');
     this.rs = new RenderSystem(this.canvas, this.settings.quality);
+    const q = this.rs.quality;
     setAnisotropy(Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()));
+    setTextureScale(q.texScale);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
@@ -48,7 +57,7 @@ export class Game {
     this.vmCamera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.01, 10);
     this.scene.add(this.camera);
     this.rs.setup(this.scene, this.camera, this.vmScene, this.vmCamera);
-    this.rs.onResize = (w, h) => this.effects && this.effects.setScale(h * this.rs.renderer.getPixelRatio(), this.camera.fov);
+    this.rs.onResize = () => this.effects && this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
     const pmrem = new THREE.PMREMGenerator(this.rs.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.12;
@@ -67,6 +76,7 @@ export class Game {
     await step(72, 'Effekte …');
     this.effects = new Effects(this.scene, this.M);
     this.audio = new AudioEngine();
+    this.audio.panningModel = q.hrtf ? 'HRTF' : 'equalpower';
     this.hud = new HUD();
     this.player = new Player(this);
     await step(78, 'Waffen …');
@@ -76,6 +86,8 @@ export class Game {
     this.interact = new Interactables(this);
     this.powerups = new PowerUps(this);
     this.hud.iconUrls = Object.fromEntries(Object.entries(this.powerups.icons).map(([k, t]) => [k, t.image.toDataURL()]));
+    this.batchInfo = batchStatic(this.scene);
+    this.applyLightQuality();
     await step(92, 'Shader werden kompiliert …');
     this.precompile();
     this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
@@ -88,20 +100,38 @@ export class Game {
   }
 
   precompile() {
-    // Alle Zombies kurz sichtbar machen, damit ihre Materialien vorab kompiliert werden
-    for (const z of this.zombies.pool) { z.root.visible = true; z.pos.set(-50, 0, -50); }
     this.rs.renderer.compile(this.scene, this.camera);
     this.rs.renderer.compile(this.vmScene, this.vmCamera);
     this.rs.render();
-    for (const z of this.zombies.pool) z.root.visible = false;
+  }
+
+  // Lichter und Schatten passend zur Qualitätsstufe ein-/ausschalten
+  applyLightQuality() {
+    const q = this.rs.quality;
+    this.scene.traverse((o) => {
+      if (!o.isLight) return;
+      if (o.userData.tier) o.visible = o.userData.tier <= q.lightTier;
+      if (o.userData.shadowTier !== undefined) {
+        o.castShadow = q.shadows && o.userData.shadowTier <= q.shadowTier;
+        const size = o.isDirectionalLight ? q.shadowSize : q.shadowSize / 2;
+        if (o.shadow.mapSize.x !== size) {
+          o.shadow.mapSize.set(size, size);
+          if (o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; }
+        }
+      }
+    });
+    this.audio.panningModel = q.hrtf ? 'HRTF' : 'equalpower';
   }
 
   applySettings() {
     const s = this.settings;
     this.camera.fov = s.fov;
     this.audio.setVolumes({ master: s.master, music: s.music });
-    if (this.rs.qualityName !== s.quality) {
+    if (this.rs.qualityName !== resolveQuality(s.quality)) {
       this.rs.setQuality(s.quality);
+      this.applyLightQuality();
+      // Schatten an/aus erfordert neue Shader
+      this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => (m.needsUpdate = true)); });
       this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
     }
   }
@@ -114,25 +144,45 @@ export class Game {
     this.resetWorld();
     this.state = 'playing';
     this.hud.show(true);
+    if (this.touch) this.touch.show(true);
     this.round = 0;
     this.roundActive = false;
     this.intermission = 2.5;
     this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time };
     this.hud.round(1);
     this.hud.notice('Station Nachtfall', 3000);
-    if (location.hash.includes('dev')) { this.points = 50000; this.godMode = true; }
+    if (location.hash.includes('dev')) { this.points = 50000; this.godMode = true; this.hud.points(this.points); }
+    this.lastT = performance.now();
   }
 
+  // Komplett neue Partie, ohne die Seite neu zu laden (wichtig auf Handys)
   resetWorld() {
-    // Für "Nochmal": Seite neu laden ist am saubersten, wenn bereits gespielt wurde
-    if (this.played) { location.reload(); return; }
-    this.played = true;
-    this.points = 500;
+    this.zombies.clear();
+    this.map.reset();
+    this.interact.reset();
+    this.effects.reset();
+    this.powerups.reset();
     this.player.reset();
     this.weapons.reset();
-    this.powerups.reset();
+    this.audio.setMuffle(0);
+    this.points = 500;
+    this.round = 0;
+    this.roundActive = false;
+    this.repairPoints = 0;
+    this.flash = 0;
+    this.godMode = false;
     this.hud.perks(this.player.perks);
     this.hud.points(this.points);
+    this.hud.round(1);
+  }
+
+  toMenu() {
+    this.state = 'menu';
+    this.hud.show(false);
+    if (this.touch) this.touch.show(false);
+    this.input.unlock();
+    this.resetWorld();
+    this.audio.resume();
   }
 
   nextRound() {
@@ -199,10 +249,10 @@ export class Game {
   gameOver() {
     if (this.state === 'gameover') return;
     this.state = 'gameover';
+    if (this.touch) this.touch.show(false);
     this.audio.gameOver();
     this.audio.setMuffle(0.6);
     this.input.unlock();
-    this.goT = 0;
     const secs = Math.floor(this.time - this.stats.start);
     const r = this.round;
     document.getElementById('goRounds').textContent = `Du hast ${r} ${r === 1 ? 'Runde' : 'Runden'} überlebt`;
@@ -214,19 +264,26 @@ export class Game {
     try {
       const best = +(localStorage.getItem('nachtfall.best') || 0);
       if (r > best) localStorage.setItem('nachtfall.best', r);
-    } catch { /* */ }
-    setTimeout(() => { this.hud.show(false); this.onGameOver && this.onGameOver(); }, 3500);
+    } catch { /* Speicher nicht verfügbar */ }
+    setTimeout(() => {
+      if (this.state !== 'gameover') return;
+      this.hud.show(false);
+      if (this.onGameOver) this.onGameOver();
+    }, 3500);
   }
 
   pause() {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing') return false;
     this.state = 'paused';
+    if (this.touch) this.touch.show(false);
     this.audio.suspend();
+    return true;
   }
 
   resume() {
     if (this.state !== 'paused') return;
     this.state = 'playing';
+    if (this.touch) this.touch.show(true);
     this.audio.resume();
     this.lastT = performance.now();
   }
@@ -234,14 +291,14 @@ export class Game {
   // ── Hauptschleife ──────────────────────────────────────────
   loop(t) {
     requestAnimationFrame((tt) => this.loop(tt));
-    let dt = (t - this.lastT) / 1000;
+    const raw = (t - this.lastT) / 1000;
     this.lastT = t;
-    if (!(dt > 0)) dt = 0.016;
-    dt = Math.min(dt, 0.05);
+    let dt = raw > 0 ? Math.min(raw, 0.05) : 0.016;
     this.fpsAcc += dt; this.fpsN++;
     if (this.fpsAcc > 0.5) { this.fps = Math.round(this.fpsN / this.fpsAcc); this.fpsAcc = 0; this.fpsN = 0; }
+    this.adaptResolution(raw);
 
-    if (this.state === 'paused') { this.rs.render(); return; }
+    if (this.state === 'paused') { this.rs.render(); this.input.endFrame(); return; }
     const slow = this.state === 'gameover' ? 0.35 : 1;
     const sdt = dt * slow;
     this.time += sdt;
@@ -250,8 +307,27 @@ export class Game {
     this.input.endFrame();
   }
 
+  // Dynamische Auflösung: hält die Bildrate auf schwächeren Geräten flüssig
+  adaptResolution(raw) {
+    if (this.settings.quality !== 'auto' || !(raw > 0) || raw > 0.1) return;
+    if (this.state !== 'playing' && this.state !== 'menu') return;
+    const p = this.perf;
+    p.acc += raw; p.n++;
+    if (p.acc < 2) return;
+    const avg = p.acc / p.n;
+    p.acc = 0; p.n = 0;
+    let s = this.rs.scale;
+    if (avg > 1 / 45 && s > 0.55) s = Math.max(0.55, s * 0.85);
+    else if (avg < 1 / 57 && s < 1) s = Math.min(1, s * 1.1);
+    if (Math.abs(s - this.rs.scale) > 0.01) this.rs.setScale(s);
+  }
+
   update(dt) {
     const playing = this.state === 'playing';
+    if (this.touch) this.touch.update();
+    this.input.poll(dt);
+    if (playing && this.input.hit('pause') && this.onPauseRequest) { this.onPauseRequest(); return; }
+
     if (playing || this.state === 'gameover') {
       this.player.update(dt, this.input);
       this.weapons.update(dt, this.input);
@@ -284,7 +360,7 @@ export class Game {
     this.computeLightLevel();
     this.audio.updateListener(this.camera);
     this.hud.update(dt, this.player, this.settings.showFps ? this.fps : null);
-    if (this.input.hit('KeyP') && location.hash.includes('dev')) this.debugSkip();
+    if (this.input.keyHit('KeyP') && location.hash.includes('dev')) this.debugSkip();
   }
 
   debugSkip() {
@@ -327,4 +403,6 @@ export class Game {
     u.uPap.value = damp(u.uPap.value, w.weapon && w.weapon.pap && w.ads > 0.5 ? 0.6 : 0, 5, dt);
     this.rs.render();
   }
+
+  get qualityLabel() { return this.rs.qualityName + (QUALITY[this.settings.quality] ? '' : ' (auto)'); }
 }

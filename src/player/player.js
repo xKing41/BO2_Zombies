@@ -1,7 +1,9 @@
 // Spieler: Bewegung, Kamera, Gesundheit, Perks, Wiederbelebung
 import * as THREE from 'three';
 import { CELL, PLAYER_START } from '../config.js';
-import { clamp, damp, lerp } from '../core/utils.js';
+import { clamp, damp, lerp, dampAngle } from '../core/utils.js';
+
+const _f = new THREE.Vector3(), _t = new THREE.Vector3();
 
 export class Player {
   constructor(game) {
@@ -24,6 +26,7 @@ export class Player {
     this.bobPhase = 0; this.stepDist = 0; this.shake = 0; this.hSpeed = 0;
     this.time = 0; this.hurtFlash = 0; this.landT = 0;
     this.eye = 1.65;
+    this.snap = null; this.wasAds = false;
   }
 
   get walkSpeed() { return 4.4 * (this.perks.has('sprint') ? 1.07 : 1); }
@@ -64,13 +67,51 @@ export class Player {
     }
   }
 
+  // Nächster sichtbarer Zombie innerhalb eines Winkels um das Fadenkreuz
+  aimTarget(maxAngle) {
+    const g = this.g, cam = g.camera, o = cam.position;
+    cam.getWorldDirection(_f);
+    let best = null, bestA = maxAngle;
+    for (const z of g.zombies.pool) {
+      if (!z.alive) continue;
+      _t.set(z.pos.x, z.pos.y + 1.35 * (z.scale || 1), z.pos.z).sub(o);
+      const d = _t.length();
+      if (d > 40 || d < 0.6) continue;
+      const a = Math.acos(clamp(_t.dot(_f) / d, -1, 1));
+      if (a >= bestA) continue;
+      const dir = _t.clone().divideScalar(d);
+      if (g.map.rayCast(o, dir, d).dist < d - 0.4) continue;
+      bestA = a; best = dir;
+    }
+    return best;
+  }
+
+  // Zielhilfe für Controller & Touch: langsamer über Zielen, beim Anvisieren einrasten
+  aimAssist(dt, s) {
+    const g = this.g;
+    const adsNow = g.weapons.ads > 0.2;
+    if (adsNow && !this.wasAds) {
+      const d = this.aimTarget(0.24);
+      if (d) this.snap = { yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(clamp(d.y, -1, 1)), t: 0.16 };
+    }
+    this.wasAds = adsNow;
+    if (this.snap) {
+      this.yaw = dampAngle(this.yaw, this.snap.yaw, 22, dt);
+      this.pitch = damp(this.pitch, this.snap.pitch, 22, dt);
+      this.snap.t -= dt;
+      if (this.snap.t <= 0) this.snap = null;
+    }
+    return this.aimTarget(0.075) ? s * 0.55 : s;
+  }
+
   update(dt, input) {
     const g = this.g, map = g.map;
     this.time += dt;
-    const sens = g.settings.sensitivity * 0.0022 * (g.weapons.ads > 0.5 ? 0.65 : 1) * (g.camera.fov / 75);
     if (g.state === 'playing') {
-      this.yaw -= input.dx * sens;
-      this.pitch -= input.dy * sens * (g.settings.invertY ? -1 : 1);
+      let s = g.settings.sensitivity * (g.weapons.ads > 0.5 ? 0.65 : 1) * (g.camera.fov / 75);
+      if (input.device !== 'kbm' && g.settings.aimAssist && !this.downed) s = this.aimAssist(dt, s);
+      this.yaw -= input.lookX * s;
+      this.pitch -= input.lookY * s * (g.settings.invertY ? -1 : 1);
     }
     this.pitch = clamp(this.pitch, -1.5, 1.5);
     this.recoilP = damp(this.recoilP, 0, 7, dt);
@@ -91,18 +132,15 @@ export class Player {
     // Bewegung
     let fx = 0, fz = 0;
     const active = g.state === 'playing' && !this.downed;
-    if (active) {
-      if (input.down('KeyW')) fz -= 1;
-      if (input.down('KeyS')) fz += 1;
-      if (input.down('KeyA')) fx -= 1;
-      if (input.down('KeyD')) fx += 1;
-    }
-    const len = Math.hypot(fx, fz);
-    if (len > 0) { fx /= len; fz /= len; }
+    if (active) { fx = input.moveX; fz = input.moveY; }
+    // Analoge Eingaben (Joystick, Controller) erlauben stufenloses Gehen
+    const mag = Math.min(1, Math.hypot(fx, fz));
+    const flen = Math.hypot(fx, fz);
+    if (flen > 0.001) { fx /= flen; fz /= flen; }
 
-    this.crouching = active && (input.down('KeyC') || input.down('ControlLeft'));
+    this.crouching = active && input.held('crouch');
     this.sprintLock -= dt;
-    const wantSprint = active && input.down('ShiftLeft') && fz < -0.3 && !this.crouching && this.sprintLock <= 0 && g.weapons.ads < 0.3;
+    const wantSprint = active && input.held('sprint') && fz < -0.3 && !this.crouching && this.sprintLock <= 0 && g.weapons.ads < 0.3;
     const sprintDur = this.perks.has('sprint') ? 9 : 4.5;
     if (wantSprint && this.stamina > 0.02 && (this.sprinting || this.stamina > 0.25)) this.sprinting = true;
     else this.sprinting = false;
@@ -110,8 +148,7 @@ export class Player {
     else this.stamina = Math.min(1, this.stamina + dt / 3);
     if (this.stamina <= 0) this.sprinting = false;
 
-    let speed = this.walkSpeed;
-    if (this.sprinting) speed *= 1.5;
+    let speed = this.walkSpeed * (this.sprinting ? 1.5 : mag);
     if (this.crouching) speed *= 0.5;
     speed *= lerp(1, 0.6, g.weapons.ads);
     if (this.downed) speed = 0;
@@ -122,7 +159,7 @@ export class Player {
     this.vel.x = damp(this.vel.x, wx * speed, accel, dt);
     this.vel.z = damp(this.vel.z, wz * speed, accel, dt);
 
-    if (active && input.hit('Space') && this.onGround && !this.crouching) {
+    if (active && input.hit('jump') && this.onGround && !this.crouching) {
       this.vel.y = 4.9; this.onGround = false;
     }
     this.vel.y -= 15 * dt;

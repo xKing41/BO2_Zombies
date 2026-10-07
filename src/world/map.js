@@ -260,6 +260,28 @@ export class GameMap {
     this.power = on;
   }
 
+  // Für eine neue Partie: Türen zu, alle Bretter dran, Strom aus
+  reset() {
+    this.anims.length = 0;
+    this.power = false;
+    this.openZones = new Set([0]);
+    for (const id in this.doors) {
+      const d = this.doors[id];
+      d.open = false; d.progress = 0;
+      d.mesh.scale.y = 1;
+      d.mesh.position.y = DOOR_H / 2;
+    }
+    for (const win of this.windows) {
+      win.boards = BOARDS;
+      win.occupant = null;
+      for (const b of win.boardMeshes) {
+        b.visible = true;
+        b.position.copy(b.userData.home);
+        b.quaternion.copy(b.userData.homeQ);
+      }
+    }
+  }
+
   // ── Aufbau der Geometrie ────────────────────────────────────
   build(scene, M) {
     this.scene = scene;
@@ -336,6 +358,7 @@ export class GameMap {
         b.rotation.set(0, yaw, tilt, 'YXZ');
         b.userData.home = b.position.clone();
         b.userData.homeQ = b.quaternion.clone();
+        b.userData.dynamic = true;
         scene.add(b);
         win.boardMeshes.push(b);
       }
@@ -360,6 +383,7 @@ export class GameMap {
       g.position.set(cx, DOOR_H / 2, cz);
       g.rotation.y = horizontal ? 0 : Math.PI / 2;
       g.castShadow = g.receiveShadow = true;
+      g.userData.dynamic = true;
       scene.add(g);
       d.mesh = g;
       d.center = new THREE.Vector3(cx, 0, cz);
@@ -518,7 +542,9 @@ export class GameMap {
     }
   }
 
-  addLight(light, { flicker = 0, poweredOnly = false, offFactor = 0.35, base = light.intensity } = {}) {
+  // tier: 1 = immer an, 2 = ab Qualität "mittel", 3 = nur "hoch"
+  addLight(light, { flicker = 0, poweredOnly = false, offFactor = 0.35, base = light.intensity, tier = 1 } = {}) {
+    light.userData.tier = tier;
     const entry = { light, base, flicker, poweredOnly, offFactor, phase: rand(0, 100), bulb: null };
     this.lights.push(entry);
     return entry;
@@ -534,6 +560,7 @@ export class GameMap {
     moon.position.set(cx - 30, 55, cz - 40);
     moon.target.position.set(cx, 0, cz);
     moon.castShadow = true;
+    moon.userData.shadowTier = 1;
     const sc = moon.shadow.camera;
     sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; sc.near = 10; sc.far = 140;
     moon.shadow.mapSize.set(2048, 2048);
@@ -549,19 +576,22 @@ export class GameMap {
       const sl = new THREE.SpotLight(opts.color || 0xffc98a, opts.intensity || 38, 16, 1.05, 0.65, 1.7);
       sl.position.set(lg.position.x, WALL_H - 0.92, lg.position.z);
       sl.target.position.set(lg.position.x, 0, lg.position.z);
-      sl.castShadow = !!opts.shadow;
-      if (opts.shadow) { sl.shadow.mapSize.set(1024, 1024); sl.shadow.bias = -0.0004; sl.shadow.normalBias = 0.03; sl.shadow.camera.near = 0.3; }
+      sl.castShadow = !!opts.shadowTier;
+      if (opts.shadowTier) {
+        sl.userData.shadowTier = opts.shadowTier;
+        sl.shadow.mapSize.set(1024, 1024); sl.shadow.bias = -0.0004; sl.shadow.normalBias = 0.03; sl.shadow.camera.near = 0.3;
+      }
       scene.add(sl, sl.target);
-      const e = this.addLight(sl, { flicker: opts.flicker || 0, offFactor: opts.offFactor ?? 0.3 });
+      const e = this.addLight(sl, { flicker: opts.flicker || 0, offFactor: opts.offFactor ?? 0.3, tier: opts.tier || 1 });
       e.bulb = lg.userData.bulb;
       return e;
     };
-    lamp(5, 4, { shadow: true, offFactor: 0.75 });
-    lamp(9, 7, { flicker: 0.6, offFactor: 0.6 });
-    lamp(16, 6, { shadow: true, color: 0xffd9b0, offFactor: 0.25 });
-    lamp(20, 3, { flicker: 0.3, offFactor: 0.25 });
-    lamp(6, 14, { shadow: true, color: 0xfff1d6, offFactor: 0.2 });
-    lamp(10, 16, { flicker: 0.8, offFactor: 0.2 });
+    lamp(5, 4, { shadowTier: 2, offFactor: 0.75 });
+    lamp(9, 7, { flicker: 0.6, offFactor: 0.6, tier: 2 });
+    lamp(16, 6, { shadowTier: 2, color: 0xffd9b0, offFactor: 0.25 });
+    lamp(20, 3, { flicker: 0.3, offFactor: 0.25, tier: 2 });
+    lamp(6, 14, { shadowTier: 3, color: 0xfff1d6, offFactor: 0.2 });
+    lamp(10, 16, { flicker: 0.8, offFactor: 0.2, tier: 2 });
 
     const point = (x, y, z, color, intensity, dist, opts) => {
       const l = new THREE.PointLight(color, intensity, dist, 1.8);
@@ -570,13 +600,13 @@ export class GameMap {
       return this.addLight(l, opts);
     };
     const n = this.center(14, 2);
-    point(n.x, 2.9, n.z + 0.8, 0xff2f6a, 7, 9, { flicker: 0.15, offFactor: 1 });
+    point(n.x, 2.9, n.z + 0.8, 0xff2f6a, 7, 9, { flicker: 0.15, offFactor: 1, tier: 2 });
     const f = this.fireBarrelPos;
     this.fireLight = point(f.x, 1.4, f.z, 0xff7a2a, 14, 14, { flicker: 1.0, offFactor: 1 });
     const lp = this.center(21, 12);
-    point(lp.x + 1.2, 3.7, lp.z - 0.6, 0xffd6a0, 10, 14, { offFactor: 0, poweredOnly: true });
+    point(lp.x + 1.2, 3.7, lp.z - 0.6, 0xffd6a0, 10, 14, { offFactor: 0, poweredOnly: true, tier: 2 });
     const w = this.center(3, 12);
-    point(w.x, 2.8, w.z, 0xff2010, 3.5, 8, { flicker: 0.0, offFactor: 1 }); // Notlicht Werkstatt
+    point(w.x, 2.8, w.z, 0xff2010, 3.5, 8, { flicker: 0.0, offFactor: 1, tier: 3 }); // Notlicht Werkstatt
   }
 
   buildSky(scene, M) {

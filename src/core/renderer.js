@@ -5,12 +5,22 @@ import { Pass } from 'three/addons/postprocessing/Pass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { IS_MOBILE } from './platform.js';
 
+// lightTier/shadowTier: welche Lichter bzw. Schatten aktiv sind (siehe GameMap.addLight)
 export const QUALITY = {
-  hoch: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, msaa: 4, bloom: true },
-  mittel: { pixelRatio: 1.25, shadows: true, shadowSize: 1024, msaa: 2, bloom: true },
-  niedrig: { pixelRatio: 0.85, shadows: false, shadowSize: 512, msaa: 0, bloom: false },
+  hoch: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, shadowTier: 3, msaa: 4, bloom: true, lightTier: 3, texScale: 1, hrtf: true },
+  mittel: { pixelRatio: 1.25, shadows: true, shadowSize: 1024, shadowTier: 2, msaa: 2, bloom: true, lightTier: 2, texScale: 1, hrtf: true },
+  niedrig: { pixelRatio: 1.0, shadows: false, shadowSize: 1024, shadowTier: 0, msaa: 0, bloom: true, lightTier: 1, texScale: 0.5, hrtf: false },
+  minimal: { pixelRatio: 0.75, shadows: false, shadowSize: 512, shadowTier: 0, msaa: 0, bloom: false, lightTier: 1, texScale: 0.5, hrtf: false },
 };
+
+// "auto": Handys & Tablets starten mit "niedrig", Computer mit "hoch";
+// die dynamische Auflösung gleicht den Rest aus.
+export function resolveQuality(name) {
+  if (QUALITY[name]) return name;
+  return IS_MOBILE ? 'niedrig' : 'hoch';
+}
 
 // Rendert die Waffen-Szene über die Welt (eigener Tiefenpuffer → keine Clipping-Probleme)
 class OverlayPass extends Pass {
@@ -95,8 +105,19 @@ export class RenderSystem {
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.quality = QUALITY[qualityName] || QUALITY.hoch;
-    this.qualityName = qualityName;
+    this.qualityName = resolveQuality(qualityName);
+    this.quality = QUALITY[this.qualityName];
+    this.scale = 1; // dynamische Auflösung (0.55 … 1)
+  }
+
+  get pixelRatio() { return Math.min(window.devicePixelRatio || 1, this.quality.pixelRatio) * this.scale; }
+
+  setScale(s) {
+    this.scale = s;
+    const pr = this.pixelRatio;
+    this.renderer.setPixelRatio(pr);
+    this.composer.setPixelRatio(pr);
+    this.resize();
   }
 
   setup(scene, camera, vmScene, vmCamera) {
@@ -107,7 +128,7 @@ export class RenderSystem {
 
   build() {
     const q = this.quality;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pixelRatio));
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.renderer.shadowMap.enabled = q.shadows;
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
@@ -127,8 +148,9 @@ export class RenderSystem {
   }
 
   setQuality(name) {
-    this.quality = QUALITY[name] || QUALITY.hoch;
-    this.qualityName = name;
+    this.qualityName = resolveQuality(name);
+    this.quality = QUALITY[this.qualityName];
+    this.scale = 1;
     this.build();
   }
 

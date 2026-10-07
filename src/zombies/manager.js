@@ -1,6 +1,7 @@
 // Zombie-Verwaltung: Spawning, Flow-Field-Navigation, Treffer, Punkte
 import * as THREE from 'three';
-import { Zombie } from './zombie.js';
+import { Zombie, zombieTypes } from './zombie.js';
+import { ZombieRenderer } from './instanced.js';
 import { CELL, MAX_ALIVE, zombiesForRound, zombieHealth, spawnDelay, rollSpeedType, POINTS } from '../config.js';
 import { raySphere, rand } from '../core/utils.js';
 
@@ -14,7 +15,9 @@ export class ZombieManager {
     this.M = game.M;
     this.map = game.map;
     this.pool = [];
-    for (let i = 0; i < MAX_ALIVE; i++) this.pool.push(new Zombie(this));
+    this.renderer = new ZombieRenderer(this.scene, zombieTypes(this.M.zombie));
+    for (let i = 0; i < MAX_ALIVE; i++) this.pool.push(new Zombie(this, i));
+    this.renderer.finalize();
     this.dist = new Int32Array(this.map.w * this.map.h);
     this.flowT = 0;
     this.toSpawn = 0;
@@ -142,6 +145,7 @@ export class ZombieManager {
       }
     }
     for (const z of this.pool) if (z.active) z.update(dt, this.game);
+    this.renderer.update(this.pool);
   }
 
   // Strahl gegen alle Zombies. Liefert nach Distanz sortierte Treffer.
@@ -209,5 +213,6 @@ export class ZombieManager {
     for (const z of this.pool) z.despawn();
     this.toSpawn = 0;
     this.remaining = 0;
+    this.renderer.update(this.pool);
   }
 }

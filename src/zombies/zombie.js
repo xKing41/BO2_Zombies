@@ -5,23 +5,26 @@
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, dampAngle, smooth, lerp } from '../core/utils.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ZOMBIE_HIT_DAMAGE } from '../config.js';
 
 let GEO = null;
 function geos() {
   if (GEO) return GEO;
   const cap = (r, l) => new THREE.CapsuleGeometry(r, l, 4, 10);
+  // Kopf inkl. Brauen und Nase als ein Teil
+  const head = new THREE.SphereGeometry(0.105, 18, 14).scale(0.9, 1.15, 1.0);
+  const brow = new THREE.BoxGeometry(0.15, 0.03, 0.04).scale(0.62, 1, 1).translate(0, 0.035, 0.07);
+  const nose = new THREE.BoxGeometry(0.028, 0.045, 0.035).translate(0, -0.005, 0.098);
   GEO = {
     pelvis: cap(0.14, 0.12).rotateZ(Math.PI / 2).scale(1.0, 1.0, 0.8),
     belly: cap(0.15, 0.12).scale(1.08, 1, 0.74),
     torso: cap(0.165, 0.17).scale(1.28, 1, 0.68),
     shoulder: new THREE.SphereGeometry(0.068, 12, 8),
     neckGeo: new THREE.CylinderGeometry(0.048, 0.06, 0.13, 10),
-    head: new THREE.SphereGeometry(0.105, 18, 14).scale(0.9, 1.15, 1.0),
+    head: mergeGeometries([head, brow, nose]),
     jaw: new THREE.BoxGeometry(0.11, 0.045, 0.09),
     teeth: new THREE.BoxGeometry(0.075, 0.018, 0.02),
-    brow: new THREE.BoxGeometry(0.15, 0.03, 0.04),
-    nose: new THREE.BoxGeometry(0.028, 0.045, 0.035),
     eye: new THREE.SphereGeometry(0.014, 8, 6),
     elbow: new THREE.SphereGeometry(0.047, 10, 8),
     knee: new THREE.SphereGeometry(0.066, 10, 8),
@@ -37,93 +40,118 @@ function geos() {
   return GEO;
 }
 
+// Körperteil-Typen für den Instanz-Renderer (Geometrie, Material, Farbkanal)
+export function zombieTypes(Z) {
+  const G = geos();
+  const t = (geo, mat, tint = null, shadow = true) => ({ geo, mat, tint, shadow });
+  return {
+    pelvis: t(G.pelvis, Z.pants, 'pants'),
+    belly_shirt: t(G.belly, Z.shirt, 'shirt'), belly_skin: t(G.belly, Z.skin, 'skin'),
+    torso: t(G.torso, Z.shirt, 'shirt'),
+    neck: t(G.neckGeo, Z.skin, 'skin'),
+    head: t(G.head, Z.skin, 'skin'),
+    hair: t(G.hair, Z.hair),
+    jaw: t(G.jaw, Z.skin, 'skin'),
+    mouth: t(G.jaw, Z.mouth, null, false),
+    teeth: t(G.teeth, Z.teeth, null, false),
+    eye: t(G.eye, Z.eye, null, false),
+    stump: t(G.neckStump, Z.gore),
+    delt_shirt: t(G.shoulder, Z.shirt, 'shirt'), delt_skin: t(G.shoulder, Z.skin, 'skin'),
+    upperArm_shirt: t(G.upperArm, Z.shirt, 'shirt'), upperArm_skin: t(G.upperArm, Z.skin, 'skin'),
+    elbow_shirt: t(G.elbow, Z.shirt, 'shirt'), elbow_skin: t(G.elbow, Z.skin, 'skin'),
+    foreArm_shirt: t(G.foreArm, Z.shirt, 'shirt'), foreArm_skin: t(G.foreArm, Z.skin, 'skin'),
+    hand: t(G.hand, Z.skin, 'skin'),
+    thigh: t(G.thigh, Z.pants, 'pants'),
+    knee: t(G.knee, Z.pants, 'pants'),
+    shin: t(G.shin, Z.pants, 'pants'),
+    foot: t(G.foot, Z.shoe),
+  };
+}
+
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 
 export class Zombie {
-  constructor(mgr) {
+  constructor(mgr, index) {
     this.mgr = mgr;
+    this.index = index;
     this.M = mgr.M.zombie;
     this.active = false;
+    this.drawn = false;
     this.build();
     this.pos = this.root.position;
     this.hitPts = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
   }
 
   build() {
-    const G = geos(), M = this.M;
-    const mesh = (g, m, parent, x = 0, y = 0, z = 0) => {
-      const o = new THREE.Mesh(g, m);
+    const R = this.mgr.renderer, zi = this.index;
+    // Platzhalter statt Meshes: Position/Rotation/Skalierung wie früher die Körperteile
+    const part = (key, parent, x = 0, y = 0, z = 0) => {
+      const o = new THREE.Object3D();
       o.position.set(x, y, z);
-      o.castShadow = true;
       parent.add(o);
+      R.add(zi, key, o);
       return o;
     };
+    const variant = (key, parent, x = 0, y = 0, z = 0) => ({ shirt: part(key + '_shirt', parent, x, y, z), skin: part(key + '_skin', parent, x, y, z) });
     const bone = (parent, x = 0, y = 0, z = 0) => { const b = new THREE.Group(); b.position.set(x, y, z); parent.add(b); return b; };
 
     const root = (this.root = new THREE.Group());
     root.rotation.order = 'YXZ';
     root.visible = false;
     const hips = (this.hips = bone(root, 0, 0.98, 0));
-    this.pelvisMesh = mesh(G.pelvis, M.pants[0], hips, 0, 0, 0);
+    this.pelvisMesh = part('pelvis', hips);
     const spine = (this.spine = bone(hips, 0, 0.06, 0));
-    this.bellyMesh = mesh(G.belly, M.shirts[0], spine, 0, 0.14, 0.005);
-    this.torsoMesh = mesh(G.torso, M.shirts[0], spine, 0, 0.38, 0);
+    this.belly = variant('belly', spine, 0, 0.14, 0.005);
+    this.torsoMesh = part('torso', spine, 0, 0.38, 0);
     const neck = (this.neck = bone(spine, 0, 0.6, 0));
-    this.neckMesh = mesh(G.neckGeo, M.skins[0], neck, 0, 0.0, 0.005);
-    this.headMesh = mesh(G.head, M.skins[0], neck, 0, 0.14, 0.015);
-    this.hair = mesh(G.hair, M.hair, this.headMesh, 0, 0.025, -0.01);
-    this.brow = mesh(G.brow, M.skins[0], this.headMesh, 0, 0.035, 0.07);
-    this.brow.scale.set(0.62, 1, 1);
-    this.nose = mesh(G.nose, M.skins[0], this.headMesh, 0, -0.005, 0.098);
-    this.jaw = mesh(G.jaw, M.skins[0], this.headMesh, 0, -0.09, 0.03);
-    this.mouth = mesh(G.jaw, M.mouth, this.headMesh, 0, -0.072, 0.03);
+    this.neckMesh = part('neck', neck, 0, 0.0, 0.005);
+    this.headMesh = part('head', neck, 0, 0.14, 0.015);
+    this.hair = part('hair', this.headMesh, 0, 0.025, -0.01);
+    this.jaw = part('jaw', this.headMesh, 0, -0.09, 0.03);
+    this.mouth = part('mouth', this.headMesh, 0, -0.072, 0.03);
     this.mouth.scale.set(0.85, 0.6, 0.95);
-    mesh(G.teeth, M.teeth, this.headMesh, 0, -0.066, 0.075);
-    mesh(G.teeth, M.teeth, this.jaw, 0, 0.018, 0.04);
-    this.eyes = [mesh(G.eye, M.eye, this.headMesh, -0.035, 0.012, 0.088), mesh(G.eye, M.eye, this.headMesh, 0.035, 0.012, 0.088)];
-    this.eyes.forEach((e) => (e.castShadow = false));
-    this.stump = mesh(G.neckStump, M.gore, neck, 0, 0.03, 0);
+    part('teeth', this.headMesh, 0, -0.066, 0.075);
+    part('teeth', this.jaw, 0, 0.018, 0.04);
+    this.eyes = [part('eye', this.headMesh, -0.035, 0.012, 0.088), part('eye', this.headMesh, 0.035, 0.012, 0.088)];
+    this.stump = part('stump', neck, 0, 0.03, 0);
     this.stump.visible = false;
 
     this.arms = [];
     for (const s of [-1, 1]) {
       const sh = bone(spine, s * 0.235, 0.5, 0);
-      const delt = mesh(G.shoulder, M.shirts[0], sh, 0, -0.01, 0);
-      const ua = mesh(G.upperArm, M.shirts[0], sh);
+      const delt = variant('delt', sh, 0, -0.01, 0);
+      const ua = variant('upperArm', sh);
       const el = bone(sh, 0, -0.33, 0);
-      const elb = mesh(G.elbow, M.skins[0], el);
-      const fa = mesh(G.foreArm, M.skins[0], el);
-      const hand = mesh(G.hand, M.skins[0], el, 0, -0.29, 0);
+      const elb = variant('elbow', el);
+      const fa = variant('foreArm', el);
+      const hand = part('hand', el, 0, -0.29, 0);
       this.arms.push({ sh, el, ua, fa, hand, delt, elb, s });
     }
     this.legs = [];
     for (const s of [-1, 1]) {
       const hp = bone(hips, s * 0.1, -0.04, 0);
-      const th = mesh(G.thigh, M.pants[0], hp);
+      const th = part('thigh', hp);
       const kn = bone(hp, 0, -0.45, 0);
-      const knee = mesh(G.knee, M.pants[0], kn);
-      const sh = mesh(G.shin, M.pants[0], kn);
+      const knee = part('knee', kn);
+      const sh = part('shin', kn);
       const ft = bone(kn, 0, -0.43, 0);
-      const foot = mesh(G.foot, M.shoe, ft);
+      const foot = part('foot', ft);
       this.legs.push({ hp, kn, ft, th, sh, foot, knee, s });
     }
     this.mgr.scene.add(root);
   }
 
   randomizeLook() {
-    const M = this.M;
-    const skin = pick(M.skins), shirt = pick(M.shirts), pants = pick(M.pants);
-    for (const m of [this.headMesh, this.neckMesh, this.brow, this.nose, this.jaw]) m.material = skin;
-    this.torsoMesh.material = shirt;
-    this.bellyMesh.material = Math.random() < 0.15 ? skin : shirt;
-    this.pelvisMesh.material = pants;
+    const T = this.M.tints;
+    this.mgr.renderer.setTints(this.index, { skin: pick(T.skin), shirt: pick(T.shirt), pants: pick(T.pants) });
+    const use = (v, skin) => { v.skin.visible = skin; v.shirt.visible = !skin; };
+    use(this.belly, Math.random() < 0.15);
     const sleeveless = Math.random() < 0.3;
     const longSleeve = !sleeveless && Math.random() < 0.4;
     for (const a of this.arms) {
-      a.ua.material = sleeveless ? skin : shirt; a.delt.material = sleeveless ? skin : shirt;
-      a.fa.material = longSleeve ? shirt : skin; a.elb.material = longSleeve ? shirt : skin; a.hand.material = skin;
+      use(a.ua, sleeveless); use(a.delt, sleeveless);
+      use(a.fa, !longSleeve); use(a.elb, !longSleeve);
     }
-    for (const l of this.legs) { l.th.material = pants; l.sh.material = pants; l.knee.material = pants; }
     this.headMesh.scale.set(rand(0.95, 1.05), rand(0.95, 1.08), rand(0.95, 1.05));
     this.hair.visible = Math.random() < 0.6;
     const s = rand(0.92, 1.08);

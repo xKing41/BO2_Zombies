@@ -138,12 +138,24 @@ export class Effects {
     // Feste Lichtquellen (Anzahl ändert sich nie → keine Shader-Neukompilierung)
     this.muzzleLight = new THREE.PointLight(0xffb060, 0, 10, 1.8);
     this.blastLight = new THREE.PointLight(0xff8840, 0, 22, 1.6);
+    this.muzzleLight.userData.tier = 1;
+    this.blastLight.userData.tier = 1;
     scene.add(this.muzzleLight, this.blastLight);
     this.muzzleT = 0;
     this.blastT = 0;
 
     // Leuchtende Staubpartikel in der Luft
     this.dustTimer = 0;
+  }
+
+  // Für eine neue Partie: Partikel, Decals und Lichter zurücksetzen
+  reset() {
+    for (const s of [this.add, this.norm]) { s.n = 0; s.geo.setDrawRange(0, 0); }
+    for (const m of this.bloodDecals) m.visible = false;
+    for (const m of this.holes) m.visible = false;
+    for (const t of this.tracers) t.visible = false;
+    this.muzzleLight.intensity = 0; this.blastLight.intensity = 0;
+    this.muzzleT = 0; this.blastT = 0;
   }
 
   setScale(h, fov) {
