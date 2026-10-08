@@ -2,9 +2,10 @@ import './style.css';
 import { Game, DEFAULT_SETTINGS } from './game/game.js';
 import { TouchControls } from './ui/touch.js';
 import { IS_TOUCH, IS_IOS, IS_STANDALONE } from './core/platform.js';
+import { MAPS, MAP_ORDER } from './maps/index.js';
 
 const $ = (id) => document.getElementById(id);
-const screens = ['loading', 'menu', 'pause', 'settings', 'controls', 'gameover'];
+const screens = ['loading', 'menu', 'mapselect', 'pause', 'settings', 'controls', 'gameover'];
 let current = 'loading';
 const show = (id) => {
   current = id;
@@ -34,6 +35,7 @@ let backTo = 'menu';
 
 // ── Start / Pause / Weiter ───────────────────────────────────
 function play() {
+  if (game.audio && game.audio.ctx) game.audio.resume();
   hideAll();
   $('clickToPlay').classList.add('hidden');
   if (game.state === 'menu' || game.state === 'gameover') game.start();
@@ -74,6 +76,7 @@ document.addEventListener('pointerlockerror', () => {
   game.hud.notice('Maus-Fang nicht verfügbar – Bildschirm-Steuerung aktiv', 4000);
 });
 $('game').addEventListener('click', () => {
+  if (game.audio && game.audio.ctx) game.audio.resume();
   if (game.state === 'playing' && !game.input.locked && !touch.active) game.input.lock();
 });
 
@@ -109,8 +112,39 @@ async function requestWakeLock() {
   } catch { /* optional */ }
 }
 
+// ── Kartenauswahl ────────────────────────────────────────────
+function buildMapCards() {
+  const wrap = $('mapCards');
+  wrap.innerHTML = '';
+  for (const id of MAP_ORDER) {
+    const d = MAPS[id];
+    const b = document.createElement('button');
+    b.className = 'mapcard' + (game.mapDef && game.mapDef.id === id ? ' current' : '');
+    b.innerHTML = `<span class="mc-name">${d.name}</span><span class="mc-tag">${d.tagline}</span><span class="mc-desc">${d.description}</span>`;
+    b.onclick = () => chooseMap(id);
+    wrap.appendChild(b);
+  }
+}
+let loadingMap = false;
+async function chooseMap(id) {
+  if (loadingMap) return;
+  if (game.mapDef && game.mapDef.id === id) { play(); return; }
+  loadingMap = true;
+  show('loading');
+  try {
+    await game.loadMap(id, (pct, text) => { $('loadbar').style.width = pct + '%'; $('loadtext').textContent = text; });
+    saveSettings(settings);
+    play();
+  } catch (err) {
+    console.error(err);
+    $('loadtext').textContent = 'Fehler beim Laden der Karte: ' + err.message;
+  }
+  loadingMap = false;
+}
+
 // ── Menü-Knöpfe ──────────────────────────────────────────────
-$('btnPlay').onclick = play;
+$('btnPlay').onclick = () => { buildMapCards(); show('mapselect'); };
+$('btnMapBack').onclick = () => show('menu');
 $('btnResume').onclick = play;
 $('btnAgain').onclick = play;
 $('btnQuit').onclick = () => { game.toMenu(); show('menu'); };

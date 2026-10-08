@@ -5,7 +5,11 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function batchStatic(scene) {
+const _c = new THREE.Vector3();
+
+// chunk > 0: Meshes werden zusätzlich nach Gitterkacheln (in Metern) getrennt,
+// damit auf großen Karten weit entfernte Teile per Frustum-Culling wegfallen.
+export function batchStatic(scene, chunk = 0) {
   scene.updateMatrixWorld(true);
   const buckets = new Map();
   const victims = [];
@@ -19,7 +23,13 @@ export function batchStatic(scene) {
         && !Object.keys(g.morphAttributes).length && o.matrixWorld.determinant() > 0;
       if (ok) {
         const attrs = Object.keys(g.attributes).sort().join(',');
-        const key = `${o.material.uuid}|${o.castShadow}|${o.receiveShadow}|${o.renderOrder}|${attrs}`;
+        let tile = '';
+        if (chunk > 0) {
+          if (!g.boundingSphere) g.computeBoundingSphere();
+          _c.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);
+          tile = `|${Math.floor(_c.x / chunk)},${Math.floor(_c.z / chunk)}`;
+        }
+        const key = `${o.material.uuid}|${o.castShadow}|${o.receiveShadow}|${o.renderOrder}|${attrs}${tile}`;
         let b = buckets.get(key);
         if (!b) buckets.set(key, (b = { material: o.material, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder, geos: [] }));
         const clone = g.clone();

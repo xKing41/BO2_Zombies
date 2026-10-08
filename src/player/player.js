@@ -1,6 +1,6 @@
 // Spieler: Bewegung, Kamera, Gesundheit, Perks, Wiederbelebung
 import * as THREE from 'three';
-import { CELL, PLAYER_START } from '../config.js';
+import { CELL } from '../config.js';
 import { clamp, damp, lerp, dampAngle } from '../core/utils.js';
 
 const _f = new THREE.Vector3(), _t = new THREE.Vector3();
@@ -14,9 +14,10 @@ export class Player {
   }
 
   reset() {
-    this.pos.set(PLAYER_START.cx * CELL + CELL / 2, 0, PLAYER_START.cy * CELL + CELL / 2);
+    const start = this.g.mapDef ? this.g.mapDef.playerStart : { cx: 0, cy: 0, yaw: 0 };
+    this.pos.set(start.cx * CELL + CELL / 2, 0, start.cy * CELL + CELL / 2);
     this.vel.set(0, 0, 0);
-    this.yaw = PLAYER_START.yaw; this.pitch = 0;
+    this.yaw = start.yaw; this.pitch = 0;
     this.recoilP = 0; this.recoilY = 0;
     this.onGround = true; this.crouch = 0; this.crouching = false;
     this.stamina = 1; this.sprinting = false; this.sprintLock = 0;

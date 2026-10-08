@@ -538,3 +538,156 @@ export function poster(seed, title) {
   for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(r() * 256, r() * 360, 10 + r() * 40, 0, 7); c.fill(); }
   return toTexture(cv, { repeat: false });
 }
+
+// Stahltür mit Warnstreifen und Beschriftung (Strom- bzw. Turbinentüren)
+export function hazardDoor(label, color) {
+  const cv = canvas(512, 512), c = cv.getContext('2d');
+  const r = mulberry32(label.length * 31);
+  c.fillStyle = '#3a3c3e'; c.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '0,0,0'},${r() * 0.06})`; c.fillRect(r() * 512, r() * 512, 3, 3); }
+  // Nieten und Paneele
+  c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 6;
+  for (const y of [130, 380]) { c.beginPath(); c.moveTo(0, y); c.lineTo(512, y); c.stroke(); }
+  // Warnstreifen unten und oben
+  for (const y0 of [0, 452]) {
+    c.save(); c.beginPath(); c.rect(0, y0, 512, 60); c.clip();
+    for (let x = -60; x < 560; x += 60) { c.fillStyle = color; c.beginPath(); c.moveTo(x, y0 + 60); c.lineTo(x + 30, y0 + 60); c.lineTo(x + 60, y0); c.lineTo(x + 30, y0); c.fill(); }
+    c.restore();
+  }
+  c.font = 'bold 64px Oswald, Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#111'; c.fillRect(96, 216, 320, 80);
+  c.shadowColor = color; c.shadowBlur = 16; c.fillStyle = color;
+  c.fillText(label, 256, 258);
+  // Rost
+  for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(110,50,20,${0.1 + r() * 0.2})`; c.beginPath(); c.arc(r() * 512, r() * 512, 4 + r() * 20, 0, 7); c.fill(); }
+  return toTexture(cv, { repeat: false });
+}
+
+// ── Texturen für große Außenkarten ─────────────────────────────
+
+export function grass(seed = 51) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixels(512, (u, v, o) => {
+    const f = n.fbm(u * 8, v * 8, 5, 8);
+    const patch = n.fbm(u * 2 + 3, v * 2, 4, 2);
+    const dirtA = smoothstep(0.58, 0.72, patch);
+    const blade = n.noise(u * 160, v * 160, 160);
+    let g = 0.2 + (f - 0.5) * 0.18 + blade * 0.06;
+    // verdorrtes Gras (oliv/braun) mit Erdflecken
+    let cr = g * 0.95, cg = g * 0.98, cb = g * 0.62;
+    cr = cr * (1 - dirtA) + dirtA * (0.2 + f * 0.08); cg = cg * (1 - dirtA) + dirtA * (0.16 + f * 0.06); cb = cb * (1 - dirtA) + dirtA * 0.1;
+    o.r = cr + (r() - 0.5) * 0.03; o.g = cg; o.b = cb;
+    o.h = 0.4 + blade * 0.4 + (f - 0.5) * 0.3;
+  });
+  return finish(p);
+}
+
+// Asphalt; v läuft entlang der Straße (eine Kachel = 8 m), u quer (0 … 1 = ganze Breite)
+export function asphalt(seed = 53) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixels(512, (u, v, o) => {
+    const f = n.fbm(u * 8, v * 8, 5, 8);
+    const crack = smoothstep(0.62, 0.66, n.fbm(u * 6 + 4, v * 6, 4, 6)) * smoothstep(0.7, 0.66, n.fbm(u * 6 + 4, v * 6, 4, 6));
+    const patchy = smoothstep(0.55, 0.7, n.fbm(u * 3, v * 3 + 7, 4, 3));
+    let g = 0.15 + (f - 0.5) * 0.1 + (r() - 0.5) * 0.05 - crack * 0.08 + patchy * 0.04;
+    // Mittellinie gestrichelt, Randlinien durchgezogen (abgefahren)
+    const wear = 0.55 + n.noise(u * 40, v * 40, 40) * 0.45;
+    const center = Math.abs(u - 0.5) < 0.012 && (v * 2) % 1 < 0.55;
+    const edge = Math.abs(u - 0.06) < 0.01 || Math.abs(u - 0.94) < 0.01;
+    if (center) g = g * (1 - wear) + 0.62 * wear;
+    let cr = g, cg = g, cb = g * 1.04;
+    if (edge) { cr = g * (1 - wear) + 0.6 * wear; cg = cr; cb = cr * 0.95; }
+    if (center) { cr = g; cg = g * 0.96; cb = g * 0.6; cr += 0.05 * wear; } // gelblich
+    const shoulder = u < 0.035 || u > 0.965;
+    if (shoulder) { cr = 0.2 + f * 0.05; cg = 0.18; cb = 0.13; }
+    o.r = cr; o.g = cg; o.b = cb;
+    o.h = 0.5 + (f - 0.5) * 0.5 - crack * 0.4;
+  });
+  return finish(p);
+}
+
+export function brick(seed = 55, tint = [0.42, 0.18, 0.13]) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const rows = 40, cols = 12;
+  const p = pixels(512, (u, v, o) => {
+    const row = Math.floor(v * rows);
+    const bu = u * cols + (row % 2) * 0.5;
+    const fu = bu - Math.floor(bu), fv = v * rows - row;
+    const mortar = fu < 0.05 || fv < 0.12;
+    const id = Math.floor(bu) * 17 + row * 5;
+    const k = ((Math.sin(id * 12.9898) * 43758.5453) % 1 + 1) % 1;
+    const f = n.fbm(u * 16, v * 16, 4, 16);
+    const soot = smoothstep(0.55, 0.8, n.fbm(u * 3, v * 3, 4, 3)) * 0.35 + smoothstep(0.4, 0, 1 - v) * 0.2;
+    let cr = mortar ? 0.33 : tint[0] * (0.8 + k * 0.4) + (f - 0.5) * 0.08;
+    let cg = mortar ? 0.31 : tint[1] * (0.8 + k * 0.4) + (f - 0.5) * 0.05;
+    let cb = mortar ? 0.28 : tint[2] * (0.8 + k * 0.4);
+    o.r = cr * (1 - soot) + (r() - 0.5) * 0.02; o.g = cg * (1 - soot); o.b = cb * (1 - soot);
+    o.h = mortar ? 0.2 : 0.6 + (f - 0.5) * 0.2;
+  });
+  return finish(p);
+}
+
+// Holzverkleidung (waagrechte Bretter), z. B. Bauernhaus oder Scheune
+export function siding(seed = 57, base = [0.62, 0.6, 0.55], boards = 16) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixels(512, (u, v, o) => {
+    const bv = v * boards, bi = Math.floor(bv), bf = bv - bi;
+    const shadow = bf > 0.86 ? 0.55 : 1;
+    const grain = n.fbm(u * 3 + bi * 1.7, bv * 6, 4, 3);
+    const peel = smoothstep(0.58, 0.64, n.fbm(u * 5, v * 5 + 2, 4, 5));
+    const dirtA = smoothstep(0.5, 0, 1 - v) * 0.3 + smoothstep(0.55, 0.8, n.fbm(u * 2, v * 2, 3, 2)) * 0.3;
+    let cr = base[0] * (0.85 + grain * 0.3), cg = base[1] * (0.85 + grain * 0.3), cb = base[2] * (0.85 + grain * 0.3);
+    cr = cr * (1 - peel) + peel * 0.3; cg = cg * (1 - peel) + peel * 0.24; cb = cb * (1 - peel) + peel * 0.18;
+    const k = shadow * (1 - dirtA);
+    o.r = cr * k + (r() - 0.5) * 0.02; o.g = cg * k; o.b = cb * k;
+    o.h = bf > 0.86 ? 0.15 : 0.6 + (grain - 0.5) * 0.3 - peel * 0.2;
+  });
+  return finish(p);
+}
+
+// Betonplatten mit Fugen und Wasserflecken (Kraftwerk, Tunnel)
+export function concretePanels(seed = 59) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixels(512, (u, v, o) => {
+    const fu = (u * 2) % 1, fv = (v * 2) % 1;
+    const joint = fu < 0.01 || fv < 0.01;
+    const f = n.fbm(u * 8, v * 8, 5, 8);
+    const streak = smoothstep(0.6, 0.85, n.noise(u * 48, v * 2, 48)) * 0.2;
+    const holes = smoothstep(0.82, 0.86, n.noise(u * 64, v * 64, 64)) * 0.25;
+    let g = 0.42 + (f - 0.5) * 0.18 - streak - holes + (r() - 0.5) * 0.04;
+    if (joint) g = 0.2;
+    o.r = g; o.g = g * 0.99; o.b = g * 0.96;
+    o.h = joint ? 0.1 : 0.5 + (f - 0.5) * 0.4 - holes;
+  });
+  return finish(p);
+}
+
+// Glühende Glut-Risse (Lava); Farbe über emissiveMap
+export function lava(seed = 61) {
+  const n = new ValueNoise(seed);
+  const p = pixels(256, (u, v, o) => {
+    const f = n.fbm(u * 4, v * 4, 5, 4);
+    const cell = Math.abs(Math.sin(f * 18));
+    const hot = smoothstep(0.75, 0.97, 1 - cell) + smoothstep(0.62, 0.75, n.fbm(u * 2, v * 2, 3, 2)) * 0.6;
+    const k = Math.min(1, hot);
+    o.r = 0.05 + k * 1.0; o.g = 0.02 + k * 0.42; o.b = 0.01 + k * 0.08;
+    o.h = 1 - k;
+  });
+  const t = toTexture(p.col);
+  return t;
+}
+
+// Haltestellen-/Ortsschild
+export function placeSign(title, sub = '', bg = '#e9d27a', fg = '#1a1a1a', w = 512, h = 192) {
+  const cv = canvas(w, h), c = cv.getContext('2d');
+  c.fillStyle = bg; c.fillRect(0, 0, w, h);
+  c.strokeStyle = fg; c.lineWidth = 10; c.strokeRect(10, 10, w - 20, h - 20);
+  c.fillStyle = fg; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = `bold ${sub ? 58 : 72}px Oswald, Impact, sans-serif`;
+  c.fillText(title, w / 2, sub ? h * 0.4 : h / 2);
+  if (sub) { c.font = '34px Oswald, Impact, sans-serif'; c.fillText(sub, w / 2, h * 0.74); }
+  // Rost und Schmutz
+  const r = mulberry32(title.length * 13 + 7);
+  for (let i = 0; i < 26; i++) { c.fillStyle = `rgba(90,45,15,${0.08 + r() * 0.2})`; c.beginPath(); c.arc(r() * w, r() * h, 3 + r() * 16, 0, 7); c.fill(); }
+  return toTexture(cv, { repeat: false });
+}

@@ -37,6 +37,8 @@ function geos() {
     hair: new THREE.SphereGeometry(0.12, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55).scale(0.95, 1.05, 1.05),
     neckStump: new THREE.CylinderGeometry(0.06, 0.07, 0.05, 10),
   };
+  // Werden über Kartenwechsel hinweg wiederverwendet → nicht freigeben
+  for (const k in GEO) GEO[k].userData.shared = true;
   return GEO;
 }
 

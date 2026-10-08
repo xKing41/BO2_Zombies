@@ -126,6 +126,12 @@ export class RenderSystem {
     window.addEventListener('resize', () => this.resize());
   }
 
+  // Neue Szenen nach einem Kartenwechsel
+  setScenes(scene, camera, vmScene, vmCamera) {
+    this.scene = scene; this.camera = camera; this.vmScene = vmScene; this.vmCamera = vmCamera;
+    this.build();
+  }
+
   build() {
     const q = this.quality;
     this.renderer.setPixelRatio(this.pixelRatio);

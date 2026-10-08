@@ -1,80 +1,12 @@
 // ─────────────────────────────────────────────────────────────
 //  NACHTFALL – zentrale Spielkonfiguration
-//  Alle Balancing-Werte, Karte, Waffen und Perks an einem Ort.
+//  Balancing-Werte, Waffen und Perks an einem Ort (Karten: src/maps/).
 // ─────────────────────────────────────────────────────────────
 
 export const CELL = 2; // Meter pro Kartenzelle
 export const WALL_H = 4; // Wandhöhe in Metern
 
-// Legende:  '#' Wand · '0'-'9' Boden (Zone) · 'A'-'Z' kaufbare Tür
-//           'w' Fenster mit Barrikade · 's' Zombie-Spawn draußen · ' ' Außenbereich
-export const MAP = [
-  '    s    s      s   s    ', // 0
-  ' ###w####w######w###w### ', // 1
-  ' #0000000000#1111111111# ', // 2
-  ' #0000000000#1111111111# ', // 3
-  ' #0000000000#1111111111# ', // 4
-  ' #0000000000A1111111111# ', // 5
-  'sw0000000000A1111111111ws', // 6
-  ' #0000000000#1111111111# ', // 7
-  ' #0000000000#1111111111# ', // 8
-  ' #0000000000#1111111111# ', // 9
-  ' #####BB#########CC##### ', // 10
-  ' #2222222222#3333333333# ', // 11
-  ' #2222222222#3333333333# ', // 12
-  'sw2222222222#3333333333ws', // 13
-  ' #2222222222D3333333333# ', // 14
-  ' #2222222222D3333333333# ', // 15
-  ' #2222222222#3333333333# ', // 16
-  'sw2222222222#3333333333ws', // 17
-  ' #2222222222#3333333333# ', // 18
-  ' ####w###w######w###w### ', // 19
-  '     s   s      s   s    ', // 20
-];
-
-export const ZONES = [
-  { name: 'Depot-Halle', ceiling: true, floor: 'concrete' },
-  { name: 'Diner', ceiling: true, floor: 'tiles' },
-  { name: 'Werkstatt', ceiling: true, floor: 'dirty' },
-  { name: 'Innenhof', ceiling: false, floor: 'cobble' },
-];
-
-export const DOORS = {
-  A: { cost: 750, zones: [0, 1], label: 'Diner' },
-  B: { cost: 750, zones: [0, 2], label: 'Werkstatt' },
-  C: { cost: 1000, zones: [1, 3], label: 'Innenhof' },
-  D: { cost: 1000, zones: [2, 3], label: 'Innenhof' },
-};
-
-export const PLAYER_START = { cx: 6, cy: 6, yaw: -Math.PI * 0.5 }; // Blick nach Osten (Tür zum Diner)
-
-// Richtungen: N = -z, S = +z, W = -x, E = +x  (zeigt zur Wand)
-export const BOX_SPOTS = [
-  { cx: 10, cy: 2, wall: 'N' },
-  { cx: 13, cy: 9, wall: 'S' },
-  { cx: 2, cy: 15, wall: 'W' },
-  { cx: 13, cy: 18, wall: 'S' },
-];
-export const BOX_START = 0;
-
-export const PERK_SPOTS = {
-  phoenix: { cx: 2, cy: 3, wall: 'W' },
-  titan: { cx: 22, cy: 3, wall: 'E' },
-  blitz: { cx: 11, cy: 18, wall: 'S' },
-  doppel: { cx: 13, cy: 11, wall: 'W' },
-  sprint: { cx: 22, cy: 11, wall: 'E' },
-};
-
-export const WALLBUYS = [
-  { weapon: 'k14', cx: 6, cy: 2, wall: 'N' },
-  { weapon: 'dlf', cx: 2, cy: 8, wall: 'W' },
-  { weapon: 'vmp', cx: 18, cy: 2, wall: 'N' },
-  { weapon: 'grenade', cx: 22, cy: 8, wall: 'E' },
-  { weapon: 'pump', cx: 7, cy: 18, wall: 'S' },
-];
-
-export const POWER_SWITCH = { cx: 3, cy: 11, wall: 'N' };
-export const PAP_SPOT = { cx: 17, cy: 14 };
+// Karten (Layout, Spots, Deko) liegen in src/maps/.
 
 // ── Waffen ───────────────────────────────────────────────────
 // damage pro Treffer/Pellet · rpm Schuss/Minute · spread in Radiant

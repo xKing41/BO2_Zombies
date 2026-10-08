@@ -1,7 +1,7 @@
 // Alles, womit der Spieler interagieren kann: Türen, Barrikaden, Wall-Buys,
 // Perk-Automaten, Stromschalter, Mystery-Kiste und Äther-Schmiede (Pack-a-Punch).
 import * as THREE from 'three';
-import { CELL, WEAPONS, PERKS, PERK_LIMIT, PERK_SPOTS, WALLBUYS, BOX_SPOTS, BOX_START, BOX_COST, BOX_POOL, PAP_COST, PAP_SPOT, POWER_SWITCH, GRENADE_COST, POINTS } from '../config.js';
+import { CELL, WEAPONS, PERKS, PERK_LIMIT, BOX_COST, BOX_POOL, PAP_COST, GRENADE_COST, POINTS } from '../config.js';
 import { WALLDIR } from '../world/map.js';
 import { buildGun } from '../weapons/guns.js';
 import * as T from '../core/textures.js';
@@ -123,7 +123,7 @@ class WallBuy extends Interactable {
 // ── Perk-Automaten ───────────────────────────────────────────
 class PerkMachine extends Interactable {
   constructor(game, id) {
-    const s = PERK_SPOTS[id], map = game.map, M = game.M, P = PERKS[id];
+    const s = game.mapDef.perkSpots[id], map = game.map, M = game.M, P = PERKS[id];
     super(game, frontOf(map, s.cx, s.cy, s.wall, -0.2), 1.9);
     this.id = id;
     const col = new THREE.Color(P.color);
@@ -187,9 +187,14 @@ class PerkMachine extends Interactable {
 // ── Stromschalter ─────────────────────────────────────────────
 class PowerSwitch extends Interactable {
   constructor(game) {
-    const s = POWER_SWITCH, map = game.map, M = game.M;
+    const s = game.mapDef.powerSwitch, map = game.map, M = game.M;
     super(game, map.center(s.cx, s.cy), 1.8);
     const g = new THREE.Group();
+    this.group = g;
+    // Auf manchen Karten muss der Schalter erst aus Teilen gebaut werden
+    this.needsBuild = !!s.build;
+    this.built = !this.needsBuild;
+    if (this.needsBuild) { g.userData.dynamic = true; g.visible = false; }
     const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.25), M.metal); box.position.y = 1.5; box.castShadow = true; g.add(box);
     const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.18), new THREE.MeshBasicMaterial({ map: T.textSign('STROM', '#ffd23a', '#1a1408', 256, 96, 'bold 60px Oswald, Impact, sans-serif') }));
     plate.position.set(0, 1.85, 0.13); g.add(plate);
@@ -204,14 +209,18 @@ class PowerSwitch extends Interactable {
     map.place(g, s.cx, s.cy, s.wall, 0.25);
     this.anim = 0;
   }
-  prompt() { return this.g.map.power ? null : `${this.press}, um den Strom einzuschalten`; }
+  prompt() { return this.g.map.power || !this.built ? null : `${this.press}, um den Strom einzuschalten`; }
+  setBuilt() { this.built = true; this.group.visible = true; }
   use() {
-    if (this.g.map.power) return;
+    if (this.g.map.power || !this.built) return;
     this.anim = 0.0001;
     this.g.audio.lever();
     setTimeout(() => this.g.powerOn(), 700);
   }
-  reset() { this.anim = 0; this.lever.rotation.x = -0.6; }
+  reset() {
+    this.anim = 0; this.lever.rotation.x = -0.6;
+    if (this.needsBuild) { this.built = false; this.group.visible = false; }
+  }
   update(dt) {
     if (this.anim > 0 && this.anim < 1) {
       this.anim = Math.min(1, this.anim + dt / 0.6);
@@ -226,7 +235,8 @@ class MysteryBox extends Interactable {
   constructor(game) {
     super(game, new THREE.Vector3(), 2.0);
     const M = game.M;
-    this.spot = BOX_START;
+    this.spots = game.mapDef.boxSpots;
+    this.spot = game.mapDef.boxStart || 0;
     this.uses = 0;
     this.totalUses = 0;
     this.state = 'idle';
@@ -234,7 +244,7 @@ class MysteryBox extends Interactable {
     this.models = {};
 
     // Paletten an allen möglichen Plätzen
-    for (const s of BOX_SPOTS) {
+    for (const s of this.spots) {
       const pal = new THREE.Group();
       for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.04, 0.18), M.woodDark); b.position.set(0, 0.12, -0.33 + i * 0.22); b.receiveShadow = true; pal.add(b); }
       for (const x of [-0.85, 0, 0.85]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.9), M.wood); b.position.set(x, 0.05, 0); pal.add(b); }
@@ -295,7 +305,7 @@ class MysteryBox extends Interactable {
     this.showWeapon(null);
     this.group.rotation.set(0, 0, 0);
     this.inner.material.opacity = 0;
-    this.moveTo(BOX_START);
+    this.moveTo(this.g.mapDef.boxStart || 0);
   }
 
   buildTeddy(M) {
@@ -313,7 +323,7 @@ class MysteryBox extends Interactable {
 
   moveTo(i) {
     this.spot = i;
-    const s = BOX_SPOTS[i], map = this.g.map;
+    const s = this.spots[i], map = this.g.map;
     map.place(this.group, s.cx, s.cy, s.wall, 0.95);
     this.group.position.y = 0.1;
     this.group.visible = true;
@@ -444,7 +454,7 @@ class MysteryBox extends Interactable {
       case 'moving':
         if (this.t > 2.5) {
           let n;
-          do { n = Math.floor(Math.random() * BOX_SPOTS.length); } while (n === this.spot);
+          do { n = Math.floor(Math.random() * this.spots.length); } while (n === this.spot && this.spots.length > 1);
           this.moveTo(n);
           this.uses = 0;
           this.state = 'idle';
@@ -464,9 +474,12 @@ class MysteryBox extends Interactable {
 class PackAPunch extends Interactable {
   constructor(game) {
     const map = game.map, M = game.M;
-    const c = map.center(PAP_SPOT.cx, PAP_SPOT.cy);
+    const spot = game.mapDef.papSpot;
+    const c = map.center(spot.cx, spot.cy);
     super(game, c.clone(), 2.3);
     const g = (this.group = new THREE.Group());
+    this.needsBuild = !!spot.build;
+    this.built = !this.needsBuild;
     const add = (geo, mat, x, y, z, p = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; p.add(m); return m; };
     const dark = new THREE.MeshStandardMaterial({ color: 0x1a1820, roughness: 0.4, metalness: 0.85 });
     add(new THREE.BoxGeometry(1.5, 1.2, 1.1), dark, 0, 0.75, 0);
@@ -498,9 +511,11 @@ class PackAPunch extends Interactable {
     this.emitter = add(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 0.6, 3) }), 0, 2.3, 0);
     for (const s of [1, -1]) { const p = add(new THREE.PlaneGeometry(0.9, 0.3), new THREE.MeshBasicMaterial({ map: T.textSign('ÄTHER-SCHMIEDE', '#b06bff', '#0a0612', 512, 128, 'bold 54px Oswald, Impact, sans-serif') }), 0, 1.9, s * 0.405); if (s < 0) p.rotation.y = Math.PI; }
     g.position.set(c.x, 0, c.z);
+    if (spot.yaw) g.rotation.y = spot.yaw;
     game.scene.add(g);
     g.updateMatrixWorld(true);
-    map.blockCell(PAP_SPOT.cx, PAP_SPOT.cy, map.aabb(g, 0.05));
+    map.blockCell(spot.cx, spot.cy, map.aabb(g, 0.05));
+    if (this.needsBuild) { g.userData.dynamic = true; g.visible = false; }
     const light = new THREE.PointLight(0xa040ff, 9, 9, 1.7);
     light.position.set(c.x, 2.6, c.z);
     game.scene.add(light);
@@ -511,9 +526,14 @@ class PackAPunch extends Interactable {
     game.scene.add(this.display);
     this.slot = null;
   }
-  reset() { this.state = 'idle'; this.t = 0; this.slot = null; this.display.clear(); this.display.visible = true; }
+  reset() {
+    this.state = 'idle'; this.t = 0; this.slot = null; this.display.clear(); this.display.visible = true;
+    if (this.needsBuild) { this.built = false; this.group.visible = false; }
+  }
+  setBuilt() { this.built = true; this.group.visible = true; }
   prompt() {
     const g = this.g, w = g.weapons.weapon;
+    if (!this.built) return null;
     if (!g.map.power) return 'Kein Strom';
     if (this.state === 'ready') return `${this.press} für ${this.slot.stats.name}`;
     if (this.state !== 'idle') return null;
@@ -541,7 +561,7 @@ class PackAPunch extends Interactable {
     this.display.clear(); this.display.add(info.group);
   }
   update(dt, time) {
-    const g = this.g, on = g.map.power;
+    const g = this.g, on = g.map.power && this.built;
     this.t += dt;
     const spin = this.state === 'work' ? 8 : on ? 0.6 : 0;
     this.gears.forEach((gr, i) => (gr.rotation.x += dt * spin * (i ? 1 : -1)));
@@ -572,13 +592,15 @@ export class Interactables {
     this.g = game;
     this.list = [];
     const map = game.map;
-    for (const id in map.doors) this.list.push(new DoorBuy(game, map.doors[id]));
+    const def = game.mapDef;
+    for (const id in map.doors) if (map.doors[id].kind === 'buy') this.list.push(new DoorBuy(game, map.doors[id]));
     for (const w of map.windows) this.list.push(new Barricade(game, w));
-    for (const wb of WALLBUYS) this.list.push(new WallBuy(game, wb));
-    for (const id in PERKS) this.list.push(new PerkMachine(game, id));
-    this.power = new PowerSwitch(game); this.list.push(this.power);
-    this.box = new MysteryBox(game); this.list.push(this.box);
-    this.pap = new PackAPunch(game); this.list.push(this.pap);
+    for (const wb of def.wallbuys || []) this.list.push(new WallBuy(game, wb));
+    this.perks = {};
+    for (const id in PERKS) if (def.perkSpots && def.perkSpots[id]) this.list.push((this.perks[id] = new PerkMachine(game, id)));
+    if (def.powerSwitch) { this.power = new PowerSwitch(game); this.list.push(this.power); }
+    if (def.boxSpots && def.boxSpots.length) { this.box = new MysteryBox(game); this.list.push(this.box); }
+    if (def.papSpot) { this.pap = new PackAPunch(game); this.list.push(this.pap); }
     this.current = null;
   }
 

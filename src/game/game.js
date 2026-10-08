@@ -18,12 +18,14 @@ import { Interactables } from './interactables.js';
 import { PowerUps } from './powerups.js';
 import { HUD } from '../ui/hud.js';
 import { clamp, damp } from '../core/utils.js';
+import { CELL } from '../config.js';
+import { MAPS } from '../maps/index.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
 export const DEFAULT_SETTINGS = {
   sensitivity: 1, fov: 80, master: 0.8, music: 0.6, quality: 'auto',
-  invertY: false, showFps: false, aimAssist: true,
+  invertY: false, showFps: false, aimAssist: true, map: 'nachtfall',
 };
 
 export class Game {
@@ -41,6 +43,8 @@ export class Game {
     this.input = new Input(canvas);
     this.touch = null; // wird von main.js gesetzt
     this.perf = { acc: 0, n: 0 };
+    this.features = [];
+    this.mapDef = null;
   }
 
   async init(progress) {
@@ -50,53 +54,113 @@ export class Game {
     const q = this.rs.quality;
     setAnisotropy(Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()));
     setTextureScale(q.texScale);
-    this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
-    this.vmScene = new THREE.Scene();
     this.vmCamera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.01, 10);
-    this.scene.add(this.camera);
+    this.scene = new THREE.Scene();
+    this.vmScene = new THREE.Scene();
     this.rs.setup(this.scene, this.camera, this.vmScene, this.vmCamera);
     this.rs.onResize = () => this.effects && this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
     const pmrem = new THREE.PMREMGenerator(this.rs.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.12;
-    this.vmScene.environment = this.scene.environment;
-    this.vmScene.environmentIntensity = 0.15;
+    this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     // Schriften für Canvas-Texturen abwarten (max. 1.5 s)
     await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
 
     let n = 0;
     const labels = 8;
-    this.M = buildMaterials((label) => { n++; progress(10 + (n / labels) * 50, `Texturen: ${label} …`); });
-    await step(62, 'Station Nachtfall wird gebaut …');
-    this.map = new GameMap();
-    this.map.build(this.scene, this.M);
-    await step(72, 'Effekte …');
-    this.effects = new Effects(this.scene, this.M);
+    this.M = buildMaterials((label) => { n++; progress(10 + (n / labels) * 40, `Texturen: ${label} …`); });
+    this.collectShared();
     this.audio = new AudioEngine();
     this.audio.panningModel = q.hrtf ? 'HRTF' : 'equalpower';
     this.hud = new HUD();
     this.player = new Player(this);
-    await step(78, 'Waffen …');
+    await this.loadMap(this.settings.map, (pct, text) => progress(52 + pct * 0.48, text));
+    this.lastT = performance.now();
+    this.fpsAcc = 0; this.fpsN = 0; this.fps = 0;
+    requestAnimationFrame((t) => this.loop(t));
+  }
+
+  // Gemeinsam genutzte Materialien/Texturen merken (werden beim Kartenwechsel nicht freigegeben)
+  collectShared() {
+    this.sharedMats = new Set();
+    this.sharedTex = new Set();
+    const walk = (o, depth = 0) => {
+      if (!o || depth > 3) return;
+      if (o.isMaterial) { this.sharedMats.add(o); return; }
+      if (o.isTexture) { this.sharedTex.add(o); return; }
+      if (Array.isArray(o)) { o.forEach((x) => walk(x, depth + 1)); return; }
+      if (typeof o === 'object') for (const k in o) walk(o[k], depth + 1);
+    };
+    walk(this.M);
+    for (const m of this.sharedMats) for (const k of ['map', 'bumpMap', 'emissiveMap']) if (m[k]) this.sharedTex.add(m[k]);
+  }
+
+  // ── Karten ──────────────────────────────────────────────────
+  async loadMap(id, progress = () => {}) {
+    const def = MAPS[id] || MAPS.nachtfall;
+    const step = async (pct, text) => { progress(pct, text); await nextFrame(); };
+    this.state = 'loading';
+    await step(2, `${def.name} wird geladen …`);
+    this.unloadMap();
+    this.mapDef = def;
+    this.settings.map = def.id;
+    this.scene = new THREE.Scene();
+    this.scene.add(this.camera);
+    this.scene.environment = this.envMap;
+    this.scene.environmentIntensity = 0.12;
+    this.vmScene = new THREE.Scene();
+    this.vmScene.environment = this.envMap;
+    this.vmScene.environmentIntensity = 0.15;
+    this.rs.setScenes(this.scene, this.camera, this.vmScene, this.vmCamera);
+    await step(10, `${def.name}: Gelände …`);
+    this.map = new GameMap(def);
+    this.map.build(this.scene, this.M, { quality: this.rs.quality, game: this });
+    await step(45, 'Effekte …');
+    this.effects = new Effects(this.scene, this.M);
     this.weapons = new Weapons(this);
-    await step(84, 'Die Toten erwachen …');
+    await step(60, 'Die Toten erwachen …');
     this.zombies = new ZombieManager(this);
     this.interact = new Interactables(this);
     this.powerups = new PowerUps(this);
+    this.features = def.setup ? def.setup(this) || [] : [];
+    for (const f of this.features) if (f.interactables) this.interact.list.push(...f.interactables);
     this.hud.iconUrls = Object.fromEntries(Object.entries(this.powerups.icons).map(([k, t]) => [k, t.image.toDataURL()]));
-    this.batchInfo = batchStatic(this.scene);
+    await step(80, 'Optimieren …');
+    this.batchInfo = batchStatic(this.scene, def.chunkCells ? def.chunkCells * CELL : 0);
     this.applyLightQuality();
-    await step(92, 'Shader werden kompiliert …');
+    this.camera.far = def.env && def.env.far ? def.env.far : 400;
+    this.camera.updateProjectionMatrix();
+    this.player.reset();
+    await step(90, 'Shader werden kompiliert …');
     this.precompile();
     this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
+    this.player.update(0, this.input);
+    this.station = null;
     await step(100, 'Bereit.');
     this.state = 'menu';
     this.lastT = performance.now();
-    this.fpsAcc = 0; this.fpsN = 0; this.fps = 0;
-    this.player.update(0, this.input);
-    requestAnimationFrame((t) => this.loop(t));
+  }
+
+  unloadMap() {
+    for (const f of this.features) if (f.dispose) f.dispose();
+    this.features = [];
+    if (!this.map) return;
+    this.zombies.clear();
+    const freed = new Set();
+    const free = (scene) => scene.traverse((o) => {
+      if (o.isInstancedMesh) o.dispose();
+      if (o.geometry && !o.geometry.userData.shared && !freed.has(o.geometry)) { freed.add(o.geometry); o.geometry.dispose(); }
+      if (o.material) for (const m of [].concat(o.material)) {
+        if (this.sharedMats.has(m) || freed.has(m)) continue;
+        freed.add(m);
+        for (const k of ['map', 'bumpMap', 'emissiveMap', 'alphaMap']) if (m[k] && !this.sharedTex.has(m[k]) && !freed.has(m[k])) { freed.add(m[k]); m[k].dispose(); }
+        m.dispose();
+      }
+    });
+    free(this.scene);
+    free(this.vmScene);
+    this.map = null;
   }
 
   precompile() {
@@ -164,6 +228,8 @@ export class Game {
     this.powerups.reset();
     this.player.reset();
     this.weapons.reset();
+    for (const f of this.features) if (f.reset) f.reset();
+    this.station = null;
     this.audio.setMuffle(0);
     this.points = 500;
     this.round = 0;
@@ -335,14 +401,14 @@ export class Game {
       this.interact.update(dt, this.time, this.input);
       this.powerups.update(dt, this.time);
     } else {
-      // Menü: langsame Kamerafahrt durch die Halle
-      const a = this.time * 0.05;
-      this.camera.position.set(13 + Math.sin(a) * 3, 1.8, 13 + Math.cos(a) * 3);
-      this.camera.rotation.set(-0.05, a * 0.8 - 1.2, 0, 'YXZ');
+      // Menü: Kamerafahrt durch die Karte
+      if (this.mapDef.menuCamera) this.mapDef.menuCamera(this.camera, this.time, this);
       for (const it of this.interact.list) it.update(dt, this.time);
     }
-    this.map.update(dt, this.time);
+    for (const f of this.features) if (f.update) f.update(dt, this.time, playing || this.state === 'gameover');
+    this.map.update(dt, this.time, this.camera.position);
     this.effects.update(dt);
+    if (playing) this.checkStation();
 
     // Rundenlogik
     if (playing) {
@@ -354,13 +420,27 @@ export class Game {
     }
 
     // Atmosphäre
-    if (this.map.fireBarrelPos && Math.random() < 0.5) this.effects.ember(this.map.fireBarrelPos.clone().setY(0.9));
+    const cp = this.camera.position;
+    for (const e of this.map.emberSources) {
+      if (Math.random() < 0.5 && (e.x - cp.x) ** 2 + (e.z - cp.z) ** 2 < 1600) this.effects.ember(e);
+    }
     if (Math.random() < 0.25) this.effects.ambientDust(this.camera.position);
     this.flash = Math.max(0, this.flash - dt * 1.2);
     this.computeLightLevel();
     this.audio.updateListener(this.camera);
     this.hud.update(dt, this.player, this.settings.showFps ? this.fps : null);
     if (this.input.keyHit('KeyP') && location.hash.includes('dev')) this.debugSkip();
+  }
+
+  // Benannte Orte (Haltestellen usw.) beim Betreten einblenden
+  checkStation() {
+    if (!this.mapDef.stations) return;
+    const p = this.player.pos;
+    const st = this.map.stationAt(p.x, p.z);
+    if (st !== this.station) {
+      this.station = st;
+      if (st && st.name) this.hud.notice(st.name, 2600);
+    }
   }
 
   debugSkip() {
@@ -376,7 +456,9 @@ export class Game {
       const d2 = (lp.x - p.x) ** 2 + (lp.y - p.y) ** 2 + (lp.z - p.z) ** 2;
       sum += e.light.intensity / (1 + d2);
     }
-    if (this.map.zoneAt(p.x, p.z) === 3) sum += 3;
+    if (this.mapDef.outdoorLight && !this.map.hasCeiling(this.map.cellAt(p.x, p.z) || { type: 'void' })) sum += this.mapDef.outdoorLight;
+    else if (!this.mapDef.outdoorLight && this.map.zoneAt(p.x, p.z) === 3) sum += 3;
+    if (this.map.lightPool) sum += this.map.lightPool.levelAt(p);
     sum += this.effects.muzzleLight.intensity * 0.3 + this.effects.blastLight.intensity * 0.05;
     this.lightLevel = damp(this.lightLevel, clamp(sum * 0.06 + 0.12, 0.12, 1), 4, 1 / 60);
   }

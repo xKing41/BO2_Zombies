@@ -61,6 +61,16 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
 #goRounds { font-size: 30px; letter-spacing: 2px; text-align: center; }
 #clickToPlay { position: fixed; left: 50%; top: 60%; transform: translateX(-50%); z-index: 30; font-size: 24px; letter-spacing: 4px; color: var(--ink); text-shadow: 0 0 10px #000; animation: flick 2s infinite; pointer-events: none; }
 
+/* Kartenauswahl */
+.mapcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; width: min(980px, 100%); }
+.mapcard { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; text-transform: none; letter-spacing: 0;
+  padding: 18px 20px; min-height: 150px; background: linear-gradient(160deg, rgba(70, 12, 10, 0.75), rgba(14, 4, 3, 0.92)); }
+.mapcard:hover, .mapcard:focus-visible { transform: translateY(-3px); }
+.mapcard.current { border-color: #b8401f; }
+.mc-name { font-family: Creepster, Impact, serif; font-size: 34px; letter-spacing: 2px; color: #ff4a2a; text-shadow: 0 0 12px rgba(255, 40, 20, 0.5); }
+.mc-tag { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #e6b48a; }
+.mc-desc { font-family: 'Special Elite', monospace; font-size: 14px; line-height: 1.45; color: var(--dim); }
+
 /* Kleine Bildschirme (z. B. Handy im Querformat) */
 @media (max-height: 540px) {
   .screen { gap: 12px; }
@@ -73,6 +83,9 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
   td { padding: 3px 10px; }
   .panel label { font-size: 15px; }
   #goRounds { font-size: 22px; }
+  .mapcard { min-height: 0; padding: 12px 14px; }
+  .mc-name { font-size: 26px; }
+  .mc-desc { font-size: 12px; }
 }
 
 /* ── HUD ─────────────────────────────────────── */
