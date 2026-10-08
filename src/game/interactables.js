@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CELL, WEAPONS, PERKS, PERK_LIMIT, BOX_COST, BOX_POOL, PAP_COST, GRENADE_COST, POINTS } from '../config.js';
 import { WALLDIR } from '../world/map.js';
 import { buildGun } from '../weapons/guns.js';
+import { mergeByMaterial } from '../world/batch.js';
 import * as T from '../core/textures.js';
 import { rand, smooth, weightedPick, clamp } from '../core/utils.js';
 
@@ -149,10 +150,14 @@ class PerkMachine extends Interactable {
     this.group = g;
     // Farbiges Licht vor dem Automaten
     const lp = frontOf(map, s.cx, s.cy, s.wall, -0.1);
-    const light = new THREE.PointLight(col, 4, 5, 1.8);
-    light.position.set(lp.x, 2.3, lp.z);
-    game.scene.add(light);
-    this.light = map.addLight(light, { poweredOnly: id !== 'phoenix', flicker: 0.1, tier: 3 });
+    if (map.lightPool) {
+      this.light = map.lightPool.add({ type: 'point', pos: new THREE.Vector3(lp.x, 2.3, lp.z), color: col, intensity: 4, distance: 5, poweredOnly: id !== 'phoenix', flicker: 0.1, offFactor: id === 'phoenix' ? 1 : 0 });
+    } else {
+      const light = new THREE.PointLight(col, 4, 5, 1.8);
+      light.position.set(lp.x, 2.3, lp.z);
+      game.scene.add(light);
+      this.light = map.addLight(light, { poweredOnly: id !== 'phoenix', flicker: 0.1, tier: 3 });
+    }
     this.col = col;
   }
   get powered() { return this.g.map.power || this.id === 'phoenix'; }
@@ -267,6 +272,11 @@ class MysteryBox extends Interactable {
     add(new THREE.BoxGeometry(1.8, 0.04, 0.82), M.metal, 0, 0.1, 0.39, this.lid);
     this.inner = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.68), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 1.4, 2.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.inner.rotation.x = -Math.PI / 2; this.inner.position.y = 0.74; body.add(this.inner);
+    // Starre Teile zu wenigen Meshes verschmelzen (Deckel und Innenleuchten bleiben beweglich)
+    body.remove(this.lid, this.inner);
+    const solidBody = mergeByMaterial(body);
+    body.clear();
+    body.add(...solidBody.children, this.lid, this.inner);
     g.userData.dynamic = true;
     game.scene.add(g);
 
@@ -282,9 +292,15 @@ class MysteryBox extends Interactable {
     this.beam = new THREE.Mesh(beamGeo, this.beamMat);
     this.beam.userData.dynamic = true;
     game.scene.add(this.beam);
-    this.light = new THREE.PointLight(0x66ccff, 0, 6, 1.6);
-    this.light.userData.tier = 2;
-    game.scene.add(this.light);
+    if (game.map.lightPool) {
+      // Quelle im Licht-Pool; .position/.intensity wie bei einem echten Licht
+      this.light = game.map.lightPool.add({ type: 'point', pos: new THREE.Vector3(), color: 0x66ccff, intensity: 0, distance: 6, offFactor: 1, dynamic: true });
+      this.light.position = this.light.pos;
+    } else {
+      this.light = new THREE.PointLight(0x66ccff, 0, 6, 1.6);
+      this.light.userData.tier = 2;
+      game.scene.add(this.light);
+    }
 
     // Teddy
     this.teddy = this.buildTeddy(M);
@@ -510,16 +526,26 @@ class PackAPunch extends Interactable {
     }
     this.emitter = add(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 0.6, 3) }), 0, 2.3, 0);
     for (const s of [1, -1]) { const p = add(new THREE.PlaneGeometry(0.9, 0.3), new THREE.MeshBasicMaterial({ map: T.textSign('ÄTHER-SCHMIEDE', '#b06bff', '#0a0612', 512, 128, 'bold 54px Oswald, Impact, sans-serif') }), 0, 1.9, s * 0.405); if (s < 0) p.rotation.y = Math.PI; }
+    // Starre Teile verschmelzen; Zahnräder drehen sich und bleiben einzeln
+    const gears = this.gears;
+    for (const gr of gears) g.remove(gr);
+    const solid = mergeByMaterial(g);
+    g.clear();
+    g.add(...solid.children, ...gears);
     g.position.set(c.x, 0, c.z);
     if (spot.yaw) g.rotation.y = spot.yaw;
     game.scene.add(g);
     g.updateMatrixWorld(true);
     map.blockCell(spot.cx, spot.cy, map.aabb(g, 0.05));
     if (this.needsBuild) { g.userData.dynamic = true; g.visible = false; }
-    const light = new THREE.PointLight(0xa040ff, 9, 9, 1.7);
-    light.position.set(c.x, 2.6, c.z);
-    game.scene.add(light);
-    this.light = map.addLight(light, { poweredOnly: true, flicker: 0.3, tier: 2 });
+    if (map.lightPool) {
+      this.light = map.lightPool.add({ type: 'point', pos: new THREE.Vector3(c.x, 2.6, c.z), color: 0xa040ff, intensity: 9, distance: 9, poweredOnly: true, flicker: 0.3, enabled: this.built });
+    } else {
+      const light = new THREE.PointLight(0xa040ff, 9, 9, 1.7);
+      light.position.set(c.x, 2.6, c.z);
+      game.scene.add(light);
+      this.light = map.addLight(light, { poweredOnly: true, flicker: 0.3, tier: 2 });
+    }
     this.state = 'idle'; this.t = 0;
     this.display = new THREE.Group();
     this.display.userData.dynamic = true;
@@ -528,9 +554,9 @@ class PackAPunch extends Interactable {
   }
   reset() {
     this.state = 'idle'; this.t = 0; this.slot = null; this.display.clear(); this.display.visible = true;
-    if (this.needsBuild) { this.built = false; this.group.visible = false; }
+    if (this.needsBuild) { this.built = false; this.group.visible = false; if (this.light.pos) this.light.enabled = false; }
   }
-  setBuilt() { this.built = true; this.group.visible = true; }
+  setBuilt() { this.built = true; this.group.visible = true; if (this.light.pos) this.light.enabled = true; }
   prompt() {
     const g = this.g, w = g.weapons.weapon;
     if (!this.built) return null;

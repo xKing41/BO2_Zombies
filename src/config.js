@@ -67,6 +67,14 @@ export const WEAPONS = {
     pap: { name: 'Neutronen-Zerstörer', damage: 2800, mag: 40, reserve: 200,
       projectile: { speed: 45, color: 0xff3355, splash: 2200, radius: 3.0 } },
   },
+  // Wunderwaffe aus Bauteilen (Linie 13): Kettenblitz, tötet sofort
+  tesla: {
+    name: 'Gewitter-Werfer', cls: 'tesla', auto: false, damage: 0, headMult: 1, rpm: 70,
+    mag: 4, reserve: 24, reload: 3.2, spread: 0, adsSpread: 0, recoil: 0.09,
+    pellets: 1, cost: 0, sound: 'tesla', wonder: true,
+    lightning: { chains: 8, range: 9, reach: 45, color: [0.7, 1.7, 4.0] },
+    pap: { name: 'Gewitter-Zorn', mag: 8, reserve: 48, lightning: { chains: 16, range: 12, reach: 55, color: [3.4, 0.9, 4.2] } },
+  },
 };
 
 // Gewichtung in der Mystery-Kiste

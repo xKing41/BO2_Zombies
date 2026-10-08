@@ -102,9 +102,10 @@ export class ZombieManager {
     return _sep;
   }
 
-  pickWindow() {
+  pickWindow(maxDist = Infinity) {
     const map = this.map, p = this.game.player.pos;
-    const cands = map.windows.filter((w) => map.openZones.has(w.zone));
+    const cands = map.windows.filter((w) => map.openZones.has(w.zone) && Math.hypot(w.center.x - p.x, w.center.z - p.z) < maxDist);
+    if (!cands.length) return null;
     let total = 0;
     const ws = cands.map((w) => {
       const d = Math.hypot(w.center.x - p.x, w.center.z - p.z);
@@ -121,9 +122,43 @@ export class ZombieManager {
   spawnOne() {
     const z = this.pool.find((x) => !x.active);
     if (!z) return false;
-    z.spawn(this.pickWindow(), this.hp, rollSpeedType(this.round));
+    const type = rollSpeedType(this.round);
+    if (this.game.mapDef.spawnMode === 'mixed') {
+      // Große Karte: in Gebäuden meist durch Fenster, draußen aus dem Boden
+      const map = this.map, p = this.game.player.pos;
+      const c = map.cellAt(p.x, p.z);
+      const inside = c && map.hasCeiling(c) && p.y < 0.3;
+      const win = this.pickWindow(40);
+      if (win && Math.random() < (inside ? 0.8 : 0.25)) {
+        z.spawn(win, this.hp, type);
+        z.rise('approach');
+      } else {
+        const pt = this.groundPoint();
+        if (pt) z.spawnAt(pt, this.hp, type);
+        else if (win) { z.spawn(win, this.hp, type); z.rise('approach'); }
+        else return false;
+      }
+    } else z.spawn(this.pickWindow(), this.hp, type);
     this.toSpawn--;
     return true;
+  }
+
+  // Zufälliger erreichbarer Punkt im Freien in der Nähe des Spielers (bzw. vor dem fahrenden Bus)
+  groundPoint() {
+    const g = this.game, map = this.map, p = g.player.pos, bus = g.bus;
+    let around = p, r0 = 12, r1 = 26;
+    if (bus && bus.playerOn && bus.v > 2) { around = bus.lanePoint(bus.s + rand(28, 55), new THREE.Vector3()); r0 = 3; r1 = 9; }
+    for (let i = 0; i < 40; i++) {
+      const a = Math.random() * Math.PI * 2, r = rand(r0, r1);
+      const x = around.x + Math.cos(a) * r, z = around.z + Math.sin(a) * r;
+      const cx = Math.floor(x / CELL), cy = Math.floor(z / CELL);
+      const c = map.get(cx, cy);
+      if (!c || c.type !== 'floor' || c.lava || map.hasCeiling(c) || !map.zombieWalkable(cx, cy)) continue;
+      if (this.dist[cy * map.w + cx] < 0) continue;
+      if (bus && Math.hypot(bus.pos.x - x, bus.pos.z - z) < 7) continue;
+      return new THREE.Vector3(x, 0, z);
+    }
+    return null;
   }
 
   respawn(z) {

@@ -23,6 +23,8 @@ const FS = /* glsl */`
     gl_FragColor = vec4(vC, a);
   }`;
 
+const _bd = new THREE.Vector3(), _bu = new THREE.Vector3(), _bv = new THREE.Vector3();
+
 class Particles {
   constructor(scene, max, additive, soft) {
     this.max = max;
@@ -146,6 +148,53 @@ export class Effects {
 
     // Leuchtende Staubpartikel in der Luft
     this.dustTimer = 0;
+
+    // Blitze (Gewitter-Werfer, Funkmast): Pool aus Linienzügen
+    this.bolts = [];
+    for (let i = 0; i < 28; i++) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(18 * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      line.frustumCulled = false;
+      line.visible = false;
+      line.renderOrder = 11;
+      scene.add(line);
+      this.bolts.push({ line, life: 0, max: 1, a: new THREE.Vector3(), b: new THREE.Vector3(), amp: 0.06 });
+    }
+    this.boltIdx = 0;
+  }
+
+  // Zuckender Blitz von a nach b
+  lightning(a, b, color = [0.7, 1.7, 4], life = 0.2, amp = 0.07) {
+    for (let k = 0; k < 2; k++) {
+      const bolt = this.bolts[this.boltIdx++ % this.bolts.length];
+      bolt.a.copy(a); bolt.b.copy(b); bolt.life = life; bolt.max = life; bolt.amp = amp * (k ? 1.8 : 1);
+      bolt.line.material.color.setRGB(color[0] * (k ? 0.8 : 2.2), color[1] * (k ? 0.8 : 2.2), color[2] * (k ? 0.8 : 2.2));
+      bolt.line.visible = true;
+      this.jitterBolt(bolt);
+    }
+    this.blastLight.position.copy(b);
+    this.blastLight.color.setRGB(color[0] / 4, color[1] / 4, color[2] / 4);
+    this.blastLight.intensity = Math.max(this.blastLight.intensity, 30);
+    this.blastT = Math.max(this.blastT, 0.2);
+    for (let i = 0; i < 12; i++) {
+      this.add.spawn({ x: b.x, y: b.y, z: b.z, vx: rand(-3, 3), vy: rand(-1, 4), vz: rand(-3, 3), life: rand(0.15, 0.4), size: rand(0.02, 0.05), r: color[0], g: color[1], b: color[2], grav: 8, drag: 1 });
+    }
+  }
+
+  jitterBolt(bolt) {
+    const p = bolt.line.geometry.attributes.position, n = p.count;
+    const d = _bd.subVectors(bolt.b, bolt.a), len = d.length();
+    _bu.set(-d.z, 0, d.x); if (_bu.lengthSq() < 1e-6) _bu.set(1, 0, 0); _bu.normalize();
+    _bv.crossVectors(d, _bu).normalize();
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1), k = Math.sin(t * Math.PI) * len * bolt.amp;
+      p.setXYZ(i,
+        bolt.a.x + d.x * t + (_bu.x * rand(-1, 1) + _bv.x * rand(-1, 1)) * k,
+        bolt.a.y + d.y * t + (_bu.y * rand(-1, 1) + _bv.y * rand(-1, 1)) * k,
+        bolt.a.z + d.z * t + (_bu.z * rand(-1, 1) + _bv.z * rand(-1, 1)) * k);
+    }
+    p.needsUpdate = true;
   }
 
   // Für eine neue Partie: Partikel, Decals und Lichter zurücksetzen
@@ -154,6 +203,7 @@ export class Effects {
     for (const m of this.bloodDecals) m.visible = false;
     for (const m of this.holes) m.visible = false;
     for (const t of this.tracers) t.visible = false;
+    for (const bolt of this.bolts) bolt.line.visible = false;
     this.muzzleLight.intensity = 0; this.blastLight.intensity = 0;
     this.muzzleT = 0; this.blastT = 0;
   }
@@ -273,6 +323,13 @@ export class Effects {
     this.norm.update(dt);
     if (this.muzzleT > 0) { this.muzzleT -= dt; if (this.muzzleT <= 0) this.muzzleLight.intensity = 0; }
     if (this.blastT > 0) { this.blastT -= dt; this.blastLight.intensity = Math.max(0, (this.blastT / 0.45) * 60); }
+    for (const bolt of this.bolts) {
+      if (!bolt.line.visible) continue;
+      bolt.life -= dt;
+      if (bolt.life <= 0) { bolt.line.visible = false; continue; }
+      bolt.line.material.opacity = Math.min(1, (bolt.life / bolt.max) * 1.6);
+      this.jitterBolt(bolt);
+    }
     for (const t of this.tracers) {
       if (!t.visible) continue;
       t.userData.life -= dt;

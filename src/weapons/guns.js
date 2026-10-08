@@ -139,6 +139,24 @@ export function buildGun(id, M, pap = false) {
       info.sightY = 0.12; info.gripR.set(0, -0.06, 0.045); info.gripL.set(-0.01, -0.03, -0.15); info.adsZ = -0.33;
       break;
     }
+    case 'tesla': {
+      // Gewitter-Werfer: Holzgriff, Kupferspulen, Glasröhre, zwei Elektroden
+      const copper = M.copper || (M.copper = new THREE.MeshStandardMaterial({ color: 0xb8673a, roughness: 0.35, metalness: 0.9 }));
+      const core = new THREE.MeshBasicMaterial({ color: pap ? new THREE.Color(1.5, 0.4, 1.9) : new THREE.Color(0.35, 0.9, 1.9) });
+      B(0.05, 0.13, 0.07, wood, 0, -0.06, 0.05, -0.28);
+      B(0.07, 0.07, 0.3, pap ? M.papGun : M.gunMetal, 0, 0.02, -0.05);
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.28, 14), new THREE.MeshStandardMaterial({ color: 0x6f98b8, transparent: true, opacity: 0.22, roughness: 0.05, depthWrite: false }));
+      tube.rotation.x = Math.PI / 2; tube.position.set(0, 0.075, -0.1); g.add(tube);
+      Cy(0.01, 0.27, core, 0, 0.075, -0.1);
+      for (let i = 0; i < 5; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.009, 6, 16), copper); t.position.set(0, 0.075, -0.2 + i * 0.05); g.add(t); }
+      for (const x of [-0.025, 0.025]) { Cy(0.008, 0.16, M.chrome, x, 0.02, -0.28); const tip = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), core); tip.position.set(x, 0.02, -0.36); g.add(tip); }
+      B(0.02, 0.03, 0.08, M.chrome, 0, 0.12, 0.0);
+      info.mag = B(0.045, 0.05, 0.06, copper, 0, -0.035, -0.12);
+      info.core = core;
+      info.muzzle.position.set(0, 0.02, -0.37);
+      info.sightY = 0.13; info.gripR.set(0, -0.07, 0.05); info.gripL.set(0, -0.02, -0.2); info.adsZ = -0.3;
+      break;
+    }
   }
   g.add(info.muzzle);
   g.updateMatrixWorld(true);
@@ -179,10 +197,11 @@ export function buildArms(info, M) {
   return g;
 }
 
-export function buildKnife(M) {
+export function buildKnife(M, big = false) {
   const g = new THREE.Group();
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.03, 0.2), M.chrome);
-  blade.position.z = -0.12; g.add(blade);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.007, big ? 0.045 : 0.03, big ? 0.3 : 0.2), M.chrome);
+  blade.position.z = big ? -0.17 : -0.12; g.add(blade);
+  if (big) { const back = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.012, 0.22), M.gunMetal); back.position.set(0, 0.024, -0.14); g.add(back); }
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.03, 0.1), M.dark);
   handle.position.z = 0.02; g.add(handle);
   const guard = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.05, 0.008), M.metal);

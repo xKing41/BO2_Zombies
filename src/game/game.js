@@ -22,6 +22,8 @@ import { CELL } from '../config.js';
 import { MAPS } from '../maps/index.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// Rekord je Karte (Nachtfall behält den alten Schlüssel)
+export const bestKey = (id) => (id === 'nachtfall' ? 'nachtfall.best' : 'nachtfall.best.' + id);
 
 export const DEFAULT_SETTINGS = {
   sensitivity: 1, fov: 80, master: 0.8, music: 0.6, quality: 'auto',
@@ -128,6 +130,14 @@ export class Game {
     this.hud.iconUrls = Object.fromEntries(Object.entries(this.powerups.icons).map(([k, t]) => [k, t.image.toDataURL()]));
     await step(80, 'Optimieren …');
     this.batchInfo = batchStatic(this.scene, def.chunkCells ? def.chunkCells * CELL : 0);
+    // Nebel-Culling: verschmolzene Kacheln, die der Nebel ganz verschluckt, gar nicht erst zeichnen
+    this.cullList = [];
+    if (def.env && def.env.fogCull) this.scene.traverse((o) => {
+      if (o.userData.cullSphere) { const c = o.userData.cullSphere; this.cullList.push({ o, x: c.x, z: c.z, r: c.r }); return; }
+      if (o.name !== 'static_batch') return;
+      const bs = o.geometry.boundingSphere;
+      this.cullList.push({ o, x: bs.center.x, z: bs.center.z, r: bs.radius });
+    });
     this.applyLightQuality();
     this.camera.far = def.env && def.env.far ? def.env.far : 400;
     this.camera.updateProjectionMatrix();
@@ -214,7 +224,7 @@ export class Game {
     this.intermission = 2.5;
     this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time };
     this.hud.round(1);
-    this.hud.notice('Station Nachtfall', 3000);
+    this.hud.notice(this.mapDef.name, 3000);
     if (location.hash.includes('dev')) { this.points = 50000; this.godMode = true; this.hud.points(this.points); }
     this.lastT = performance.now();
   }
@@ -229,6 +239,7 @@ export class Game {
     this.player.reset();
     this.weapons.reset();
     for (const f of this.features) if (f.reset) f.reset();
+    this.hud.clearMapHud();
     this.station = null;
     this.audio.setMuffle(0);
     this.points = 500;
@@ -288,6 +299,29 @@ export class Game {
 
   onZombieKilled(z, opts) {
     this.powerups.onKill(z.pos, opts);
+    for (const f of this.features) if (f.onKill) f.onKill(z, opts);
+  }
+
+  // Boden unter einer Position (Karten-Elemente wie der Bus können ihn anheben)
+  floorAt(p) {
+    let y = 0;
+    for (const f of this.features) if (f.floorAt) y = Math.max(y, f.floorAt(p));
+    return y;
+  }
+
+  // Bewegliche Hindernisse (Bus) schieben Spieler/Zombies heraus
+  constrain(p, r) {
+    for (const f of this.features) if (f.constrain) f.constrain(p, r);
+  }
+
+  // Strahl gegen bewegliche Hindernisse; ersetzt den Wandtreffer, wenn näher
+  rayBlock(o, d, hit) {
+    for (const f of this.features) {
+      if (!f.rayCast) continue;
+      const h = f.rayCast(o, d, hit.dist);
+      if (h && h.dist < hit.dist) { hit.dist = h.dist; hit.normal = h.normal; hit.mat = h.mat; }
+    }
+    return hit;
   }
 
   explode(pos, radius, damage, opts = {}) {
@@ -328,8 +362,9 @@ export class Game {
       <tr><td>Ausgegebene Punkte</td><td>${this.stats.spent}</td></tr>
       <tr><td>Überlebenszeit</td><td>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</td></tr>`;
     try {
-      const best = +(localStorage.getItem('nachtfall.best') || 0);
-      if (r > best) localStorage.setItem('nachtfall.best', r);
+      const key = bestKey(this.mapDef.id);
+      const best = +(localStorage.getItem(key) || 0);
+      if (r > best) localStorage.setItem(key, r);
     } catch { /* Speicher nicht verfügbar */ }
     setTimeout(() => {
       if (this.state !== 'gameover') return;
@@ -394,6 +429,8 @@ export class Game {
     this.input.poll(dt);
     if (playing && this.input.hit('pause') && this.onPauseRequest) { this.onPauseRequest(); return; }
 
+    // Bewegliche Karten-Elemente (z. B. Bus) vor dem Spieler bewegen, damit Mitfahrer nicht ruckeln
+    for (const f of this.features) if (f.early) f.early(dt, playing);
     if (playing || this.state === 'gameover') {
       this.player.update(dt, this.input);
       this.weapons.update(dt, this.input);
@@ -407,6 +444,7 @@ export class Game {
     }
     for (const f of this.features) if (f.update) f.update(dt, this.time, playing || this.state === 'gameover');
     this.map.update(dt, this.time, this.camera.position);
+    this.fogCull();
     this.effects.update(dt);
     if (playing) this.checkStation();
 
@@ -430,6 +468,13 @@ export class Game {
     this.audio.updateListener(this.camera);
     this.hud.update(dt, this.player, this.settings.showFps ? this.fps : null);
     if (this.input.keyHit('KeyP') && location.hash.includes('dev')) this.debugSkip();
+  }
+
+  fogCull() {
+    if (!this.cullList.length || !this.scene.fog) return;
+    const env = this.mapDef.env, cp = this.camera.position;
+    const d = clamp(env.fogCull / this.scene.fog.density, env.minCull || 55, 400);
+    for (const e of this.cullList) e.o.visible = Math.hypot(e.x - cp.x, e.z - cp.z) - e.r < d;
   }
 
   // Benannte Orte (Haltestellen usw.) beim Betreten einblenden

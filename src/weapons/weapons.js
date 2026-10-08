@@ -32,6 +32,8 @@ export class Weapons {
     this.cache = {};
     this.thrown = [];
     this.projectiles = [];
+    this.chainQ = [];
+    this.knifeLevel = 0;
 
     // Mündungsfeuer
     const fm = new THREE.MeshBasicMaterial({ map: this.M.tex.flash, color: new THREE.Color(3, 2.2, 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
@@ -174,7 +176,7 @@ export class Weapons {
 
   knifeAttack() {
     if (this.busy) return;
-    this.setState('knife', 0.55);
+    this.setState('knife', this.knifeLevel ? 0.45 : 0.55);
     this.knifeHit = false;
     this.g.audio.knife();
   }
@@ -204,11 +206,13 @@ export class Weapons {
     const muzzle = this.muzzleWorld(_q);
 
     let anyHit = false, headHit = false;
-    for (let i = 0; i < st.pellets; i++) {
+    if (st.lightning) this.fireLightning(st, muzzle);
+    else for (let i = 0; i < st.pellets; i++) {
       const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * spread;
       const dir = _p.copy(_d).addScaledVector(_right, Math.cos(a) * r).addScaledVector(_up, Math.sin(a) * r).normalize();
       if (st.projectile) { this.spawnProjectile(muzzle, dir.clone(), st, dmgMul); continue; }
-      const wall = g.map.rayCast(_o, dir, 150);
+      const wall = g.rayBlock(_o, dir, g.map.rayCast(_o, dir, 150));
+      if (i === 0) for (const f of g.features) if (f.onShot) f.onShot(_o, dir, wall.dist);
       const hits = g.zombies.raycast(_o, dir, wall.dist);
       let pen = st.penetrate || 0, dmg = st.damage * dmgMul, endT = wall.dist;
       let stopped = false;
@@ -237,9 +241,9 @@ export class Weapons {
     const rec = st.recoil * (1 - this.ads * 0.35) * (player.crouching ? 0.8 : 1);
     player.addRecoil(rec, (Math.random() - 0.5) * rec * 0.6);
     this.kick = Math.min(1.6, this.kick + (st.pellets > 1 || st.cls === 'sniper' ? 1.4 : 0.8));
-    const flashColor = st.projectile ? st.projectile.color : 0xffb060;
+    const flashColor = st.projectile ? st.projectile.color : st.lightning ? 0x66aaff : 0xffb060;
     g.effects.muzzle(muzzle, flashColor, st.projectile ? 0.6 : 1);
-    this.flash.visible = !st.projectile;
+    this.flash.visible = !st.projectile && !st.lightning;
     this.flash.rotation.z = Math.random() * Math.PI;
     this.flash.scale.setScalar(rand(0.8, 1.25) * (st.pellets > 1 ? 1.4 : 1));
     this.flashT = 0.045;
@@ -248,6 +252,75 @@ export class Weapons {
     if (st.cls === 'shotgun') { g.audio.pumpAction(); this.pumpT = 0.0001; }
     if (st.cls === 'sniper') this.boltT = 0.0001;
     if (this.info && this.info.slide) this.slideT = 0.0001;
+  }
+
+  // Gewitter-Werfer: Blitz springt von Zombie zu Zombie
+  fireLightning(st, muzzle) {
+    const g = this.g, L = st.lightning;
+    const o = _o.clone(), d = _d.clone();
+    const wall = g.rayBlock(o, d, g.map.rayCast(o, d, L.reach));
+    for (const f of g.features) if (f.onShot) f.onShot(o, d, wall.dist);
+    let first = null, best = Infinity;
+    for (const z of g.zombies.pool) {
+      if (!z.alive) continue;
+      const c = _p.set(z.pos.x, z.pos.y + 1.1, z.pos.z).sub(o);
+      const t = c.dot(d);
+      if (t < 0.3 || t > Math.min(L.reach, wall.dist + 0.6)) continue;
+      const off = c.addScaledVector(d, -t).length();
+      if (off > 0.9 + t * 0.035) continue;
+      const score = off / (1 + t * 0.05);
+      if (score < best) { best = score; first = z; }
+    }
+    if (!first) {
+      const end = o.clone().addScaledVector(d, Math.min(wall.dist, L.reach));
+      g.effects.lightning(muzzle.clone(), end, L.color, 0.22, 0.05);
+      if (wall.dist < L.reach) g.effects.impact(end, wall.normal, 'metal');
+      return;
+    }
+    const hit = [first];
+    let cur = first;
+    while (hit.length < L.chains) {
+      let nb = null, nd = L.range;
+      for (const z of g.zombies.pool) {
+        if (!z.alive || hit.includes(z)) continue;
+        const dd = Math.hypot(z.pos.x - cur.pos.x, z.pos.z - cur.pos.z);
+        if (dd < nd) { nd = dd; nb = z; }
+      }
+      if (!nb) break;
+      hit.push(nb); cur = nb;
+    }
+    let from = muzzle.clone();
+    hit.forEach((z, i) => {
+      const to = z.pos.clone(); to.y += 1.1;
+      this.chainQ.push({ t: i * 0.08, from: from.clone(), to, z, color: L.color });
+      from = to;
+    });
+  }
+
+  updateChain(dt) {
+    const g = this.g;
+    for (let i = this.chainQ.length - 1; i >= 0; i--) {
+      const c = this.chainQ[i];
+      c.t -= dt;
+      if (c.t > 0) continue;
+      this.chainQ.splice(i, 1);
+      if (c.z.alive) c.to.set(c.z.pos.x, c.z.pos.y + 1.1, c.z.pos.z);
+      g.effects.lightning(c.from, c.to, c.color);
+      g.audio.teslaZap(c.to);
+      if (c.z.alive) {
+        g.zombies.damage(c.z, 1e9, 'torso', { dir: c.to.clone().sub(c.from).normalize(), point: c.to.clone() });
+        g.hud.hitmarker(false);
+        g.effects.energy(c.to, c.color, 10, 0.4);
+      }
+    }
+  }
+
+  upgradeKnife() {
+    this.knifeLevel = 1;
+    this.scene.remove(this.knife);
+    this.knife = buildKnife(this.M, true);
+    this.knife.visible = false;
+    this.scene.add(this.knife);
   }
 
   muzzleWorld(out) {
@@ -283,7 +356,7 @@ export class Weapons {
       p.life -= dt;
       const step = p.vel.length() * dt;
       _d.copy(p.vel).normalize();
-      const wall = g.map.rayCast(p.pos, _d, step + 0.05);
+      const wall = g.rayBlock(p.pos, _d, g.map.rayCast(p.pos, _d, step + 0.05));
       const hits = g.zombies.raycast(p.pos, _d, Math.min(step + 0.1, wall.dist));
       let boom = null;
       if (hits.length) {
@@ -365,7 +438,7 @@ export class Weapons {
     if (best) {
       if (bd > 1.2) { player.vel.x += fwd.x * 6; player.vel.z += fwd.z * 6; } // Ausfallschritt
       const point = best.pos.clone().setY(1.3);
-      g.zombies.damage(best, 150 + (g.round > 10 ? 0 : 0), 'torso', { dir: fwd.clone(), point, knife: true });
+      g.zombies.damage(best, this.knifeLevel ? 1000 + g.round * 100 : 150, 'torso', { dir: fwd.clone(), point, knife: true });
       g.hud.hitmarker(false);
       g.player.shake = Math.max(g.player.shake, 0.15);
     }
@@ -438,6 +511,7 @@ export class Weapons {
 
     this.updateProjectiles(dt);
     this.updateGrenades(dt);
+    this.updateChain(dt);
     this.animate(dt, input);
 
     // HUD
@@ -595,6 +669,8 @@ export class Weapons {
     if (this.bottle) { this.scene.remove(this.bottle); this.bottle = null; }
     this.flash.visible = false; this.knife.visible = false; this.nade.visible = false;
     this.projLight.intensity = 0;
+    this.chainQ.length = 0;
+    if (this.knifeLevel) { this.scene.remove(this.knife); this.knife = buildKnife(this.M); this.knife.visible = false; this.scene.add(this.knife); this.knifeLevel = 0; }
     for (const p of this.projectiles) { p.active = false; p.mesh.visible = false; }
     for (const n of this.thrown) { n.active = false; n.mesh.visible = false; }
     this.give('p45');

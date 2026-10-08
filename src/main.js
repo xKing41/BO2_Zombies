@@ -1,5 +1,5 @@
 import './style.css';
-import { Game, DEFAULT_SETTINGS } from './game/game.js';
+import { Game, DEFAULT_SETTINGS, bestKey } from './game/game.js';
 import { TouchControls } from './ui/touch.js';
 import { IS_TOUCH, IS_IOS, IS_STANDALONE } from './core/platform.js';
 import { MAPS, MAP_ORDER } from './maps/index.js';
@@ -120,7 +120,13 @@ function buildMapCards() {
     const d = MAPS[id];
     const b = document.createElement('button');
     b.className = 'mapcard' + (game.mapDef && game.mapDef.id === id ? ' current' : '');
-    b.innerHTML = `<span class="mc-name">${d.name}</span><span class="mc-tag">${d.tagline}</span><span class="mc-desc">${d.description}</span>`;
+    let extra = '';
+    try {
+      const best = localStorage.getItem(bestKey(id));
+      if (best) extra += `Rekord: Runde ${best}`;
+      if (id === 'linie13' && localStorage.getItem('nachtfall.ach.signal')) extra += `${extra ? ' · ' : ''}Erfolg: Das Signal ✓`;
+    } catch { /* */ }
+    b.innerHTML = `<span class="mc-name">${d.name}</span><span class="mc-tag">${d.tagline}</span><span class="mc-desc">${d.description}</span>${extra ? `<span class="mc-best">${extra}</span>` : ''}`;
     b.onclick = () => chooseMap(id);
     wrap.appendChild(b);
   }
@@ -134,6 +140,7 @@ async function chooseMap(id) {
   try {
     await game.loadMap(id, (pct, text) => { $('loadbar').style.width = pct + '%'; $('loadtext').textContent = text; });
     saveSettings(settings);
+    menuTitle();
     play();
   } catch (err) {
     console.error(err);
@@ -260,6 +267,12 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureConte
   });
 }
 
+// Untertitel im Hauptmenü zeigt die geladene Karte
+function menuTitle() {
+  const el = document.querySelector('#menu .subtitle');
+  if (el && game.mapDef) el.innerHTML = `Z O M B I E S &nbsp;·&nbsp; ${game.mapDef.name}`;
+}
+
 // ── Laden ────────────────────────────────────────────────────
 show('loading');
 game.init((pct, text) => {
@@ -267,11 +280,7 @@ game.init((pct, text) => {
   $('loadtext').textContent = text;
 }).then(() => {
   show('menu');
-  const hint = document.querySelector('#menu .hint');
-  try {
-    const best = localStorage.getItem('nachtfall.best');
-    if (best) hint.textContent += ` Rekord: Runde ${best}.`;
-  } catch { /* */ }
+  menuTitle();
   // Installations-Tipp nur dort, wo das Spiel wirklich als App installierbar ist
   const installable = !!document.querySelector('link[rel="manifest"]') && window.top === window;
   if (IS_IOS && !IS_STANDALONE && installable) $('iosHint').classList.remove('hidden');

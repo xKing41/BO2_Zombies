@@ -634,10 +634,10 @@ export function siding(seed = 57, base = [0.62, 0.6, 0.55], boards = 16) {
     const bv = v * boards, bi = Math.floor(bv), bf = bv - bi;
     const shadow = bf > 0.86 ? 0.55 : 1;
     const grain = n.fbm(u * 3 + bi * 1.7, bv * 6, 4, 3);
-    const peel = smoothstep(0.58, 0.64, n.fbm(u * 5, v * 5 + 2, 4, 5));
+    const peel = smoothstep(0.62, 0.68, n.fbm(u * 5, v * 5 + 2, 4, 5)) * 0.8;
     const dirtA = smoothstep(0.5, 0, 1 - v) * 0.3 + smoothstep(0.55, 0.8, n.fbm(u * 2, v * 2, 3, 2)) * 0.3;
     let cr = base[0] * (0.85 + grain * 0.3), cg = base[1] * (0.85 + grain * 0.3), cb = base[2] * (0.85 + grain * 0.3);
-    cr = cr * (1 - peel) + peel * 0.3; cg = cg * (1 - peel) + peel * 0.24; cb = cb * (1 - peel) + peel * 0.18;
+    cr = cr * (1 - peel) + peel * 0.42; cg = cg * (1 - peel) + peel * 0.34; cb = cb * (1 - peel) + peel * 0.25;
     const k = shadow * (1 - dirtA);
     o.r = cr * k + (r() - 0.5) * 0.02; o.g = cg * k; o.b = cb * k;
     o.h = bf > 0.86 ? 0.15 : 0.6 + (grain - 0.5) * 0.3 - peel * 0.2;
@@ -689,5 +689,112 @@ export function placeSign(title, sub = '', bg = '#e9d27a', fg = '#1a1a1a', w = 5
   // Rost und Schmutz
   const r = mulberry32(title.length * 13 + 7);
   for (let i = 0; i < 26; i++) { c.fillStyle = `rgba(90,45,15,${0.08 + r() * 0.2})`; c.beginPath(); c.arc(r() * w, r() * h, 3 + r() * 16, 0, 7); c.fill(); }
+  return toTexture(cv, { repeat: false });
+}
+
+// Dachziegel (Schindeln) mit Moos
+export function roofTiles(seed = 63, tint = [0.32, 0.16, 0.12]) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const rows = 16, cols = 10;
+  const p = pixels(512, (u, v, o) => {
+    const row = Math.floor(v * rows);
+    const bu = u * cols + (row % 2) * 0.5;
+    const fu = bu - Math.floor(bu), fv = v * rows - row;
+    const id = Math.floor(bu) * 13 + row * 7;
+    const k = ((Math.sin(id * 12.9898) * 43758.5453) % 1 + 1) % 1;
+    const f = n.fbm(u * 8, v * 8, 4, 8);
+    const moss = smoothstep(0.55, 0.75, n.fbm(u * 3 + 5, v * 3, 4, 3)) * 0.55;
+    const edge = fv > 0.86 ? 0.45 : 1 - (1 - fv) * 0.18;
+    const gap = fu < 0.03 ? 0.55 : 1;
+    const s = (0.8 + k * 0.4) * edge * gap;
+    let cr = tint[0] * s, cg = tint[1] * s, cb = tint[2] * s;
+    cr = cr * (1 - moss) + moss * 0.16; cg = cg * (1 - moss) + moss * 0.2; cb = cb * (1 - moss) + moss * 0.09;
+    o.r = cr + (f - 0.5) * 0.05 + (r() - 0.5) * 0.02; o.g = cg + (f - 0.5) * 0.04; o.b = cb + (f - 0.5) * 0.03;
+    o.h = fv > 0.86 ? 0.2 : 0.4 + fv * 0.5 + (f - 0.5) * 0.2;
+  });
+  return finish(p);
+}
+
+// Wellblech mit Rost (Scheune, Hütte, Werkstatt)
+export function corrugated(seed = 65, base = [0.36, 0.37, 0.38], rust = 0.6) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const waves = 24;
+  const p = pixels(512, (u, v, o) => {
+    const w = Math.sin(u * waves * Math.PI * 2);
+    const f = n.fbm(u * 6, v * 6, 5, 6);
+    const rs = smoothstep(0.62 - rust * 0.2, 0.8 - rust * 0.2, n.fbm(u * 4 + 3, v * 4, 4, 4)) + smoothstep(0.4, 1, v) * rust * 0.4;
+    const k = Math.min(1, rs);
+    const sh = 0.75 + w * 0.25;
+    o.r = (base[0] * (1 - k) + 0.36 * k) * sh + (f - 0.5) * 0.06 + (r() - 0.5) * 0.02;
+    o.g = (base[1] * (1 - k) + 0.17 * k) * sh + (f - 0.5) * 0.05;
+    o.b = (base[2] * (1 - k) + 0.08 * k) * sh + (f - 0.5) * 0.04;
+    o.h = 0.5 + w * 0.45;
+  });
+  return finish(p);
+}
+
+// Maschendraht (für alphaTest)
+export function chainLink() {
+  const cv = canvas(256), c = cv.getContext('2d');
+  c.clearRect(0, 0, 256, 256);
+  c.strokeStyle = '#a4aaae'; c.lineWidth = 3.5;
+  for (let i = -256; i < 512; i += 32) {
+    c.beginPath(); c.moveTo(i, 0); c.lineTo(i + 256, 256); c.stroke();
+    c.beginPath(); c.moveTo(i + 256, 0); c.lineTo(i, 256); c.stroke();
+  }
+  return toTexture(cv);
+}
+
+// Unregelmäßige Fleck-Maske (weiß innen, ausgefranster Rand) – z. B. für Glutfelder
+export function blobMask(seed = 67) {
+  const n = new ValueNoise(seed);
+  const cv = canvas(256), c = cv.getContext('2d');
+  const img = c.createImageData(256, 256);
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+    const u = x / 256, v = y / 256;
+    const dx = Math.max(0, Math.abs(u - 0.5) * 2 - 0.55) / 0.45, dy = Math.max(0, Math.abs(v - 0.5) * 2 - 0.55) / 0.45;
+    const d = Math.hypot(dx, dy) + (n.fbm(u * 6, v * 6, 4, 6) - 0.5) * 0.9;
+    const a = d < 0.75 ? 255 : 0;
+    const i = (y * 256 + x) * 4;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = a; img.data[i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+  return toTexture(cv, { srgb: false, repeat: false });
+}
+
+// Haltestellenschild: grüner Kreis mit gelbem H, darunter Name
+export function busStopSign(name) {
+  const cv = canvas(256, 384), c = cv.getContext('2d');
+  c.clearRect(0, 0, 256, 384);
+  c.fillStyle = '#f2c200'; c.beginPath(); c.arc(128, 112, 104, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#1d7a3a'; c.beginPath(); c.arc(128, 112, 92, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#f2c200'; c.font = 'bold 150px Oswald, Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('H', 128, 122);
+  c.fillStyle = '#f4f1e6'; c.fillRect(14, 236, 228, 132);
+  c.strokeStyle = '#1d7a3a'; c.lineWidth = 6; c.strokeRect(17, 239, 222, 126);
+  c.fillStyle = '#1a1a1a';
+  const words = name.split(' ');
+  const l1 = words.slice(0, Math.ceil(words.length / 2)).join(' '), l2 = words.slice(Math.ceil(words.length / 2)).join(' ');
+  c.font = 'bold 34px Oswald, Impact, sans-serif';
+  c.fillText(l1, 128, l2 ? 278 : 296);
+  if (l2) c.fillText(l2, 128, 316);
+  c.font = '22px Oswald, Impact, sans-serif'; c.fillStyle = '#1d7a3a';
+  c.fillText('LINIE 13', 128, 350);
+  const r = mulberry32(name.length * 7);
+  for (let i = 0; i < 18; i++) { c.fillStyle = `rgba(90,45,15,${0.06 + r() * 0.16})`; c.beginPath(); c.arc(r() * 256, r() * 384, 3 + r() * 12, 0, 7); c.fill(); }
+  return toTexture(cv, { repeat: false });
+}
+
+// Abfahrtstafel mit orangefarbener LED-Schrift
+export function departureBoard(rows) {
+  const cv = canvas(1024, 384), c = cv.getContext('2d');
+  c.fillStyle = '#050505'; c.fillRect(0, 0, 1024, 384);
+  c.strokeStyle = '#2a2a2a'; c.lineWidth = 10; c.strokeRect(5, 5, 1014, 374);
+  c.font = 'bold 44px "Courier New", monospace'; c.textBaseline = 'middle';
+  c.shadowColor = '#ff8a1a'; c.shadowBlur = 12; c.fillStyle = '#ffb04a';
+  rows.forEach((row, i) => {
+    c.textAlign = 'left'; c.fillText(row[0], 36, 52 + i * 66);
+    c.textAlign = 'right'; c.fillText(row[1], 990, 52 + i * 66);
+  });
   return toTexture(cv, { repeat: false });
 }

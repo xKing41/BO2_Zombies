@@ -70,6 +70,7 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
 .mc-name { font-family: Creepster, Impact, serif; font-size: 34px; letter-spacing: 2px; color: #ff4a2a; text-shadow: 0 0 12px rgba(255, 40, 20, 0.5); }
 .mc-tag { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #e6b48a; }
 .mc-desc { font-family: 'Special Elite', monospace; font-size: 14px; line-height: 1.45; color: var(--dim); }
+.mc-best { display: block; margin-top: 8px; font-size: 13px; letter-spacing: 1px; color: #9fe8a8; }
 
 /* Kleine Bildschirme (z. B. Handy im Querformat) */
 @media (max-height: 540px) {
@@ -145,6 +146,17 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
   background: linear-gradient(#000, #000) center/2px 100% no-repeat, linear-gradient(#000, #000) center/100% 2px no-repeat; box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9); }
 #downed { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-family: Creepster, Impact, serif; font-size: 64px; color: #ff3020; text-align: center; letter-spacing: 4px; }
 #downed small { display: block; font-family: Oswald, sans-serif; font-size: 20px; color: var(--ink); letter-spacing: 2px; }
+#subtitle { position: absolute; left: 50%; bottom: calc(118px + var(--safe-b)); transform: translateX(-50%); max-width: min(76vw, 900px); text-align: center;
+  font-size: 19px; line-height: 1.35; color: #f2ede0; background: rgba(0, 0, 0, 0.5); padding: 6px 14px; border-radius: 4px; opacity: 0; transition: opacity 0.4s; }
+#subtitle b { color: #7fe3ff; font-weight: 600; letter-spacing: 1px; }
+#carry { position: absolute; left: calc(36px + var(--safe-l)); bottom: calc(222px + var(--safe-b)); font-size: 17px; letter-spacing: 1px; color: #a8ecff;
+  text-shadow: 0 0 10px rgba(80, 200, 255, 0.6), 1px 1px 0 #000; display: flex; align-items: center; gap: 8px; }
+#carry .ic { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 6px; border: 1px solid rgba(140, 220, 255, 0.6);
+  background: rgba(20, 60, 80, 0.45); font-size: 20px; }
+#latch { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.15s;
+  background: radial-gradient(ellipse at 50% 55%, transparent 18%, rgba(8, 4, 6, 0.75) 46%, rgba(0, 0, 0, 0.96) 70%); }
+#latch.on { opacity: 1; animation: latchShake 0.12s infinite; }
+@keyframes latchShake { 0% { transform: translate(0, 0); } 33% { transform: translate(-6px, 4px); } 66% { transform: translate(5px, -3px); } }
 #fps { position: absolute; right: calc(10px + var(--safe-r)); top: calc(8px + var(--safe-t)); font-size: 13px; color: #9a9; font-family: monospace; }
 
 /* ── Touch-Steuerung ─────────────────────────── */
@@ -192,6 +204,8 @@ body.touch #prompt { top: 22%; font-size: 15px; white-space: normal; width: min(
 body.touch #notice { top: 14%; font-size: 18px; width: min(70vw, 560px); }
 body.touch #banner { font-size: 34px; top: 30%; }
 body.touch #downed { font-size: 44px; top: 32%; }
+body.touch #subtitle { bottom: auto; top: 34%; font-size: 15px; }
+body.touch #carry { left: calc(16px + var(--safe-l)); bottom: auto; top: calc(128px + var(--safe-t)); font-size: 14px; }
 body.touch #fps { top: auto; bottom: calc(6px + var(--safe-b)); right: 50%; }
 body.touch #game { cursor: default; }
 

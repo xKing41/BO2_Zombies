@@ -28,6 +28,7 @@ export class Player {
     this.time = 0; this.hurtFlash = 0; this.landT = 0;
     this.eye = 1.65;
     this.snap = null; this.wasAds = false;
+    this.stepY = 0; this.speedMul = 1;
   }
 
   get walkSpeed() { return 4.4 * (this.perks.has('sprint') ? 1.07 : 1); }
@@ -149,7 +150,8 @@ export class Player {
     else this.stamina = Math.min(1, this.stamina + dt / 3);
     if (this.stamina <= 0) this.sprinting = false;
 
-    let speed = this.walkSpeed * (this.sprinting ? 1.5 : mag);
+    let speed = this.walkSpeed * (this.sprinting ? 1.5 : mag) * this.speedMul;
+    this.speedMul = 1;
     if (this.crouching) speed *= 0.5;
     speed *= lerp(1, 0.6, g.weapons.ads);
     if (this.downed) speed = 0;
@@ -165,11 +167,15 @@ export class Player {
     }
     this.vel.y -= 15 * dt;
     this.pos.addScaledVector(this.vel, dt);
-    if (this.pos.y <= 0) {
+    const floor = g.floorAt(this.pos);
+    if (this.pos.y <= floor) {
       if (!this.onGround && this.vel.y < -3) { g.audio.jumpLand(); this.landT = 1; }
-      this.pos.y = 0; this.vel.y = 0; this.onGround = true;
-    }
+      const step = floor - this.pos.y;
+      if (step > 0.1 && step < 0.8) this.stepY -= step; // Stufe hinauf: Kamera folgt weich
+      this.pos.y = floor; this.vel.y = 0; this.onGround = true;
+    } else if (this.pos.y > floor + 0.08) this.onGround = false;
     map.collide(this.pos, 0.36, (x, y) => map.playerWalkable(x, y), true);
+    g.constrain(this.pos, 0.36);
 
     // Gesundheit regenerieren
     if (!this.downed && this.time - this.lastHit > 2.4 && this.health < this.maxHealth) {
@@ -192,18 +198,20 @@ export class Player {
       if (this.stepDist > stride) {
         this.stepDist = 0;
         const z = map.zoneAt(this.pos.x, this.pos.z);
-        g.audio.footstep(z === 1 ? 'tiles' : z === 3 ? 'cobble' : 'stone', this.sprinting);
+        const surf = g.mapDef.surfaceAt ? g.mapDef.surfaceAt(map, this.pos) : z === 1 ? 'tiles' : z === 3 ? 'cobble' : 'stone';
+        g.audio.footstep(surf, this.sprinting);
       }
     }
     this.crouch = damp(this.crouch, this.crouching ? 1 : this.downed ? 1.6 : 0, 10, dt);
     this.landT = Math.max(0, this.landT - dt * 4);
+    this.stepY = damp(this.stepY, 0, 9, dt);
     this.shake = Math.max(0, this.shake - dt * 1.5);
 
     // Kamera
     const cam = g.camera;
     const bobY = Math.abs(Math.sin(this.bobPhase)) * 0.045 * Math.min(1, this.hSpeed / 4) * (1 - g.weapons.ads * 0.8);
     const bobX = Math.cos(this.bobPhase) * 0.025 * Math.min(1, this.hSpeed / 4) * (1 - g.weapons.ads * 0.8);
-    const eye = this.eye - this.crouch * 0.6 - this.landT * 0.08;
+    const eye = this.eye - this.crouch * 0.6 - this.landT * 0.08 + this.stepY;
     cam.position.set(this.pos.x + bobX * cy, this.pos.y + eye + bobY, this.pos.z - bobX * sy);
     const sh = this.shake * this.shake;
     const t = this.time;

@@ -64,3 +64,35 @@ export function batchStatic(scene, chunk = 0) {
   }
   return { merged: victims.length, meshes };
 }
+
+// Ein Objekt (mit Kindern) zu möglichst wenigen Meshes verschmelzen – je Material eines.
+// Transformationen werden relativ zur Wurzel eingebacken. Für bewegliche Requisiten,
+// die sonst aus vielen kleinen Teilen bestehen (Bauteile, Geister-Vorschauen).
+export function mergeByMaterial(root, override = null) {
+  root.updateMatrixWorld(true);
+  const inv = root.matrixWorld.clone().invert();
+  const buckets = new Map();
+  const m = new THREE.Matrix4();
+  root.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material)) return;
+    const mat = override || o.material;
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    if (!g.attributes.normal) g.computeVertexNormals();
+    m.multiplyMatrices(inv, o.matrixWorld);
+    g.applyMatrix4(m);
+    if (!buckets.has(mat)) buckets.set(mat, { geos: [], cast: o.castShadow });
+    buckets.get(mat).geos.push(g);
+  });
+  const out = new THREE.Group();
+  for (const [mat, b] of buckets) {
+    const geo = mergeGeometries(b.geos, false);
+    if (!geo) continue;
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = b.cast && !override;
+    mesh.receiveShadow = !override;
+    out.add(mesh);
+  }
+  return out;
+}

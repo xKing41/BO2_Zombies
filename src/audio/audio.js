@@ -160,6 +160,7 @@ export class AudioEngine {
       sniper: { crack: 0.2, body: 0.8, thump: 55, tf: 2000, vol: 1.4, tail: 0.9 },
     }[kind];
     if (kind === 'ray') return this.rayShot(pap);
+    if (kind === 'tesla') return this.teslaShot(pap);
     const out = this.out(null, P.vol, P.tail);
     const v = rand(0.9, 1.1);
     this.noise(out, t, P.crack, { type: 'highpass', f: P.tf * v, peak: 0.9 });
@@ -376,10 +377,13 @@ export class AudioEngine {
   footstep(surface = 'stone', sprint = false) {
     if (!this.ctx) return;
     const out = this.out(null, sprint ? 0.28 : 0.18, 0.05), t = this.now;
-    const f = surface === 'tiles' ? 1600 : surface === 'cobble' ? 900 : 700;
-    this.noise(out, t, 0.07, { type: 'lowpass', f: f * rand(0.8, 1.2), peak: 0.8 });
-    this.tone(out, t, 0.05, { f: rand(70, 100), f2: 40, peak: 0.4 });
+    const f = { tiles: 1600, cobble: 900, grass: 420, wood: 650, metal: 1300 }[surface] || 700;
+    this.noise(out, t, surface === 'grass' ? 0.12 : 0.07, { type: 'lowpass', f: f * rand(0.8, 1.2), peak: 0.8 });
+    this.tone(out, t, 0.05, { f: rand(70, 100), f2: 40, peak: surface === 'grass' ? 0.2 : 0.4 });
     if (surface === 'tiles') this.noise(out, t, 0.02, { type: 'highpass', f: 4000, peak: 0.2 });
+    if (surface === 'grass') this.noise(out, t + 0.02, 0.09, { type: 'highpass', f: 3000, peak: 0.12 });
+    if (surface === 'metal') { this.tone(out, t, 0.18, { type: 'triangle', f: rand(380, 460), peak: 0.06 }); this.tone(out, t, 0.12, { type: 'sine', f: rand(1100, 1300), peak: 0.03 }); }
+    if (surface === 'wood') this.tone(out, t, 0.09, { type: 'triangle', f: rand(160, 220), f2: 120, peak: 0.12 });
   }
 
   jumpLand() {
@@ -595,6 +599,389 @@ export class AudioEngine {
       speechSynthesis.cancel();
       speechSynthesis.speak(u);
     } catch { /* optional */ }
+  }
+
+  // ── Linie 13: Sprache, Bus, Erde ────────────────────────────
+  // Sprachausgabe für Figuren (OTTO, Funkstimme); stapelt nicht und unterbricht nur auf Wunsch
+  say(text, { pitch = 1, rate = 1, interrupt = false, voice = 1 } = {}) {
+    try {
+      if (!('speechSynthesis' in window) || this.volumes.master < 0.01) return;
+      if (interrupt) speechSynthesis.cancel();
+      else if (speechSynthesis.pending) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE'; u.pitch = pitch; u.rate = rate; u.volume = this.volumes.master;
+      const vs = speechSynthesis.getVoices().filter((x) => x.lang && x.lang.startsWith('de'));
+      if (vs.length) u.voice = vs[Math.min(voice, vs.length - 1)];
+      speechSynthesis.speak(u);
+    } catch { /* optional */ }
+  }
+
+  // Dauerhaftes Motorgeräusch (Bus); liefert Steuerobjekt
+  engineLoop() {
+    const ctx = this.ctx;
+    const out = ctx.createGain(); out.gain.value = 0;
+    const pan = ctx.createPanner();
+    pan.panningModel = this.panningModel; pan.distanceModel = 'inverse'; pan.refDistance = 4; pan.maxDistance = 120; pan.rolloffFactor = 1.1;
+    out.connect(pan).connect(this.sfx);
+    const rv = ctx.createGain(); rv.gain.value = 0.15; pan.connect(rv).connect(this.reverbIn);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400; lp.Q.value = 2.5;
+    const vca = ctx.createGain(); vca.gain.value = 0.7;
+    lp.connect(vca).connect(out);
+    const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 32;
+    const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = 64;
+    const g2 = ctx.createGain(); g2.gain.value = 0.25;
+    o1.connect(lp); o2.connect(g2).connect(lp);
+    const am = ctx.createOscillator(); am.frequency.value = 12;
+    const amg = ctx.createGain(); amg.gain.value = 0.3;
+    am.connect(amg).connect(vca.gain);
+    const n = ctx.createBufferSource(); n.buffer = this.brownBuf; n.loop = true;
+    const nb = ctx.createBiquadFilter(); nb.type = 'bandpass'; nb.frequency.value = 170; nb.Q.value = 0.7;
+    const ng = ctx.createGain(); ng.gain.value = 0.55;
+    n.connect(nb).connect(ng).connect(out);
+    const nodes = [o1, o2, am, n];
+    nodes.forEach((x) => x.start());
+    return {
+      update(pos, sp, on, inside) {
+        const t = ctx.currentTime;
+        pan.positionX.setTargetAtTime(pos.x, t, 0.05); pan.positionY.setTargetAtTime(1, t, 0.05); pan.positionZ.setTargetAtTime(pos.z, t, 0.05);
+        const rpm = 0.25 + sp * 0.75;
+        o1.frequency.setTargetAtTime(26 + rpm * 44, t, 0.25);
+        o2.frequency.setTargetAtTime(52 + rpm * 88, t, 0.25);
+        am.frequency.setTargetAtTime(8 + rpm * 20, t, 0.25);
+        lp.frequency.setTargetAtTime(inside ? 240 + rpm * 260 : 360 + rpm * 650, t, 0.25);
+        out.gain.setTargetAtTime(on ? (inside ? 0.35 : 0.75) * (0.55 + sp * 0.45) : 0, t, 0.3);
+      },
+      stop() { nodes.forEach((x) => { try { x.stop(); } catch { /* */ } }); out.disconnect(); },
+    };
+  }
+
+  horn(pos, vol = 1) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 1.2 * vol, 0.4), t = this.now;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800; lp.connect(out);
+    for (const f of [311, 392]) { this.tone(lp, t, 0.55, { type: 'sawtooth', f, a: 0.02, peak: 0.22 }); this.tone(lp, t, 0.55, { type: 'square', f: f * 1.003, a: 0.02, peak: 0.08 }); }
+  }
+
+  busDoor(pos, open) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.9, 0.2), t = this.now;
+    this.noise(out, t, 0.55, { type: 'highpass', f: 2600, a: 0.03, peak: 0.5 });
+    this.noise(out, t, 0.35, { type: 'bandpass', f: 900, q: 1, peak: 0.25 });
+    this.tone(out, t + (open ? 0.5 : 0.8), 0.2, { f: 110, f2: 50, peak: 0.6 });
+    this.noise(out, t + (open ? 0.5 : 0.8), 0.08, { type: 'bandpass', f: 1800, q: 2, peak: 0.4 });
+  }
+
+  busChime(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.7, 0.3), t = this.now;
+    this.tone(out, t, 0.8, { type: 'sine', f: 988, peak: 0.25 });
+    this.tone(out, t + 0.35, 1.0, { type: 'sine', f: 784, peak: 0.25 });
+  }
+
+  brakeSqueal(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.35, 0.3), t = this.now;
+    const o = this.tone(out, t, 0.9, { type: 'sine', f: rand(2400, 2900), a: 0.1, peak: 0.12 });
+    const vib = this.ctx.createOscillator(); vib.frequency.value = 7;
+    const vg = this.ctx.createGain(); vg.gain.value = 40;
+    vib.connect(vg).connect(o.frequency); vib.start(t); vib.stop(t + 1);
+    this.noise(out, t, 0.9, { type: 'bandpass', f: 3000, q: 4, a: 0.1, peak: 0.1 });
+  }
+
+  busHit(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 1.1, 0.25), t = this.now;
+    this.tone(out, t, 0.25, { f: 90, f2: 35, peak: 1 });
+    this.noise(out, t, 0.18, { type: 'lowpass', f: 900, peak: 0.9 });
+    this.noise(out, t + 0.03, 0.12, { type: 'bandpass', f: 2400, q: 2, peak: 0.4 });
+  }
+
+  dirtRise(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.7, 0.2), t = this.now;
+    this.noise(out, t, 1.3, { type: 'lowpass', f: 320, f2: 120, a: 0.2, peak: 0.8, brown: true });
+    for (let i = 0; i < 5; i++) this.noise(out, t + rand(0, 1), 0.05, { type: 'bandpass', f: rand(800, 1600), q: 2, peak: 0.25 });
+  }
+
+  // ── Linie 13: Wunderwaffe, Baupläne, Gefahren ───────────────
+  teslaShot(pap) {
+    const t = this.now;
+    const out = this.out(null, 0.9, 0.5);
+    this.noise(out, t, 0.5, { type: 'highpass', f: 2500, a: 0.005, peak: 0.6 });
+    for (let i = 0; i < 9; i++) this.noise(out, t + rand(0, 0.35), 0.03, { type: 'bandpass', f: rand(2000, 6000), q: 3, peak: rand(0.3, 0.7) });
+    this.tone(out, t, 0.45, { type: 'sawtooth', f: pap ? 90 : 120, f2: 40, peak: 0.5 });
+    this.noise(out, t + 0.05, 1.4, { type: 'lowpass', f: 300, f2: 60, a: 0.03, peak: 0.9, brown: true }); // Donner
+  }
+
+  teslaZap(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.7, 0.3), t = this.now;
+    for (let i = 0; i < 5; i++) this.noise(out, t + rand(0, 0.15), 0.025, { type: 'bandpass', f: rand(2500, 7000), q: 2, peak: 0.6 });
+    this.tone(out, t, 0.15, { type: 'square', f: rand(60, 90), f2: 30, peak: 0.25 });
+  }
+
+  teslaPickup() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.7, 0.5), t = this.now;
+    this.tone(out, t, 1.2, { type: 'sawtooth', f: 60, f2: 480, peak: 0.15 });
+    for (let i = 0; i < 8; i++) this.noise(out, t + 0.1 + i * 0.1, 0.03, { type: 'bandpass', f: 4000, q: 3, peak: 0.4 });
+    this.melody([[62, 0.5], [65, 0.5], [69, 0.5], [74, 1.5]], { type: 'square', bpm: 180, vol: 0.06, start: 0.9 });
+  }
+
+  partPickup() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.5, 0.2), t = this.now;
+    this.noise(out, t, 0.08, { type: 'bandpass', f: 1400, q: 2, peak: 0.5 });
+    this.tone(out, t + 0.05, 0.3, { type: 'triangle', f: 880, f2: 1320, peak: 0.15 });
+  }
+
+  buildStep(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.45, 0.1), t = this.now;
+    this.noise(out, t, 0.04, { type: 'bandpass', f: rand(2500, 3500), q: 4, peak: 0.6 });
+    this.tone(out, t, 0.05, { type: 'square', f: rand(300, 420), peak: 0.05 });
+  }
+
+  buildDone() {
+    if (!this.ctx) return;
+    this.melody([[67, 0.5], [71, 0.5], [74, 0.5], [79, 1.5]], { type: 'triangle', bpm: 170, vol: 0.12, bell: true });
+  }
+
+  turbineStart(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.8, 0.3), t = this.now;
+    this.tone(out, t, 1.5, { type: 'sawtooth', f: 40, f2: 220, peak: 0.12, curve: 'lin' });
+    this.noise(out, t, 1.5, { type: 'bandpass', f: 300, f2: 1200, q: 1, a: 0.3, peak: 0.3 });
+  }
+
+  turbineWhir(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.35, 0.1), t = this.now;
+    this.noise(out, t, 0.4, { type: 'bandpass', f: 900, q: 2, a: 0.15, peak: 0.25 });
+    this.tone(out, t, 0.4, { type: 'sine', f: 220, peak: 0.05 });
+  }
+
+  lavaSizzle() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.4, 0.05);
+    this.noise(out, this.now, 0.3, { type: 'highpass', f: 3500, a: 0.02, peak: 0.6 });
+  }
+
+  ignite(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.7, 0.2), t = this.now;
+    this.noise(out, t, 0.6, { type: 'bandpass', f: 600, f2: 1800, q: 0.8, a: 0.05, peak: 0.6 });
+  }
+
+  fireBurst(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 1.0, 0.4), t = this.now;
+    this.noise(out, t, 0.9, { type: 'lowpass', f: 1800, f2: 200, a: 0.01, peak: 1 });
+    this.tone(out, t, 0.4, { f: 80, f2: 30, peak: 0.7 });
+  }
+
+  crawlerScreech(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.9, 0.5), t = this.now;
+    const o = this.tone(out, t, 0.7, { type: 'sawtooth', f: 900, f2: 2200, a: 0.02, peak: 0.12, curve: 'lin' });
+    o.detune.setValueAtTime(0, t); o.detune.linearRampToValueAtTime(-600, t + 0.7);
+    this.noise(out, t, 0.6, { type: 'bandpass', f: 3500, q: 3, peak: 0.25 });
+  }
+
+  crawlerChatter(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.5, 0.3), t = this.now;
+    for (let i = 0; i < 6; i++) this.noise(out, t + i * 0.05, 0.03, { type: 'bandpass', f: rand(1500, 3000), q: 5, peak: 0.4 });
+  }
+
+  crawlerLatch() {
+    if (!this.ctx) return;
+    const out = this.out(null, 1.0, 0.2), t = this.now;
+    this.tone(out, t, 0.5, { type: 'sawtooth', f: 1400, f2: 500, peak: 0.2 });
+    this.noise(out, t, 0.3, { type: 'bandpass', f: 1200, q: 1, peak: 0.6 });
+  }
+
+  crawlerBite() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.6, 0.05), t = this.now;
+    this.noise(out, t, 0.08, { type: 'bandpass', f: 900, q: 2, peak: 0.6 });
+  }
+
+  crawlerDeath(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.8, 0.3), t = this.now;
+    this.tone(out, t, 0.4, { type: 'sawtooth', f: 1800, f2: 300, peak: 0.15 });
+    this.noise(out, t, 0.2, { type: 'lowpass', f: 800, peak: 0.6 });
+  }
+
+  coins(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.5, 0.2), t = this.now;
+    for (let i = 0; i < 6; i++) this.tone(out, t + i * 0.045, 0.25, { type: 'triangle', f: rand(2600, 3600), peak: 0.1 });
+  }
+
+  locker(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.7, 0.2), t = this.now;
+    this.noise(out, t, 0.15, { type: 'bandpass', f: 1200, q: 2, peak: 0.5 });
+    this.tone(out, t + 0.15, 0.2, { f: 150, f2: 70, peak: 0.5 });
+  }
+
+  // ── Linie 13: Funk, Seelen, Signal, Spieluhren ──────────────
+  radioStatic(pos, dur = 2) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.45, 0.15), t = this.now;
+    this.noise(out, t, dur, { type: 'bandpass', f: 2200, q: 0.6, a: 0.05, peak: 0.35 });
+    for (let i = 0; i < dur * 6; i++) this.noise(out, t + rand(0, dur), 0.04, { type: 'highpass', f: 5000, peak: 0.3 });
+  }
+
+  radioTune(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.5, 0.1), t = this.now;
+    this.tone(out, t, 0.25, { type: 'sine', f: rand(600, 1400), f2: rand(400, 2000), peak: 0.12 });
+    this.noise(out, t, 0.2, { type: 'bandpass', f: 2500, q: 1, peak: 0.25 });
+    this.noise(out, t, 0.02, { type: 'bandpass', f: 4000, q: 4, peak: 0.4 });
+  }
+
+  tapeClick() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.6, 0.05), t = this.now;
+    this.noise(out, t, 0.05, { type: 'bandpass', f: 1500, q: 3, peak: 0.7 });
+    this.noise(out, t + 0.1, 4, { type: 'highpass', f: 4000, a: 0.2, peak: 0.08 });
+  }
+
+  soulCollect(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.6, 0.6), t = this.now;
+    this.tone(out, t, 0.6, { type: 'sine', f: 300, f2: 1200, peak: 0.15 });
+    this.tone(out, t + 0.05, 0.6, { type: 'triangle', f: 600, f2: 2400, peak: 0.05 });
+  }
+
+  signalPulse(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.8, 0.6), t = this.now;
+    this.tone(out, t, 0.3, { type: 'sine', f: 1046, peak: 0.2 });
+    this.tone(out, t + 0.32, 0.3, { type: 'sine', f: 1318, peak: 0.2 });
+    this.noise(out, t, 0.6, { type: 'bandpass', f: 800, q: 4, peak: 0.15 });
+  }
+
+  signalFinale() {
+    if (!this.ctx) return;
+    this.pad([38, 45, 50, 57, 62], 9, { vol: 0.16, cutoff: 2600 });
+    this.pad([74, 78, 81], 8, { vol: 0.05, cutoff: 4000, type: 'sine', start: 1 });
+    this.drum(0, 45, 1); this.drum(2.2, 40, 1);
+    this.melody([[62, 1], [66, 1], [69, 1], [74, 3], [73, 1], [74, 4]], { type: 'triangle', bpm: 90, vol: 0.14, bell: true, start: 0.5 });
+    const out = this.out(null, 0.8, 0.9);
+    this.noise(out, this.now, 4, { type: 'lowpass', f: 200, f2: 40, a: 0.3, peak: 0.9, brown: true });
+  }
+
+  achievement() {
+    if (!this.ctx) return;
+    this.melody([[67, 0.5], [72, 0.5], [76, 0.5], [79, 1], [76, 0.5], [79, 2]], { type: 'square', bpm: 160, vol: 0.08, bell: true });
+  }
+
+  musicBox(i) {
+    if (!this.ctx) return;
+    const motifs = [
+      [[74, 0.5], [77, 0.5], [81, 1], [79, 1]],
+      [[70, 0.5], [74, 0.5], [77, 1], [76, 1]],
+      [[69, 0.5], [73, 0.5], [76, 1], [74, 2]],
+    ];
+    this.melody(motifs[i % 3], { type: 'sine', bpm: 120, vol: 0.2, bell: true, octave: 1 });
+  }
+
+  // Geheimes Lied "Nebelfahrt" – kleiner Sequenzer mit Vorausplanung
+  secretSong() {
+    if (!this.ctx || this.song) return 0;
+    const ctx = this.ctx;
+    const bpm = 96, beat = 60 / bpm, bar = beat * 4;
+    const bus = ctx.createGain(); bus.gain.value = 0.9; bus.connect(this.music);
+    const rv = ctx.createGain(); rv.gain.value = 0.35; bus.connect(rv).connect(this.reverbIn);
+    const dist = ctx.createWaveShaper(); dist.curve = this.makeDistortion(220);
+    const gtrLp = ctx.createBiquadFilter(); gtrLp.type = 'lowpass'; gtrLp.frequency.value = 2400;
+    const gtrG = ctx.createGain(); gtrG.gain.value = 0.11;
+    dist.connect(gtrLp).connect(gtrG).connect(bus);
+    const VERSE = [[38, [50, 53, 57]], [34, [50, 53, 58]], [41, [53, 57, 60]], [36, [52, 55, 60]], [43, [50, 55, 58]], [34, [50, 53, 58]], [33, [49, 52, 57]], [38, [50, 53, 57]]];
+    const CHORUS = [[34, [50, 53, 58]], [36, [52, 55, 60]], [38, [50, 53, 57]], [38, [50, 53, 57]], [34, [50, 53, 58]], [36, [52, 55, 60]], [33, [49, 52, 57]], [33, [49, 52, 57]]];
+    const LEAD_V = [[[74, 1], [77, 0.5], [76, 0.5], [74, 1], [72, 1]], [[70, 1.5], [72, 0.5], [74, 2]], [[74, 1], [77, 0.5], [79, 0.5], [81, 1], [79, 0.5], [77, 0.5]], [[76, 2], [null, 1], [72, 1]],
+      [[70, 1], [74, 0.5], [72, 0.5], [70, 1], [69, 1]], [[67, 1.5], [69, 0.5], [70, 2]], [[69, 1], [70, 0.5], [72, 0.5], [74, 1], [76, 1]], [[74, 3], [null, 1]]];
+    const LEAD_C = [[[77, 1], [79, 1], [81, 2]], [[79, 1], [77, 1], [76, 2]], [[74, 1], [76, 1], [77, 1.5], [76, 0.5]], [[74, 4]],
+      [[77, 1], [79, 1], [81, 1], [84, 1]], [[82, 2], [81, 1], [79, 1]], [[76, 1], [77, 1], [79, 1], [81, 1]], [[81, 2], [null, 2]]];
+    // Abschnitte: [Art, Takte]
+    const form = [['intro', 4], ['verse', 8], ['chorus', 8], ['verse', 8], ['chorus', 8], ['outro', 4]];
+    const events = [];
+    let t0 = 0;
+    for (const [kind, bars] of form) {
+      for (let b = 0; b < bars; b++) {
+        const ts = t0 + b * bar;
+        const ch = (kind === 'chorus' ? CHORUS : VERSE)[b % 8];
+        events.push({ t: ts, kind, b, ch, lead: kind === 'verse' ? LEAD_V[b % 8] : kind === 'chorus' ? LEAD_C[b % 8] : null });
+      }
+      t0 += bars * bar;
+    }
+    const total = t0;
+    const start = ctx.currentTime + 0.3;
+    let next = 0;
+    const N = (n) => 440 * Math.pow(2, (n - 69) / 12);
+    const env = (g, t, a, p, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(p, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
+    const osc = (type, f, t, dur, peak, dest, a = 0.01) => {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+      const g = ctx.createGain(); env(g, t, a, peak, dur);
+      o.connect(g).connect(dest); o.start(t); o.stop(t + a + dur + 0.05);
+      return o;
+    };
+    const kick = (t) => { this.tone(bus, t, 0.3, { f: 130, f2: 42, peak: 0.9 }); };
+    const snare = (t) => { this.noise(bus, t, 0.16, { type: 'bandpass', f: 1900, q: 0.8, peak: 0.45 }); this.tone(bus, t, 0.1, { type: 'triangle', f: 190, f2: 140, peak: 0.25 }); };
+    const hat = (t, v = 0.12) => this.noise(bus, t, 0.035, { type: 'highpass', f: 7500, peak: v });
+    const schedule = (ev) => {
+      const T = start + ev.t;
+      const [root, chord] = ev.ch;
+      if (ev.kind === 'intro' || ev.kind === 'outro') {
+        for (let i = 0; i < 16; i++) { const n = chord[i % 3] + 24; osc('sine', N(n), T + i * beat / 4, 0.5, 0.1, bus, 0.003); osc('sine', N(n) * 2.01, T + i * beat / 4, 0.8, 0.03, bus, 0.002); }
+        if (ev.kind === 'intro') for (const n of chord) osc('triangle', N(n), T, bar, 0.035, bus, bar * 0.4);
+        return;
+      }
+      const loud = ev.kind === 'chorus';
+      for (let i = 0; i < 4; i++) {
+        if (i % 2 === 0) kick(T + i * beat); else snare(T + i * beat);
+        if (loud && i === 3) kick(T + i * beat + beat / 2);
+        for (let k = 0; k < 2; k++) hat(T + i * beat + k * beat / 2, k ? 0.07 : 0.12);
+      }
+      for (let i = 0; i < 8; i++) {
+        const n = root + (i % 4 === 2 ? 12 : 0);
+        const o = osc('sawtooth', N(n), T + i * beat / 2, beat / 2 * 0.85, 0.16, bus, 0.005);
+        o.detune.value = -5;
+      }
+      if (loud) for (const n of [root + 12, root + 19, root + 24]) for (let i = 0; i < 8; i++) osc('sawtooth', N(n), T + i * beat / 2, beat / 2 * 0.9, 0.5, dist, 0.005);
+      else for (const n of chord) osc('triangle', N(n), T, bar * 0.95, 0.03, bus, 0.3);
+      if (ev.lead) {
+        let tt = T;
+        for (const [n, len] of ev.lead) {
+          if (n !== null) {
+            const o = osc(loud ? 'sawtooth' : 'square', N(n), tt, len * beat * 0.92, loud ? 0.07 : 0.05, bus, 0.01);
+            const vib = ctx.createOscillator(); vib.frequency.value = 5.5;
+            const vg = ctx.createGain(); vg.gain.value = 6; vib.connect(vg).connect(o.detune); vib.start(tt + 0.15); vib.stop(tt + len * beat + 0.1);
+          }
+          tt += len * beat;
+        }
+      }
+    };
+    const timer = setInterval(() => {
+      const now = ctx.currentTime - start;
+      while (next < events.length && events[next].t < now + 1.2) schedule(events[next++]);
+      if (now > total + 2) this.stopSong();
+    }, 250);
+    this.song = { timer, bus, end: start + total };
+    return total;
+  }
+
+  stopSong() {
+    if (!this.song) return;
+    clearInterval(this.song.timer);
+    try { this.song.bus.gain.setTargetAtTime(0, this.ctx.currentTime, 0.3); } catch { /* */ }
+    const b = this.song.bus;
+    setTimeout(() => b.disconnect(), 1500);
+    this.song = null;
   }
 
   // ── Atmosphäre ──────────────────────────────────────────────

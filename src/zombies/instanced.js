@@ -25,6 +25,8 @@ export class ZombieRenderer {
     this.slots = new Map();
     this.byZombie = [];
     this.meshes = {};
+    this.tints = [];
+    this.cursor = {};
   }
 
   add(zi, key, obj) {
@@ -56,29 +58,31 @@ export class ZombieRenderer {
   }
 
   setTints(zi, tints) {
-    for (const p of this.byZombie[zi]) {
-      if (!p.tint) continue;
-      const m = this.meshes[p.key];
-      m.setColorAt(p.idx, tints[p.tint]);
-      m.instanceColor.needsUpdate = true;
-    }
+    this.tints[zi] = tints;
   }
 
+  // Aktive Zombies dicht packen und nur so viele Instanzen zeichnen
+  // (spart Vertex-Arbeit, wenn wenige Zombies leben)
   update(zombies) {
+    const cur = this.cursor;
+    for (const k in this.meshes) cur[k] = 0;
     for (const z of zombies) {
-      const parts = this.byZombie[z.index];
-      if (!z.active) {
-        if (z.drawn) {
-          for (const p of parts) this.meshes[p.key].setMatrixAt(p.idx, ZERO);
-          z.drawn = false;
-        }
-        continue;
-      }
+      if (!z.active) continue;
       z.root.updateMatrixWorld(true);
-      for (const p of parts) this.meshes[p.key].setMatrixAt(p.idx, shown(p.obj, z.root) ? p.obj.matrixWorld : ZERO);
-      z.drawn = true;
+      const tints = this.tints[z.index];
+      for (const p of this.byZombie[z.index]) {
+        const m = this.meshes[p.key];
+        const i = cur[p.key]++;
+        m.setMatrixAt(i, shown(p.obj, z.root) ? p.obj.matrixWorld : ZERO);
+        if (p.tint) m.setColorAt(i, tints ? tints[p.tint] : WHITE);
+      }
     }
-    for (const k in this.meshes) this.meshes[k].instanceMatrix.needsUpdate = true;
+    for (const k in this.meshes) {
+      const m = this.meshes[k];
+      m.count = cur[k];
+      m.instanceMatrix.needsUpdate = true;
+      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    }
   }
 
   get drawCalls() { return Object.keys(this.meshes).length; }

@@ -15,6 +15,7 @@ export const WALLDIR = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] };
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 export const BOARDS = 6;
 export const SILL = 1.0, LINTEL = 2.6, DOOR_H = 3.2;
+const ZERO4 = new THREE.Matrix4().makeScale(0, 0, 0);
 
 export function worldUV(geo, scale) {
   const p = geo.attributes.position, n = geo.attributes.normal, uv = geo.attributes.uv;
@@ -314,6 +315,7 @@ export class GameMap {
         b.quaternion.copy(b.userData.homeQ);
       }
     }
+    this.boardsDirty = true;
     if (this.def.reset) this.def.reset(this);
   }
 
@@ -404,12 +406,13 @@ export class GameMap {
   buildWindows(scene, M) {
     const bgeo = new THREE.BoxGeometry(1.55, 0.17, 0.05);
     const frameMat = M.woodDark;
+    // Alle Bretter als eine Instanz-Gruppe (ein Draw-Call); die Logik bewegt unsichtbare Platzhalter
+    this.boardList = [];
     for (const win of this.windows) {
       const yaw = win.out.x !== 0 ? Math.PI / 2 : 0;
       const face = win.center.clone().addScaledVector(win.out, -(CELL / 2 - 0.06));
       for (let i = 0; i < BOARDS; i++) {
-        const b = new THREE.Mesh(bgeo, M.board);
-        b.castShadow = true; b.receiveShadow = true;
+        const b = new THREE.Object3D();
         const tilt = (i % 2 ? 1 : -1) * rand(0.12, 0.35);
         b.position.copy(face);
         b.position.y = SILL + 0.15 + i * 0.25 + rand(-0.03, 0.03);
@@ -417,9 +420,8 @@ export class GameMap {
         b.rotation.set(0, yaw, tilt, 'YXZ');
         b.userData.home = b.position.clone();
         b.userData.homeQ = b.quaternion.clone();
-        b.userData.dynamic = true;
-        scene.add(b);
         win.boardMeshes.push(b);
+        this.boardList.push(b);
       }
       const fr = new THREE.Group();
       fr.position.copy(face); fr.rotation.y = yaw;
@@ -427,6 +429,24 @@ export class GameMap {
       fb(1.5, 0.08, 0, SILL); fb(1.5, 0.08, 0, LINTEL); fb(0.08, LINTEL - SILL, -0.72, (SILL + LINTEL) / 2); fb(0.08, LINTEL - SILL, 0.72, (SILL + LINTEL) / 2);
       scene.add(fr);
     }
+    const inst = new THREE.InstancedMesh(bgeo, M.board, Math.max(1, this.boardList.length));
+    inst.castShadow = true; inst.receiveShadow = true;
+    inst.frustumCulled = false;
+    inst.userData.dynamic = true;
+    inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    inst.count = this.boardList.length;
+    scene.add(inst);
+    this.boardInst = inst;
+    this.syncBoards();
+  }
+
+  syncBoards() {
+    const inst = this.boardInst;
+    if (!inst) return;
+    this.boardList.forEach((b, i) => {
+      if (b.visible) { b.updateMatrix(); inst.setMatrixAt(i, b.matrix); } else inst.setMatrixAt(i, ZERO4);
+    });
+    inst.instanceMatrix.needsUpdate = true;
   }
 
   doorMaterial(kind, M) {
@@ -575,6 +595,7 @@ export class GameMap {
 
   // ── Laufzeit ────────────────────────────────────────────────
   update(dt, time, camPos) {
+    const boardsMoving = this.anims.length > 0 || this.boardsDirty;
     for (let i = this.anims.length - 1; i >= 0; i--) {
       const a = this.anims[i];
       a.t += dt;
@@ -582,6 +603,7 @@ export class GameMap {
       a.fn(k);
       if (k >= 1) this.anims.splice(i, 1);
     }
+    if (boardsMoving) { this.syncBoards(); this.boardsDirty = false; }
     for (const e of this.lights) {
       let f = 1;
       if (e.flicker > 0) {

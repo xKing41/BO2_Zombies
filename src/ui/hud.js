@@ -9,6 +9,7 @@ export class HUD {
       hud: $('hud'), prompt: $('prompt'), notice: $('notice'), banner: $('banner'), round: $('round'), roundNum: $('roundNum'), tally: $('tally'),
       perks: $('perks'), score: $('score'), popups: $('popups'), wname: $('wname'), ammo: $('ammo'), mag: $('mag'), reserve: $('reserve'), nades: $('nades'),
       powerups: $('powerups'), damage: $('damage'), dmgdir: $('dmgdir'), hit: $('hitmarker'), cross: $('crosshair'), scope: $('scope'), downed: $('downed'), fps: $('fps'),
+      subtitle: $('subtitle'), carry: $('carry'), latch: $('latch'),
     };
     this.cross = ['t', 'b', 'l', 'r'].map((c) => this.el.cross.querySelector('.' + c));
     this.cache = {};
@@ -135,6 +136,32 @@ export class HUD {
     this.el.notice.style.opacity = 1;
     clearTimeout(this.noticeTimer);
     this.noticeTimer = setTimeout(() => (this.el.notice.style.opacity = 0), ms);
+  }
+
+  // Untertitel für Figuren (OTTO, Funkstimme, Tonbänder)
+  subtitle(who, text, ms = 5200) {
+    const el = this.el.subtitle;
+    el.innerHTML = '';
+    if (who) { const b = document.createElement('b'); b.textContent = who + ': '; el.appendChild(b); }
+    el.appendChild(document.createTextNode(text));
+    el.style.opacity = 1;
+    clearTimeout(this.subTimer);
+    this.subTimer = setTimeout(() => (el.style.opacity = 0), ms);
+  }
+  // Getragenes Bauteil
+  carry(item) {
+    this.set('carry', item ? item.name : '', () => {
+      this.el.carry.innerHTML = '';
+      if (!item) return;
+      const i = document.createElement('span'); i.className = 'ic'; i.textContent = item.icon || '⚙';
+      this.el.carry.append(i, document.createTextNode(item.name));
+    });
+  }
+  latch(on) { this.set('latch', !!on, (x) => this.el.latch.classList.toggle('on', x)); }
+  clearMapHud() {
+    this.el.subtitle.style.opacity = 0;
+    this.carry(null);
+    this.latch(false);
   }
 
   // ── Schaden ─────────────────────────────────────────────────
