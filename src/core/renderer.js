@@ -139,7 +139,11 @@ export class RenderSystem {
     this.renderer.shadowMap.enabled = q.shadows;
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: q.msaa });
-    if (this.composer) this.composer.dispose();
+    if (this.composer) {
+      // Alle Effekt-Passes freigeben (Bloom hält eigene Render-Targets)
+      for (const pass of this.composer.passes) if (pass.dispose) pass.dispose();
+      this.composer.dispose();
+    }
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new OverlayPass(this.vmScene, this.vmCamera));

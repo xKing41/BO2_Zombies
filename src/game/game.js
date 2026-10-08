@@ -160,6 +160,7 @@ export class Game {
     const freed = new Set();
     const free = (scene) => scene.traverse((o) => {
       if (o.isInstancedMesh) o.dispose();
+      if (o.isLight && o.shadow && o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; }
       if (o.geometry && !o.geometry.userData.shared && !freed.has(o.geometry)) { freed.add(o.geometry); o.geometry.dispose(); }
       if (o.material) for (const m of [].concat(o.material)) {
         if (this.sharedMats.has(m) || freed.has(m)) continue;
@@ -400,6 +401,8 @@ export class Game {
     this.adaptResolution(raw);
 
     if (this.state === 'paused') { this.rs.render(); this.input.endFrame(); return; }
+    // Während eine Karte lädt, weder aktualisieren noch zeichnen (halb gebaute Szene)
+    if (this.state === 'loading') { this.input.endFrame(); return; }
     const slow = this.state === 'gameover' ? 0.35 : 1;
     const sdt = dt * slow;
     this.time += sdt;

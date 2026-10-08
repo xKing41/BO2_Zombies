@@ -47,6 +47,10 @@ export function batchStatic(scene, chunk = 0) {
   const merged = new Set(victims);
   for (const o of victims) for (const c of [...o.children]) if (!merged.has(c)) scene.attach(c);
   for (const o of victims) o.removeFromParent();
+  // Originale werden nicht mehr gezeichnet: Geometrien freigeben (geteilte bleiben)
+  const kept = new Set();
+  scene.traverse((o) => { if (o.geometry) kept.add(o.geometry); });
+  for (const o of victims) if (!o.geometry.userData.shared && !kept.has(o.geometry)) o.geometry.dispose();
   let meshes = 0;
   for (const b of buckets.values()) {
     if (!b.geos.length) continue;
