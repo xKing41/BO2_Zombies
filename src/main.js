@@ -25,6 +25,8 @@ function saveSettings(s) {
   try { localStorage.setItem('nachtfall.settings', JSON.stringify(s)); localStorage.setItem('nachtfall.v2', '1'); } catch { /* */ }
 }
 
+// Läuft das Spiel in der Android-App? (Die App stellt window.NachtfallApp bereit)
+const IN_APP = !!window.NachtfallApp;
 const settings = loadSettings();
 const game = new Game($('game'), settings);
 const touch = new TouchControls(game.input);
@@ -80,10 +82,15 @@ $('game').addEventListener('click', () => {
   if (game.state === 'playing' && !game.input.locked && !touch.active) game.input.lock();
 });
 
-// Tab-Wechsel, App im Hintergrund, Hochformat → Pause
+// Tab-Wechsel, App im Hintergrund, Hochformat → Pause (und im Menü Ton aus)
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) pauseGame();
-  else if (game.state === 'playing') requestWakeLock();
+  if (document.hidden) {
+    pauseGame();
+    if (game.audio) game.audio.suspend();
+  } else {
+    if (game.state === 'playing') requestWakeLock();
+    if (game.audio && game.audio.ctx && game.state !== 'paused') game.audio.resume();
+  }
 });
 function checkOrientation() {
   const portrait = touch.active && innerHeight > innerWidth * 1.05;
@@ -95,6 +102,7 @@ addEventListener('orientationchange', () => setTimeout(checkOrientation, 200));
 
 // ── Vollbild, Querformat, Bildschirm wach halten ─────────────
 function enterFullscreen() {
+  if (IN_APP) return; // die App ist schon im Vollbild
   try {
     const el = document.documentElement;
     if (document.fullscreenElement || !el.requestFullscreen || IS_STANDALONE) return;
@@ -261,11 +269,32 @@ $('btnInstall').onclick = async () => {
   installPrompt = null;
   $('btnInstall').classList.add('hidden');
 };
-if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
+if (import.meta.env.PROD && !IN_APP && 'serviceWorker' in navigator && window.isSecureContext) {
   addEventListener('load', () => {
     try { navigator.serviceWorker.register('./sw.js').catch(() => {}); } catch { /* nicht verfügbar */ }
   });
 }
+
+// ── Android-App: Zurück-Taste und Hintergrund ───────────────
+// Liefert 'exit', wenn die App beendet werden soll (nur im Hauptmenü)
+window.__nfBack = () => {
+  if (game.state === 'playing') { pauseGame(); return 'handled'; }
+  switch (current) {
+    case 'pause': play(); return 'handled';
+    case 'settings': case 'controls': $(current).querySelector('.back').click(); return 'handled';
+    case 'mapselect': show('menu'); return 'handled';
+    case 'gameover': game.toMenu(); show('menu'); return 'handled';
+    case 'loading': return 'handled';
+    default: return 'exit';
+  }
+};
+window.__nfAppPause = () => {
+  pauseGame();
+  if (game.audio) game.audio.suspend();
+};
+window.__nfAppResume = () => {
+  if (game.audio && game.audio.ctx && game.state !== 'paused') game.audio.resume();
+};
 
 // Untertitel im Hauptmenü zeigt die geladene Karte
 function menuTitle() {

@@ -56,6 +56,24 @@ oder direkt Öffnen im Browser.
 **Online spielen (GitHub Pages):** Der Workflow `.github/workflows/deploy.yml` baut das Spiel bei jedem
 Push auf `main` und veröffentlicht es. Einmalig unter *Settings → Pages → Source* „GitHub Actions“ wählen.
 
+## Android-App (APK)
+
+Das Spiel gibt es auch als Android-App: eine schlanke Hülle (`android/`), die das gebaute Spiel
+offline in einer WebView zeigt – im Vollbild, im Querformat, mit Bildschirm-wach-halten. OTTO und
+der Ansager sprechen über die Android-Stimme, die Zurück-Taste pausiert das Spiel bzw. führt durch
+die Menüs.
+
+| Weg | So geht's |
+|---|---|
+| **Cloud (ohne PC)** | Jeder Push baut automatisch (Workflow „APK bauen“). APK unter **Actions → letzter Lauf → Artifacts → Nachtfall-APK** herunterladen, ZIP entpacken, `Nachtfall.apk` antippen und installieren. Von Hand starten: Actions → „APK bauen“ → *Run workflow*. |
+| **Eigener Rechner** | `android/build-apk.sh` (braucht Node.js und das Android-SDK); die APK liegt danach als `Nachtfall.apk` im Projektordner. |
+
+- **Feste Signatur:** Alle Builds sind mit demselben Schlüssel (`android/ci-signing.jks`) signiert.
+  Neue Versionen lassen sich deshalb einfach über die alte installieren; Speicherstände
+  (Einstellungen, Rekorde, Bank, Schließfach) bleiben erhalten.
+- Beim ersten Installieren fragt Android, ob der Browser bzw. Dateimanager „unbekannte Apps“
+  installieren darf – das einmal erlauben.
+
 ## Steuerung
 
 | Aktion | Tastatur & Maus | Controller (Xbox / PlayStation) | Touch |
@@ -129,6 +147,7 @@ src/
   audio/               Prozedurales Sound-Design
   ui/                  HUD und Touch-Steuerung
 public/                App-Manifest, Service Worker (offline), Icons
+android/               Android-App (WebView-Hülle, Gradle-Projekt, fester Signaturschlüssel)
 scripts/               Einzeldatei-Build
 ```
 
@@ -169,7 +188,8 @@ damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Anima
    Höllenhund-Runden, Spezialzombies, Rangsystem und Statistiken.
 5. **Verbesserungen ggü. BO2:** Barrierefreiheit (Farbfilter, frei belegbare Tasten; Untertitel gibt es
    schon), Speichern zwischen Runden, Mod-Support über die Kartendefinitionen.
-6. **App-Stores & Konsolen:** Für Google Play und den App Store lässt sich das Spiel mit Capacitor
-   verpacken, für Steam mit Electron oder Tauri. PlayStation, Xbox und Nintendo verlangen offizielle
+6. **App-Stores & Konsolen:** Eine Android-App (APK) wird bereits automatisch gebaut (siehe oben);
+   für Google Play fehlt noch ein Store-Paket (AAB) mit eigenem Upload-Schlüssel, für iPhone eine
+   Xcode-Hülle, für Steam z. B. Electron oder Tauri. PlayStation, Xbox und Nintendo verlangen offizielle
    Entwicklerverträge und Dev-Kits – ein Browser-Spiel kann dort nicht direkt veröffentlicht werden.
    Im Browser einer Konsole (z. B. Edge auf der Xbox) sollte es mit Controller laufen; das ist ungetestet.

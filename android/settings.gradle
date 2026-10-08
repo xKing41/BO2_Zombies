@@ -1,0 +1,18 @@
+// Android-Hülle für das Browser-Spiel: eine App, die das gebaute Spiel
+// (dist/) aus den Assets lädt und in einer WebView im Vollbild zeigt.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'Nachtfall'
+include ':app'

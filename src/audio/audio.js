@@ -591,7 +591,11 @@ export class AudioEngine {
   // Ansager per Sprachsynthese (tief, dunkel)
   announce(text, rate = 0.85) {
     try {
-      if (!('speechSynthesis' in window) || this.volumes.master < 0.01) return;
+      if (this.volumes.master < 0.01) return;
+      // Android-App: Die WebView kennt keine Web-Sprachausgabe → Android-Stimme
+      const app = window.NachtfallApp;
+      if (app) { app.speak(text, 0.5, rate, this.volumes.master, true); return; }
+      if (!('speechSynthesis' in window)) return;
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'de-DE'; u.pitch = 0.1; u.rate = rate; u.volume = this.volumes.master;
       const v = speechSynthesis.getVoices().find((x) => x.lang && x.lang.startsWith('de'));
@@ -605,7 +609,14 @@ export class AudioEngine {
   // Sprachausgabe für Figuren (OTTO, Funkstimme); stapelt nicht und unterbricht nur auf Wunsch
   say(text, { pitch = 1, rate = 1, interrupt = false, voice = 1 } = {}) {
     try {
-      if (!('speechSynthesis' in window) || this.volumes.master < 0.01) return;
+      if (this.volumes.master < 0.01) return;
+      const app = window.NachtfallApp;
+      if (app) {
+        if (!interrupt && app.isSpeaking()) return;
+        app.speak(text, pitch, rate, this.volumes.master, !!interrupt);
+        return;
+      }
+      if (!('speechSynthesis' in window)) return;
       if (interrupt) speechSynthesis.cancel();
       else if (speechSynthesis.pending) return;
       const u = new SpeechSynthesisUtterance(text);
@@ -1044,6 +1055,10 @@ export class AudioEngine {
     }
   }
 
-  suspend() { if (this.ctx) this.ctx.suspend(); try { speechSynthesis.cancel(); } catch { /* */ } }
+  suspend() {
+    if (this.ctx) this.ctx.suspend();
+    try { speechSynthesis.cancel(); } catch { /* */ }
+    try { if (window.NachtfallApp) window.NachtfallApp.stopSpeaking(); } catch { /* */ }
+  }
   resume() { if (this.ctx) this.ctx.resume(); }
 }

@@ -1,0 +1,79 @@
+name: APK bauen
+
+# Baut die Android-App in der Cloud – wie bei der Motorrad-App: Das Spiel
+# wird gebaut, in die Android-Hülle (android/) gelegt und als fest signierte
+# APK bereitgestellt. Herunterladen: Actions → letzter Lauf → Artifacts →
+# "Nachtfall-APK" (ZIP entpacken, APK antippen, installieren).
+
+on:
+  # Von Hand startbar (auch vom Handy aus, im Reiter "Actions").
+  workflow_dispatch:
+  # Und automatisch bei jeder Änderung – auch auf Arbeitszweigen.
+  push:
+    branches: [main, master, 'claude/**', 'ccr-**']
+
+# Kommt ein neuer Push, während noch gebaut wird: alten Lauf abbrechen.
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Spiel bauen
+        run: |
+          npm ci
+          npm run build
+
+      - name: Spiel in die App legen
+        run: |
+          rm -rf android/app/src/main/assets/www
+          mkdir -p android/app/src/main/assets/www
+          cp -r dist/. android/app/src/main/assets/www/
+          # Den Offline-Cache des Browsers braucht die App nicht
+          rm -f android/app/src/main/assets/www/sw.js
+          du -sh android/app/src/main/assets/www
+
+      - name: Java einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: APK bauen
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+          mkdir -p ../out
+          cp app/build/outputs/apk/release/app-release.apk ../out/Nachtfall.apk
+          ls -la ../out
+
+      - name: Signatur anzeigen
+        run: |
+          SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          "$SIGNER" verify --print-certs out/Nachtfall.apk | grep -i "SHA-256" || true
+          echo "Erwartet (fester Schlüssel): 75a3f6070f9898792e0f0a21e2b5959ba67df91f450783971dd7ba574a640ecd"
+
+      - name: APK bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nachtfall-APK
+          path: out/Nachtfall.apk
+          if-no-files-found: error
+          retention-days: 30

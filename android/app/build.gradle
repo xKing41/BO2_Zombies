@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Versionsnummer: in der Cloud die laufende Nummer des Builds, damit jede
+// neue APK sich über die alte installieren lässt.
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as Integer
+
+android {
+    namespace 'de.nachtfall.zombies'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'de.nachtfall.zombies'
+        minSdk 24
+        targetSdk 35
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // Fester Schlüssel für alle Builds (liegt im Repo). Ohne ihn hätte jede
+    // APK eine andere Signatur und ließe sich nicht als Update installieren.
+    signingConfigs {
+        release {
+            storeFile rootProject.file('ci-signing.jks')
+            storeType 'pkcs12'
+            storePassword 'nachtfall'
+            keyAlias 'nachtfall'
+            keyPassword 'nachtfall'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
