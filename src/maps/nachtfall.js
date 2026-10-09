@@ -7,6 +7,7 @@ import { parseRows } from '../world/layout.js';
 import { rand } from '../core/utils.js';
 import * as P from '../world/props.js';
 import * as T from '../core/textures.js';
+import { Teddies } from '../game/teddies.js';
 
 // Legende: '#' Wand · '0'-'9' Boden (Zone) · 'A'-'Z' kaufbare Tür · 'w' Fenster · 's' Spawn draußen · ' ' Außenbereich
 const ROWS = [
@@ -79,6 +80,12 @@ export default {
   powerSwitch: { cx: 3, cy: 11, wall: 'N' },
   papSpot: { cx: 17, cy: 14 },
   env: { fogDensity: 0.032, ash: 1 },
+  // Drei versteckte Teddys starten das geheime Lied (Kistenstapel, Theke, Generator)
+  setup: (game) => [new Teddies(game, [
+    { x: 23.25, y: 2.0, z: 18.85, yaw: -2.25 },
+    { x: 30.5, y: 1.06, z: 8.8, yaw: 0.3 },
+    { x: 15.36, y: 1.0, z: 30.77, yaw: 2.6 },
+  ])],
 
   menuCamera(cam, t) {
     const a = t * 0.05;

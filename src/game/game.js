@@ -225,7 +225,7 @@ export class Game {
     this.roundActive = false;
     this.intermission = 2.5;
     this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time };
-    this.hud.round(1);
+    this.hud.round(0); // der erste Kreidestrich erscheint erst mit Runde 1
     this.hud.showHits = !!this.settings.hitmarker;
     // Intro wie im Original: Ort und Zeit erscheinen Buchstabe für Buchstabe
     if (this.mapDef.intro) this.hud.intro(this.mapDef.intro, this.audio);
@@ -275,7 +275,7 @@ export class Game {
     this.powerups.dropsThisRound = 0;
     this.zombies.startRound(this.round);
     if (this.round > 1) this.weapons.grenades = Math.min(4, this.weapons.grenades + 2);
-    this.hud.round(this.round, this.round > 1);
+    this.hud.round(this.round, true);
     this.audio.roundStart(this.round);
   }
 
