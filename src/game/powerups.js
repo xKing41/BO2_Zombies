@@ -180,7 +180,7 @@ export class PowerUps {
       case 'maxammo': g.weapons.refillAll(); break;
       case 'instakill': this.timers.instakill = 30; break;
       case 'double': this.timers.double = 30; break;
-      case 'firesale': this.timers.firesale = 30; if (g.interact.box) g.interact.box.onFireSale(true); break;
+      case 'firesale': this.timers.firesale = 30; g.interact.fireSale(true); break;
       case 'nuke':
         g.flash = 1;
         g.audio.explosion(g.player.pos.clone().setY(8), 1.6);
@@ -209,7 +209,7 @@ export class PowerUps {
   update(dt, time) {
     const was = this.fireSale;
     for (const k in this.timers) this.timers[k] = Math.max(0, this.timers[k] - dt);
-    if (was && !this.fireSale && this.g.interact.box) this.g.interact.box.onFireSale(false);
+    if (was && !this.fireSale) this.g.interact.fireSale(false);
     this.watchScore();
     const p = this.g.player;
     for (const it of this.items) {

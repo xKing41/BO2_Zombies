@@ -298,11 +298,13 @@ class PowerSwitch extends Interactable {
 
 // ── Mystery-Kiste ────────────────────────────────────────────
 class MysteryBox extends Interactable {
-  constructor(game) {
+  // opts.temp: Zusatzkiste, die nur während eines Ausverkaufs an ihrem Platz steht
+  constructor(game, opts = {}) {
     super(game, new THREE.Vector3(), 2.0);
     const M = game.M;
+    this.temp = !!opts.temp;
     this.spots = game.mapDef.boxSpots;
-    this.spot = game.mapDef.boxStart || 0;
+    this.spot = opts.spot ?? (game.mapDef.boxStart || 0);
     this.uses = 0;
     this.totalUses = 0;
     this.moves = 0;
@@ -310,8 +312,8 @@ class MysteryBox extends Interactable {
     this.t = 0;
     this.models = {};
 
-    // Paletten an allen möglichen Plätzen
-    for (const s of this.spots) {
+    // Paletten an allen möglichen Plätzen (baut nur die Hauptkiste)
+    if (!this.temp) for (const s of this.spots) {
       const pal = new THREE.Group();
       for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.04, 0.18), M.woodDark); b.position.set(0, 0.12, -0.33 + i * 0.22); b.receiveShadow = true; pal.add(b); }
       for (const x of [-0.85, 0, 0.85]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.9), M.wood); b.position.set(x, 0.05, 0); pal.add(b); }
@@ -358,6 +360,9 @@ class MysteryBox extends Interactable {
       // Quelle im Licht-Pool; .position/.intensity wie bei einem echten Licht
       this.light = game.map.lightPool.add({ type: 'point', pos: new THREE.Vector3(), color: 0x66ccff, intensity: 0, distance: 6, offFactor: 1, dynamic: true });
       this.light.position = this.light.pos;
+    } else if (this.temp) {
+      // Ohne Licht-Pool kein weiteres Szenenlicht (jedes kostet in allen Shadern)
+      this.light = { intensity: 0, position: new THREE.Vector3() };
     } else {
       this.light = new THREE.PointLight(0x66ccff, 0, 6, 1.6);
       this.light.userData.tier = 2;
@@ -374,16 +379,29 @@ class MysteryBox extends Interactable {
     this.display.userData.dynamic = true;
     game.scene.add(this.display);
     this.moveTo(this.spot);
+    if (this.temp) this.hide();
   }
 
   reset() {
     this.state = 'idle'; this.t = 0;
     this.uses = 0; this.totalUses = 0; this.moves = 0;
+    this.vanish = false;
     this.teddy.visible = false;
     this.showWeapon(null);
     this.group.rotation.set(0, 0, 0);
     this.inner.material.opacity = 0;
-    this.moveTo(this.g.mapDef.boxStart || 0);
+    this.onFireSale(false);
+    this.vanish = false;
+    this.moveTo(this.temp ? this.spot : this.g.mapDef.boxStart || 0);
+    if (this.temp) this.hide();
+  }
+
+  hide() {
+    this.state = 'hidden'; this.t = 0;
+    this.group.visible = false; this.beam.visible = false;
+    this.light.intensity = 0;
+    this.teddy.visible = false;
+    this.showWeapon(null);
   }
 
   buildTeddy(M) {
@@ -433,15 +451,31 @@ class MysteryBox extends Interactable {
 
   get cost() { return this.g.powerups && this.g.powerups.fireSale ? 10 : BOX_COST; }
 
-  // Ausverkauf: Kiste kostet 10 Punkte und zieht nicht um
+  // Ausverkauf: Kiste kostet 10 Punkte und zieht nicht um; an allen anderen
+  // Plätzen tauchen Zusatzkisten auf, die danach wieder verschwinden
   onFireSale(on) {
     this.beamMat.uniforms.uColor.value.setRGB(on ? 1.6 : 0.35, on ? 0.9 : 0.75, on ? 0.3 : 1.6);
+    if (!this.temp) return;
+    if (!on) { if (this.state !== 'hidden') this.vanish = true; return; }
+    this.vanish = false;
+    const main = this.g.interact && this.g.interact.box;
+    if (this.state !== 'hidden' || !main || main.spot === this.spot || !main.group.visible) return;
+    this.state = 'idle'; this.t = 0; this.uses = 0;
+    this.group.rotation.set(0, 0, 0);
+    this.moveTo(this.spot);
+    this.poof();
+  }
+
+  poof() {
+    const c = this.group.position;
+    this.g.effects.explosion(c.clone().setY(0.6), 2, [3, 1.6, 0.4]);
+    if (this.g.audio.boxWhoosh) this.g.audio.boxWhoosh(c);
   }
 
   // Teddy-Regel wie bei Treyarch: an einem Standort frühestens ab der 4. Benutzung
   // (15 %), beim allerersten Standort spätestens bei der 8.; danach 30 % ab 8, 50 % ab 13
   rollTeddy() {
-    if (this.g.powerups && this.g.powerups.fireSale) return false;
+    if (this.temp || (this.g.powerups && this.g.powerups.fireSale)) return false;
     const n = this.uses, r = Math.random();
     if (this.moves === 0 && n >= 8) return true;
     if (n >= 4 && n < 8) return r < 0.15;
@@ -491,7 +525,11 @@ class MysteryBox extends Interactable {
     this.display.rotation.set(0, ry + Math.PI / 2, 0);
 
     switch (this.state) {
+      case 'hidden':
+        this.light.intensity = 0;
+        break;
       case 'idle':
+        if (this.vanish) { this.vanish = false; this.poof(); this.hide(); break; }
         this.lid.rotation.x = 0;
         this.inner.material.opacity = 0;
         this.light.intensity = 0.6 + Math.sin(time * 2) * 0.2;
@@ -552,8 +590,12 @@ class MysteryBox extends Interactable {
       }
       case 'moving':
         if (this.t > 2.5) {
-          let n;
-          do { n = Math.floor(Math.random() * this.spots.length); } while (n === this.spot && this.spots.length > 1);
+          // freier Platz (dort steht gerade keine Ausverkaufs-Kiste)
+          const extra = g.interact.extraBoxes || [];
+          let free = this.spots.map((_, i) => i).filter((i) => i !== this.spot && !(extra[i] && extra[i].state !== 'hidden'));
+          if (!free.length) free = this.spots.map((_, i) => i).filter((i) => i !== this.spot);
+          const n = free.length ? free[Math.floor(Math.random() * free.length)] : this.spot;
+          if (extra[n] && extra[n].state !== 'hidden') extra[n].hide();
           this.moveTo(n);
           this.uses = 0;
           this.moves++;
@@ -709,7 +751,12 @@ export class Interactables {
     this.perks = {};
     for (const id in PERKS) if (def.perkSpots && def.perkSpots[id]) this.list.push((this.perks[id] = new PerkMachine(game, id)));
     if (def.powerSwitch) { this.power = new PowerSwitch(game); this.list.push(this.power); }
-    if (def.boxSpots && def.boxSpots.length) { this.box = new MysteryBox(game); this.list.push(this.box); }
+    if (def.boxSpots && def.boxSpots.length) {
+      this.box = new MysteryBox(game); this.list.push(this.box);
+      // Ausverkaufs-Kisten (eine je Platz, versteckt bis zum Ausverkauf)
+      this.extraBoxes = def.boxSpots.map((_, i) => new MysteryBox(game, { temp: true, spot: i }));
+      this.list.push(...this.extraBoxes);
+    }
     if (def.papSpot) { this.pap = new PackAPunch(game); this.list.push(this.pap); }
     this.current = null;
   }
@@ -745,4 +792,9 @@ export class Interactables {
   }
 
   reset() { for (const it of this.list) it.reset(); }
+
+  fireSale(on) {
+    if (this.box) this.box.onFireSale(on);
+    for (const b of this.extraBoxes || []) b.onFireSale(on);
+  }
 }
