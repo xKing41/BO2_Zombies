@@ -517,6 +517,7 @@ class MysteryBox extends Interactable {
 
   update(dt, time) {
     const g = this.g;
+    if (this.state === 'hidden') return;
     this.t += dt;
     this.beamMat.uniforms.uTime.value = time;
     const base = this.group.position.clone();
@@ -525,9 +526,6 @@ class MysteryBox extends Interactable {
     this.display.rotation.set(0, ry + Math.PI / 2, 0);
 
     switch (this.state) {
-      case 'hidden':
-        this.light.intensity = 0;
-        break;
       case 'idle':
         if (this.vanish) { this.vanish = false; this.poof(); this.hide(); break; }
         this.lid.rotation.x = 0;
