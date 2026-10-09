@@ -178,8 +178,8 @@ export function gunMats(M) {
   const steel = steelTex(), poly = polyTex(), wood = woodTex();
   const std = (o) => new THREE.MeshStandardMaterial(o);
   G = {};
-  G.metal = addWear(std({ map: steel.map, roughnessMap: steel.data, bumpMap: steel.data, bumpScale: 0.6, roughness: 1, metalness: 0.88, vertexColors: true }), [0.36, 0.36, 0.38], 0.2, 140, 520);
-  G.poly = addWear(std({ map: poly.map, roughnessMap: poly.data, bumpMap: poly.data, bumpScale: 0.5, roughness: 1, metalness: 0.04, vertexColors: true }), [0.075, 0.075, 0.072], 0.85, 160, 650, 0.85);
+  G.metal = addWear(std({ map: steel.map, roughnessMap: steel.data, bumpMap: steel.data, bumpScale: 0.28, roughness: 1, metalness: 0.88, vertexColors: true }), [0.36, 0.36, 0.38], 0.2, 140, 520);
+  G.poly = addWear(std({ map: poly.map, roughnessMap: poly.data, bumpMap: poly.data, bumpScale: 0.3, roughness: 1, metalness: 0.04, vertexColors: true }), [0.075, 0.075, 0.072], 0.85, 160, 650, 0.85);
   G.wood = addWear(std({ map: wood.map, roughnessMap: wood.data, bumpMap: wood.data, bumpScale: 0.8, roughness: 1, metalness: 0, vertexColors: true }), [0.42, 0.25, 0.12], 0.62, 130, 520, 0.75);
   // Griffschalen mit Fischhaut (eigene UV-Dichte)
   const ck = woodTex(11, 12);

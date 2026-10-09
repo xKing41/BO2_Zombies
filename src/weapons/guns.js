@@ -153,7 +153,7 @@ const BUILDERS = {
     F.build(g, 'frame');
     I.muzzle.position.set(0, 0.03, -0.18);
     I.ejectPort.position.set(0.012, 0.035, -0.03);
-    I.sightY = 0.054; I.adsZ = -0.19; I.hip = V(0.11, -0.098, -0.32);
+    I.sightY = 0.054; I.adsZ = -0.22; I.hip = V(0.1, -0.086, -0.3);
     gripR(g, [0.014, -0.008, 0.078], 0.36, 0.25);
     supportL(g, [-0.03, -0.035, 0.06]);
     hand(slide, 'slideGrab', [-0.1, 0.05, 0.02], [0.95, -0.3, -0.05], [0.25, 0.95, 0.1]);
@@ -216,7 +216,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.03, -0.71);
     I.ejectPort.position.set(0.012, 0.045, -0.07);
-    I.sightY = 0.064; I.adsZ = -0.105; I.hip = V(0.13, -0.112, -0.3);
+    I.sightY = 0.064; I.adsZ = -0.16; I.hip = V(0.13, -0.112, -0.3);
     hand(g, 'handR', [0.022, -0.02, 0.085], [0.0, -0.55, -0.83], [0.95, 0.2, 0.2]);
     guardL(g, [-0.046, -0.034, -0.31]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'mag'; I.eject = 'rifle'; I.flash = 1.1;
@@ -270,7 +270,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.026, -0.67);
     I.ejectPort.position.set(0, 0.03, -0.14);
-    I.sightY = 0.046; I.adsZ = -0.115; I.hip = V(0.13, -0.108, -0.3);
+    I.sightY = 0.046; I.adsZ = -0.15; I.hip = V(0.13, -0.108, -0.3);
     hand(g, 'handR', [0.02, -0.018, 0.085], [0.0, -0.45, -0.89], [0.95, 0.2, 0.15]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'break'; I.eject = 'shell'; I.flash = 1.35;
   },
@@ -325,7 +325,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.026, -0.385);
     I.ejectPort.position.set(0.024, 0.035, -0.07);
-    I.sightY = 0.08; I.adsZ = -0.14; I.hip = V(0.125, -0.115, -0.3);
+    I.sightY = 0.08; I.adsZ = -0.17; I.hip = V(0.125, -0.115, -0.3);
     gripR(g, [0.012, -0.03, 0.088], 0.32, 0.18);
     hand(g, 'handL', [-0.024, -0.034, -0.198], [0.12, 0.0, -1], [-1, 0.0, 0.1]);
     I.poseR = 'pistol'; I.poseL = 'vgrip'; I.reload = 'mag'; I.eject = 'pistol'; I.flash = 0.8;
@@ -370,7 +370,7 @@ const BUILDERS = {
     hand(g, 'shellGrab', [-0.03, -0.11, -0.05], [0.1, 0.8, -0.6], [-0.95, 0.15, 0.25]);
     I.muzzle.position.set(0, 0.03, -0.71);
     I.ejectPort.position.set(0.019, 0.025, -0.085);
-    I.sightY = 0.045; I.adsZ = -0.11; I.hip = V(0.13, -0.108, -0.3);
+    I.sightY = 0.045; I.adsZ = -0.15; I.hip = V(0.13, -0.108, -0.3);
     hand(g, 'handR', [0.022, -0.02, 0.09], [0.0, -0.5, -0.86], [0.95, 0.2, 0.15]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'shells'; I.eject = 'shell'; I.flash = 1.35;
   },
@@ -439,7 +439,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.028, -0.605);
     I.ejectPort.position.set(0.014, 0.03, -0.03);
-    I.sightY = 0.094; I.adsZ = -0.13; I.hip = V(0.13, -0.122, -0.32);
+    I.sightY = 0.094; I.adsZ = -0.18; I.hip = V(0.13, -0.122, -0.32);
     gripR(g, [0.012, -0.034, 0.088], 0.42, 0.18);
     guardL(g, [-0.046, -0.018, -0.262]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'mag'; I.eject = 'rifle'; I.flash = 1;
@@ -504,7 +504,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.032, -0.885);
     I.ejectPort.position.set(0.0, -0.012, -0.08);
-    I.sightY = 0.072; I.adsZ = -0.17; I.hip = V(0.135, -0.128, -0.32);
+    I.sightY = 0.072; I.adsZ = -0.2; I.hip = V(0.135, -0.128, -0.32);
     gripR(g, [0.012, -0.034, 0.085], 0.33, 0.18);
     guardL(g, [-0.05, -0.038, -0.33]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'lmg'; I.eject = 'rifle'; I.flash = 1.15;
@@ -609,7 +609,7 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, y0, -0.275);
     I.ejectPort.position.set(0, 0.05, 0.0);
-    I.sightY = 0.088; I.adsZ = -0.2; I.hip = V(0.11, -0.1, -0.32);
+    I.sightY = 0.088; I.adsZ = -0.22; I.hip = V(0.11, -0.1, -0.32);
     gripR(g, [0.012, -0.012, 0.085], 0.28, 0.2);
     supportL(g, [-0.03, -0.035, 0.065]);
     I.poseR = 'pistol'; I.poseL = 'support'; I.reload = 'cell'; I.eject = null; I.flash = 0;
@@ -666,7 +666,7 @@ const BUILDERS = {
     I.core = core;
     I.muzzle.position.set(0, 0.014, -0.375);
     I.ejectPort.position.set(0, 0.05, 0.0);
-    I.sightY = 0.124; I.adsZ = -0.17; I.hip = V(0.125, -0.125, -0.32);
+    I.sightY = 0.124; I.adsZ = -0.2; I.hip = V(0.125, -0.125, -0.32);
     gripR(g, [0.012, -0.012, 0.085], 0.33, 0.2);
     guardL(g, [-0.05, -0.044, -0.14]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'cell'; I.eject = null; I.flash = 0;
