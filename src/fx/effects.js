@@ -329,6 +329,27 @@ export class Effects {
     }
   }
 
+  // Kreidestaub: Die Wandzeichnung wird zur echten Waffe (Wandkauf wie in BO2)
+  chalk(pos, normal, w = 1.5) {
+    const tx = -normal.z, tz = normal.x; // entlang der Wand
+    for (let i = 0; i < 40; i++) {
+      const s = rand(-0.5, 0.5) * w;
+      this.norm.spawn({
+        x: pos.x + tx * s + normal.x * 0.05, y: pos.y + rand(-0.3, 0.3), z: pos.z + tz * s + normal.z * 0.05,
+        vx: normal.x * rand(0.2, 0.8) + rand(-0.15, 0.15), vy: rand(-0.1, 0.3), vz: normal.z * rand(0.2, 0.8) + rand(-0.15, 0.15),
+        life: rand(0.8, 1.7), size: 0.1, size1: rand(0.4, 0.7), alpha: 0.13, r: 0.8, g: 0.79, b: 0.75, drag: 2.4, grav: 0.3,
+      });
+    }
+    for (let i = 0; i < 16; i++) {
+      const s = rand(-0.5, 0.5) * w;
+      this.add.spawn({
+        x: pos.x + tx * s, y: pos.y + rand(-0.25, 0.25), z: pos.z + tz * s,
+        vx: normal.x * rand(0.3, 1), vy: rand(0, 0.8), vz: normal.z * rand(0.3, 1),
+        life: rand(0.3, 0.7), size: rand(0.02, 0.04), size1: 0, r: 1.4, g: 1.4, b: 1.3, drag: 2,
+      });
+    }
+  }
+
   // Energiepartikel (Strahlenkanone, Power-Ups)
   energy(pos, color, n = 2, spread = 0.1) {
     for (let i = 0; i < n; i++) {

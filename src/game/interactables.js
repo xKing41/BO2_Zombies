@@ -84,16 +84,41 @@ class WallBuy extends Interactable {
     const tex = T.chalkWeapon(cls === 'lmg' || cls === 'sniper' ? 'ar' : cls);
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.85), new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
     plane.position.y = 1.55;
+    plane.userData.dynamic = true; // wird nach dem ersten Kauf ausgeblendet
     map.place(plane, def.cx, def.cy, def.wall, 0.0);
+    this.def = def; this.plane = plane; this.mount = null;
     this.cost = isNade ? GRENADE_COST : WEAPONS[this.id].cost;
     this.name = isNade ? 'Splittergranaten' : WEAPONS[this.id].name;
     // Kleine Lampe über der Kreidezeichnung
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: game.M.tex.glow, color: 0x60584a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     glow.scale.set(2.2, 1.4, 1);
     const [wdx, wdz] = WALLDIR[def.wall];
+    this.out = new THREE.Vector3(-wdx, 0, -wdz);
     glow.position.copy(plane.position);
     glow.position.x -= wdx * 0.05; glow.position.z -= wdz * 0.05;
     game.scene.add(glow);
+  }
+
+  // Wie in BO2: Beim ersten Kauf wird aus der Kreidezeichnung die echte Waffe an der Wand
+  materialize() {
+    if (this.mount || this.id === 'grenade') return;
+    const g = this.g, m = (this.mount = new THREE.Group());
+    m.position.y = 1.5;
+    m.userData.dynamic = true;
+    g.map.place(m, this.def.cx, this.def.cy, this.def.wall, 0.0);
+    const gun = buildGun(this.id, g.M, false).group;
+    gun.rotation.y = Math.PI / 2;
+    gun.position.z = 0.1;
+    gun.scale.setScalar(1.15);
+    gun.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    m.add(gun);
+    this.plane.visible = false;
+    g.effects.chalk(this.plane.getWorldPosition(new THREE.Vector3()), this.out);
+  }
+
+  reset() {
+    if (this.mount) { this.mount.removeFromParent(); this.mount = null; }
+    this.plane.visible = true;
   }
   prompt() {
     const w = this.g.weapons;
@@ -119,6 +144,7 @@ class WallBuy extends Interactable {
     }
     if (!this.g.spend(this.cost)) return;
     w.give(this.id);
+    this.materialize();
   }
 }
 

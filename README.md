@@ -107,6 +107,7 @@ die Menüs.
   - Power-Ups: Drop, sobald die verdienten Punkte eine Schwelle überschreiten (2000, dann jeweils ×1,14), dazu 3 % Zufall, höchstens 4 je Runde; gemischter Zyklus; 15 s ruhig, dann immer schneller blinkend, nach 26,5 s weg; neu: **Ausverkauf** (30 s lang steht an jedem Kistenplatz eine Kiste für 10 Punkte)
   - Zufallskiste: Teddy frühestens bei der 4. Benutzung (15 %), am Startplatz spätestens bei der 8., nach dem ersten Umzug 30 % bzw. ab der 13. Benutzung 50 %; Punkte zurück
   - Perks: höchstens vier; Phönix-Soda belebt solo nach 10 s wieder – nach dem dritten Mal zieht der Automat weiter; Blitz-Tonikum beschleunigt auch das Reparieren
+  - Wandwaffen sind Kreidezeichnungen – nach dem ersten Kauf wird daraus in einer Kreidestaubwolke die echte Waffe an der Wand
   - Ab Runde 4 sprintet der letzte Zombie einer Runde – außer er hat keine Beine mehr (Kriecher)
   - Hechtsprung aus dem Sprint (Ducken drücken): flach nach vorn, kurz liegen bleiben
 
