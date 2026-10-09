@@ -159,6 +159,10 @@ class PerkMachine extends Interactable {
       this.light = map.addLight(light, { poweredOnly: id !== 'phoenix', flicker: 0.1, tier: 3 });
     }
     this.col = col;
+    // Klang: Lautsprecher im Automaten, Zufallstakt für die eigene Melodie
+    this.spk = g.position.clone().setY(1.3);
+    this.jingleT = rand(15, 45);
+    this.hum = null;
   }
   get powered() { return this.g.map.power || this.id === 'phoenix'; }
   prompt() {
@@ -186,6 +190,23 @@ class PerkMachine extends Interactable {
     const on = this.powered;
     this.signMat.color.setScalar(on ? 1.6 + Math.sin(time * 3 + this.id.length) * 0.15 : 0.25);
     this.panelMat.emissiveIntensity = on ? 0.22 : 0.03;
+    this.sound(dt, on);
+  }
+  // Leises Brummen in der Nähe; ab und zu spielt der Automat seine Melodie
+  // (nur bis ~12 m, alle 45–120 s, nie während ein anderer Jingle läuft)
+  sound(dt, on) {
+    const g = this.g, a = g.audio, live = on && g.state === 'playing';
+    const d = live ? g.player.pos.distanceTo(this.spk) : Infinity;
+    if (d < 7) {
+      if (!this.hum || !this.hum.alive) this.hum = a.machineHum(this.spk);
+      this.hum.keep();
+    } else if (this.hum) { this.hum.stop(); this.hum = null; }
+    if (!live || (this.jingleT -= dt) > 0) return;
+    this.jingleT = d < 12 && a.perkJingle(this.id, this.spk) ? rand(45, 120) : rand(4, 9);
+  }
+  reset() {
+    this.jingleT = rand(15, 45);
+    if (this.hum) { this.hum.stop(); this.hum = null; }
   }
 }
 

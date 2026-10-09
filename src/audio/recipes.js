@@ -5,7 +5,7 @@
 //  Jedes Rezept liefert pro Aufruf eine Variante als Float32Array.
 // ─────────────────────────────────────────────────────────────
 import {
-  NOTE, voice, finish, noise, modes, bubbles, grains, sweep, varispeed, creak, wavetable, oscT, curve, sinT,
+  rng, NOTE, voice, finish, noise, modes, bubbles, grains, sweep, varispeed, creak, wavetable, oscT, curve, sinT,
   mix, secs, lp, hp, bp, peq, normalize, drive,
 } from './dsp.js';
 
@@ -591,3 +591,21 @@ export const RECIPES = [
   { name: 'whisper', n: 3, sr: SRV, fn: whisper },
   { name: 'thunder', n: 3, sr: 16000, fn: thunder },
 ];
+
+// ── Aufträge ─────────────────────────────────────────────────
+// Fester Seed je Rezept und Variante (gleicher Klang in Worker und Hauptthread)
+export function seedOf(name, i) {
+  let h = 2166136261;
+  for (let k = 0; k < name.length; k++) h = Math.imul(h ^ name.charCodeAt(k), 16777619);
+  return ((h >>> 0) + i * 7919) >>> 0;
+}
+// Reihenfolge: erst je eine Variante pro Rezept, dann die übrigen
+export function jobList() {
+  const jobs = [], max = Math.max(...RECIPES.map((r) => r.n));
+  for (let i = 0; i < max; i++) for (const r of RECIPES) if (i < r.n) jobs.push([r.name, i]);
+  return jobs;
+}
+export function renderJob(name, i) {
+  const r = RECIPES.find((x) => x.name === name);
+  return { name, i, sr: r.sr, data: r.fn(rng(seedOf(name, i)), i, r.sr) };
+}

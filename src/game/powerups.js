@@ -52,6 +52,13 @@ export class PowerUps {
     it.group.visible = true;
     this.dropsThisRound++;
     this.g.audio.powerupSpawn(it.group.position);
+    this.stopLoop(it);
+    it.loop = this.g.audio.powerupLoop(it.group.position.clone()); // schwebendes Summen
+    it.blink = 1;
+  }
+
+  stopLoop(it) {
+    if (it.loop) { it.loop.stop(); it.loop = null; }
   }
 
   apply(type) {
@@ -89,19 +96,23 @@ export class PowerUps {
       it.icon.rotation.y += dt * 1.8;
       const blink = it.t > 22 ? (Math.sin(it.t * (it.t > 27 ? 30 : 14)) > 0 ? 1 : 0) : 1;
       it.group.visible = blink > 0;
+      // Summen flackert mit, kurz bevor das Power-Up verschwindet
+      if (it.loop && blink !== it.blink) { it.blink = blink; it.loop.set(blink ? 1 : 0.35); }
       if (Math.random() < 0.2) this.g.effects.energy(gp, [0.3, 1.5, 0.3], 1, 0.3);
       if (Math.hypot(p.pos.x - gp.x, p.pos.z - gp.z) < 1.3 && !p.downed) {
         it.active = false; it.group.visible = false;
+        this.stopLoop(it);
         this.apply(it.type);
       } else if (it.t > 30) {
         it.active = false; it.group.visible = false;
+        this.stopLoop(it);
       }
     }
     this.g.hud.powerupTimers(this.timers);
   }
 
   reset() {
-    for (const it of this.items) { it.active = false; it.group.visible = false; }
+    for (const it of this.items) { it.active = false; it.group.visible = false; this.stopLoop(it); }
     this.timers.instakill = 0; this.timers.double = 0;
     this.dropsThisRound = 0;
   }
