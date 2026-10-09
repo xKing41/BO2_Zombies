@@ -98,7 +98,10 @@ die Menüs.
 - Zombies als verrottete Menschen: gebeugt, mit eingefallenem Schädel, leuchtenden Augen (mit Leuchtspur), offenem Mund, Krallenhänden und zerrissener, blutiger Kleidung; Varianten wie Koch, Büroangestellter, Bauarbeiter
 - Zerstückelung: Köpfe platzen, Unterarme lassen sich abschießen, Explosionen reißen Beine ab – die Zombies kriechen weiter („Kriecher“). Explosionen und der Bus schleudern Körper durch die Luft, der Gewitter-Werfer lässt sie unter Strom zucken
 - HUD wie im Original: Kreide-Strichliste und handgemalte rote Rundenzahlen, die beim Rundenende weiß-rot pulsieren; Intro mit Ort und Uhrzeit auf der Schreibmaschine; Perk-Kronkorken; Blut am Bildschirmrand; keine Trefferanzeige (in den Einstellungen zuschaltbar)
-- Last Stand: Am Boden schleppst du dich weiter, ein Ring zeigt die Wiederbelebung; nach dem Tod steigt die Kamera über den Körper auf
+- Waffen in der Hand wie im Original: detaillierte Modelle (abgegriffene Kanten, Holzmaserung, Kratzer), schmutzige Hände mit fingerlosen Handschuhen und hochgekrempelten Ärmeln, Waffe groß unten rechts im Bild
+- Nachladen mit echten Handgriffen: Magazin raus/rein, Schlitten oder Spannhebel bei leerem Magazin, Pumpgun Patrone für Patrone, Doppellauf abkippen, MG-Deckel und Trommel; beim ersten Ziehen jeder Waffe eine kurze Vorführ-Animation
+- Hülsen fliegen aus dem Auswurf und klimpern auf dem Boden, Mündungsfeuer mit Seitenflammen, Rauch aus dem Lauf, Messer-Ausfallschritt, Granate mit Splint, Perk-Flasche mit Kronkorken
+- Last Stand: Am Boden schleppst du dich mit der Pistole weiter (eigene, sonst eine Leihwaffe), ein Ring zeigt die Wiederbelebung; danach kommt die vorige Waffe zurück. Nach dem Tod steigt die Kamera über den Körper auf
 - Atmosphäre: Feuertonnen mit Flammen, Asche und Glut rieseln im Freien, kontrastreiche Farbstimmung
 - Musik-Easter-Egg auf beiden Karten (Station Nachtfall: drei versteckte Teddys)
 - Spielregeln nach den öffentlich dokumentierten Formeln der Treyarch-Zombies nachgebaut:
@@ -143,10 +146,10 @@ die Menüs.
 
 **Animation**
 - Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung
-- Viewmodel: Laufen, Atmen, Sway, Sprint-Haltung, Rückstoß, Nachladen (Magazin raus/rein, Pumpgun, Kipplauf), Messer, Granate, Perk-Trinken
+- Viewmodel: Arme mit IK an der Waffe, Animations-Zeitachsen je Waffe, Laufen, Atmen, Sway, Sprint-Haltung, Rückstoß, Nachladen, Ziehen, Messer, Granate, Perk-Trinken
 
 **Sound** (vollständig synthetisiert, Web Audio API, HRTF-3D)
-- Waffensounds je Waffenklasse mit Hall, PaP-Variante, Nachlade-Mechanik, Blitz und Donner
+- Waffensounds je Waffenklasse in Schichten (Knall, Körper, Tiefdruck, Verschluss, Raumecho), PaP-Variante; Nachlade-Geräusche synchron zur Animation, Hülsen-Klimpern
 - Zombie-Stimmen über Formant-Synthese (Stöhnen, Schreie, Gurgeln), Schläge, Todesgeräusche
 - Runden-Start/-Ende-Musik, Perk-Jingles, Mystery-Kisten-Melodie, Ansager (Sprachsynthese)
 - Ambiente: Wind, Drone, ferne Schreie, Donner; Herzschlag und dumpfer Klang bei wenig Leben
