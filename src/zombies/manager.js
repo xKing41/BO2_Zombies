@@ -2,11 +2,12 @@
 import * as THREE from 'three';
 import { Zombie, zombieTypes } from './zombie.js';
 import { ZombieRenderer } from './instanced.js';
+import { EyeGlow } from './eyes.js';
 import { CELL, MAX_ALIVE, zombiesForRound, zombieHealth, spawnDelay, rollSpeedType, POINTS } from '../config.js';
 import { raySphere, rand } from '../core/utils.js';
 
 const _sep = new THREE.Vector3();
-const _c = new THREE.Vector3();
+const _c = new THREE.Vector3(), _c2 = new THREE.Vector3(), _c3 = new THREE.Vector3();
 
 export class ZombieManager {
   constructor(game) {
@@ -18,6 +19,8 @@ export class ZombieManager {
     this.renderer = new ZombieRenderer(this.scene, zombieTypes(this.M.zombie));
     for (let i = 0; i < MAX_ALIVE; i++) this.pool.push(new Zombie(this, i));
     this.renderer.finalize();
+    this.eyes = new EyeGlow(this.scene, MAX_ALIVE);
+    this.stepBudget = 0;
     this.dist = new Int32Array(this.map.w * this.map.h);
     this.flowT = 0;
     this.toSpawn = 0;
@@ -179,8 +182,10 @@ export class ZombieManager {
         if (this.spawnOne()) this.spawnT = spawnDelay(this.round) * rand(0.7, 1.3);
       }
     }
+    this.stepBudget = Math.min(2, this.stepBudget + dt * 7);
     for (const z of this.pool) if (z.active) z.update(dt, this.game);
     this.renderer.update(this.pool);
+    this.eyes.update(this.pool, dt, this.game);
   }
 
   // Strahl gegen alle Zombies. Liefert nach Distanz sortierte Treffer.
@@ -188,17 +193,17 @@ export class ZombieManager {
     const hits = [];
     for (const z of this.pool) {
       if (!z.alive) continue;
-      _c.copy(z.pos); _c.y += 1.0;
-      if (raySphere(o, d, _c, 1.3) < 0) continue;
-      let best = Infinity, part = null;
+      _c.copy(z.pos); _c.y += z.crawler ? 0.3 : 1.0;
+      if (raySphere(o, d, _c, z.crawler ? 1.1 : 1.3) < 0) continue;
+      let best = Infinity, part = null, sub = null;
       for (const s of z.hitSpheres()) {
-        if (s.part === 'head' && z.headless) continue;
+        if ((s.part === 'head' && z.headless) || s.r <= 0) continue;
         const t = raySphere(o, d, s.p, s.r);
         if (t < 0) continue;
         const tt = s.part === 'head' ? t - 0.05 : t; // Kopf leicht bevorzugen
-        if (tt < best) { best = tt; part = s.part; }
+        if (tt < best) { best = tt; part = s.part; sub = s.sub; }
       }
-      if (part && best < maxDist) hits.push({ z, t: best, part });
+      if (part && best < maxDist) { hits.push({ z, t: best, part, sub }); z.lastSub = sub; }
     }
     hits.sort((a, b) => a.t - b.t);
     return hits;
@@ -208,17 +213,33 @@ export class ZombieManager {
     return this.pool.filter((z) => z.alive && Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < r && Math.abs(z.pos.y + 1 - p.y) < r + 1);
   }
 
-  // Schaden anwenden. opts: {dir, point, knife, explosive, silent}
+  // Schaden anwenden. opts: {dir, point, knife, explosive, nuke, fling, sub, silent}
   damage(z, amount, part, opts = {}) {
     if (!z.alive) return false;
     const g = this.game;
     if (g.powerups.instaKill) amount = z.hp + 1;
+    const sub = opts.sub || z.lastSub || null;
+    z.lastSub = null;
+    const heavy = amount >= z.maxHp * 0.35;
     z.hp -= amount;
-    const point = opts.point || _c.copy(z.pos).setY(1.3);
+    const point = opts.point || _c.copy(z.pos).setY(z.crawler ? 0.35 : 1.3);
+    const dir = opts.dir || null;
+    const armIdx = sub === 'armR' ? 0 : sub === 'armL' ? 1 : -1;
+    const legIdx = sub === 'legR' ? 0 : sub === 'legL' ? 1 : -1;
     if (z.hp <= 0) {
-      const head = part === 'head';
-      z.die(head && !opts.explosive, opts.dir);
-      g.effects.blood(point, opts.dir || new THREE.Vector3(), 1.4, head);
+      // Explosionen und der Bus werfen Zombies um, der Gewitter-Werfer verschmort sie
+      const fling = opts.fling || (opts.explosive && !opts.nuke ? 1 : 0);
+      const shock = amount >= 1e9 && !opts.nuke && !opts.explosive && !opts.fling;
+      let head = part === 'head' && !opts.explosive;
+      if (fling) {
+        for (let i = 0; i < 2; i++) if (Math.random() < 0.3) z.loseLimb('arm', i, dir, 5);
+        if (!z.crawler) for (let i = 0; i < 2; i++) if (Math.random() < 0.25) z.loseLimb('leg', i, dir, 4);
+        if (Math.random() < 0.15) head = true;
+      } else if (armIdx >= 0 && Math.random() < 0.7) z.loseLimb('arm', armIdx, dir, 3);
+      else if (legIdx >= 0 && opts.pellet && Math.random() < 0.3) z.loseLimb('leg', legIdx, dir, 3);
+      z.die(head, dir, { fling, shock });
+      if (head) { g.effects.gore(z.headMesh.getWorldPosition(_c3), dir, 'head'); if (g.audio.zombieHeadPop) g.audio.zombieHeadPop(point); }
+      g.effects.blood(point, dir || _c2.set(0, 0, 0), 1.4, head);
       g.effects.bloodDecal(z.pos.x + rand(-0.3, 0.3), z.pos.z + rand(-0.3, 0.3), head ? 1.2 : 0.9);
       g.audio.hitFlesh(point, head);
       if (Math.random() < 0.6) g.audio.zombieDeath(point);
@@ -231,11 +252,32 @@ export class ZombieManager {
       g.onZombieKilled(z, opts);
       return true;
     }
-    z.hurt(opts.dir);
-    g.effects.blood(point, opts.dir || new THREE.Vector3(), 0.6, false);
+    z.hurt(dir, part, sub);
+    // Schwere Treffer reißen Unterarme ab, Explosionen kosten die Beine (→ Kriecher)
+    if (armIdx >= 0 && heavy && Math.random() < 0.45) this.gib(z, 'arm', armIdx, dir);
+    const standing = z.state === 'chase' && !z.onBus && !z.crawler;
+    if (standing && opts.explosive && amount >= z.maxHp * 0.2 && Math.random() < 0.5) {
+      const both = Math.random() < 0.55;
+      this.gib(z, 'leg', Math.random() < 0.5 ? 0 : 1, dir);
+      if (both) this.gib(z, 'leg', z.legs[0].lost ? 1 : 0, dir);
+      z.makeCrawler();
+    } else if (standing && legIdx >= 0 && heavy && Math.random() < 0.18) {
+      this.gib(z, 'leg', legIdx, dir);
+      z.makeCrawler();
+    }
+    g.effects.blood(point, dir || _c2.set(0, 0, 0), 0.6, false);
     g.audio.hitFlesh(point, part === 'head');
     if (!opts.noPoints) g.addPoints(POINTS.hit);
     return false;
+  }
+
+  // Gliedmaße abtrennen mit Fleischfetzen und Geräusch
+  gib(z, kind, i, dir) {
+    if (!z.loseLimb(kind, i, dir, kind === 'arm' ? 3 : 2.5)) return;
+    const j = kind === 'arm' ? z.arms[i].el : z.legs[i].kn;
+    const p = j.getWorldPosition(_c3);
+    this.game.effects.gore(p, dir, 'limb');
+    if (this.game.audio.gib) this.game.audio.gib(p);
   }
 
   killAll(opts = {}) {
@@ -246,6 +288,7 @@ export class ZombieManager {
 
   clear() {
     for (const z of this.pool) z.despawn();
+    this.eyes.reset();
     this.toSpawn = 0;
     this.remaining = 0;
     this.renderer.update(this.pool);

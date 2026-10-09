@@ -56,7 +56,7 @@ export class Player {
   goDown() {
     if (this.perks.has('phoenix')) {
       this.downed = true;
-      this.reviveT = 6;
+      this.reviveT = this.reviveTotal = 6;
       this.selfRevives++;
       this.perks.clear();
       this.maxHealth = 100;

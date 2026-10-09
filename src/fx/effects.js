@@ -250,6 +250,34 @@ export class Effects {
     }
   }
 
+  // Fleischfetzen, Knochensplitter und Blutnebel (Kopfschuss, abgetrennte Gliedmaßen)
+  gore(pos, dir, kind = 'head') {
+    const head = kind === 'head';
+    const dx = dir ? dir.x * 2 : 0, dz = dir ? dir.z * 2 : 0;
+    for (let i = 0; i < (head ? 26 : 12); i++) {
+      const bone = Math.random() < (head ? 0.3 : 0.18);
+      this.norm.spawn({
+        x: pos.x, y: pos.y, z: pos.z, vx: dx + rand(-2.6, 2.6), vy: rand(0.8, head ? 5 : 3.5), vz: dz + rand(-2.6, 2.6),
+        life: rand(0.9, 1.8), size: rand(0.022, 0.055), size1: rand(0.018, 0.04), alpha: 1,
+        r: bone ? 0.72 : rand(0.28, 0.48), g: bone ? 0.64 : rand(0.02, 0.08), b: bone ? 0.52 : rand(0.02, 0.06),
+        grav: 11, drag: 0.3, bounce: 0.2, fade: 0,
+      });
+    }
+    for (let i = 0; i < (head ? 12 : 6); i++) {
+      this.norm.spawn({
+        x: pos.x + rand(-0.08, 0.08), y: pos.y + rand(-0.08, 0.08), z: pos.z + rand(-0.08, 0.08),
+        vx: dx * 0.4 + rand(-0.7, 0.7), vy: rand(-0.1, 0.6), vz: dz * 0.4 + rand(-0.7, 0.7),
+        life: rand(0.5, 1.1), size: 0.12, size1: rand(0.5, 0.95), alpha: 0.5, r: 0.34, g: 0.01, b: 0.01, drag: 2.6,
+      });
+    }
+    this.blood(pos, dir || _bd.set(0, 0, 0), head ? 1.8 : 1, head);
+  }
+
+  // Tropfendes Blut (fliegende Gliedmaßen, Stümpfe)
+  bloodTrail(pos) {
+    this.norm.spawn({ x: pos.x, y: pos.y, z: pos.z, vx: rand(-0.2, 0.2), vy: rand(-0.4, 0.3), vz: rand(-0.2, 0.2), life: rand(0.3, 0.6), size: rand(0.015, 0.035), size1: 0.01, alpha: 0.9, r: 0.3, g: 0.01, b: 0.01, grav: 9.8, drag: 0.3, fade: 0 });
+  }
+
   bloodDecal(x, z, scale = 1) {
     const m = this.bloodDecals[this.bloodIdx++ % this.bloodDecals.length];
     m.position.set(x, 0.008 + (this.bloodIdx % 48) * 0.0002, z);

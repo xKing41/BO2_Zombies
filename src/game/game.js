@@ -27,7 +27,7 @@ export const bestKey = (id) => (id === 'nachtfall' ? 'nachtfall.best' : 'nachtfa
 
 export const DEFAULT_SETTINGS = {
   sensitivity: 1, fov: 80, master: 0.8, music: 0.6, quality: 'auto',
-  invertY: false, showFps: false, aimAssist: true, map: 'nachtfall',
+  invertY: false, showFps: false, aimAssist: true, hitmarker: false, map: 'nachtfall',
 };
 
 export class Game {
@@ -202,6 +202,7 @@ export class Game {
     const s = this.settings;
     this.camera.fov = s.fov;
     this.audio.setVolumes({ master: s.master, music: s.music });
+    this.hud.showHits = !!s.hitmarker;
     if (this.rs.qualityName !== resolveQuality(s.quality)) {
       this.rs.setQuality(s.quality);
       this.applyLightQuality();
@@ -225,7 +226,10 @@ export class Game {
     this.intermission = 2.5;
     this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time };
     this.hud.round(1);
-    this.hud.notice(this.mapDef.name, 3000);
+    this.hud.showHits = !!this.settings.hitmarker;
+    // Intro wie im Original: Ort und Zeit erscheinen Buchstabe für Buchstabe
+    if (this.mapDef.intro) this.hud.intro(this.mapDef.intro, this.audio);
+    else this.hud.notice(this.mapDef.name, 3000);
     if (location.hash.includes('dev')) { this.points = 50000; this.godMode = true; this.hud.points(this.points); }
     this.lastT = performance.now();
   }
@@ -278,7 +282,7 @@ export class Game {
     this.roundActive = false;
     this.intermission = 10;
     this.audio.roundEnd();
-    this.hud.round(this.round, true);
+    this.hud.roundEnding();
   }
 
   spend(cost) {

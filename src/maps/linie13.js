@@ -13,6 +13,7 @@ export default {
   id: 'linie13',
   name: 'Linie 13',
   tagline: 'Groß · Bus · Nebel · Geheimnisse',
+  intro: ['Linie 13', 'Kreisstraße nach Grauweiler', 'Letzte Fahrt – 23:58 Uhr'],
   description: 'Fahr mit OTTOs Bus durch die neblige Nacht: fünf Haltestellen, Baupläne, eine Geheimwaffe, Glutfelder und ein Funkmast, der ein Signal senden will.',
   layout,
   chunkCells: 24,

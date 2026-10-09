@@ -321,7 +321,7 @@ export class Bus {
       if (Math.abs(l.x) > HALF_W + 0.45 || Math.abs(l.z) > HALF_L + 0.45) continue;
       if (this.v > 2.5 && l.z > HALF_L - 1.5) {
         const dir = new THREE.Vector3(Math.sin(this.yaw), 0.3, Math.cos(this.yaw));
-        g.zombies.damage(z, 1e9, 'torso', { dir, point: z.pos.clone().setY(1.2), nuke: true });
+        g.zombies.damage(z, 1e9, 'torso', { dir, point: z.pos.clone().setY(1.2), nuke: true, fling: 1.5 });
         g.audio.busHit(z.pos);
         continue;
       }

@@ -188,6 +188,7 @@ bind('sQual', 'quality');
 bind('sAim', 'aimAssist');
 bind('sInv', 'invertY');
 bind('sFps', 'showFps');
+bind('sHit', 'hitmarker');
 
 // ── Controller-Steuerung in Menüs ────────────────────────────
 const padNav = {
@@ -299,7 +300,7 @@ window.__nfAppResume = () => {
 // Untertitel im Hauptmenü zeigt die geladene Karte
 function menuTitle() {
   const el = document.querySelector('#menu .subtitle');
-  if (el && game.mapDef) el.innerHTML = `Z O M B I E S &nbsp;·&nbsp; ${game.mapDef.name}`;
+  if (el && game.mapDef) el.textContent = game.mapDef.name;
 }
 
 // ── Laden ────────────────────────────────────────────────────

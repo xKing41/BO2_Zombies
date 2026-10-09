@@ -15,10 +15,23 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Oswald:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Creepster&family=Oswald:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
 </head>
 <body>
   <canvas id="game"></canvas>
+
+  <!-- SVG-Filter: raue Kreide-/Pinselkanten (Rundenzähler) und abgenutzte Schrift (Logo) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="chalkRough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="worn" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -10 6.9" result="holes"/>
+      <feComposite in="SourceGraphic" in2="holes" operator="in"/>
+    </filter>
+  </svg>
 
   <!-- HUD -->
   <div id="hud" class="hidden">
@@ -30,7 +43,8 @@
     <div id="prompt"></div>
     <div id="notice"></div>
     <div id="banner"></div>
-    <div id="round"><svg id="tally" viewBox="0 0 220 120"></svg><span id="roundNum"></span></div>
+    <div id="round"><svg id="tally" viewBox="0 0 220 120"></svg></div>
+    <div id="intro"></div>
     <div id="perks"></div>
     <div id="points"><div id="score">500</div><div id="popups"></div></div>
     <div id="weapon">
@@ -39,7 +53,10 @@
       <div id="nades"></div>
     </div>
     <div id="powerups"></div>
-    <div id="downed" class="hidden">AM BODEN<small>Phönix-Soda wirkt …</small></div>
+    <div id="downed" class="hidden">
+      <svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="45"/><circle id="reviveRing" cx="50" cy="50" r="45"/></svg>
+      <span>Wiederbelebung</span><small>Phönix-Soda wirkt …</small>
+    </div>
     <div id="latch"></div>
     <div id="subtitle"></div>
     <div id="carry"></div>
@@ -48,15 +65,15 @@
 
   <!-- Ladebildschirm -->
   <div id="loading" class="screen">
-    <h1 class="title">NACHTFALL</h1>
+    <div class="logo"><span class="logo-top">NACHTFALL</span><span class="logo-main">ZOMBIES</span></div>
     <div class="bar"><div id="loadbar"></div></div>
     <div id="loadtext">Initialisiere …</div>
   </div>
 
   <!-- Hauptmenü -->
   <div id="menu" class="screen hidden">
-    <h1 class="title">NACHTFALL</h1>
-    <div class="subtitle">Z O M B I E S &nbsp;·&nbsp; Station Nachtfall</div>
+    <div class="logo"><span class="logo-top">NACHTFALL</span><span class="logo-main">ZOMBIES</span></div>
+    <div class="subtitle">Station Nachtfall</div>
     <div class="buttons">
       <button id="btnPlay">Spielen</button>
       <button id="btnSettings">Einstellungen</button>
@@ -103,6 +120,7 @@
     </label>
     <label class="check">Zielhilfe (Controller &amp; Touch) <input id="sAim" type="checkbox" /></label>
     <label class="check">Y-Achse invertieren <input id="sInv" type="checkbox" /></label>
+    <label class="check">Trefferanzeige (nicht im Original) <input id="sHit" type="checkbox" /></label>
     <label class="check">FPS anzeigen <input id="sFps" type="checkbox" /></label>
     <div class="buttons"><button class="back">Zurück</button></div>
   </div>
@@ -162,7 +180,7 @@
 
   <!-- Game Over -->
   <div id="gameover" class="screen hidden">
-    <h1 class="title red">SPIEL VORBEI</h1>
+    <h1 class="title red">Spiel vorbei</h1>
     <div id="goRounds"></div>
     <table id="goStats"></table>
     <div class="buttons"><button id="btnAgain">Nochmal</button><button id="btnMenu">Hauptmenü</button></div>

@@ -798,3 +798,258 @@ export function departureBoard(rows) {
   });
   return toTexture(cv, { repeat: false });
 }
+
+// ── Zombies ──────────────────────────────────────────────────
+// Wie pixels(), zusätzlich eine Färbemaske o.m (1 = pro Zombie eingefärbt, 0 = feste Farbe
+// wie Blut oder Wunden). Sie liegt im G-Kanal der Bump-Map – die Bump-Map selbst nutzt nur R.
+function pixelsM(size, fn) {
+  size = Math.max(128, Math.round(size * SCALE));
+  const col = canvas(size), bmp = canvas(size);
+  const cc = col.getContext('2d'), bc = bmp.getContext('2d');
+  const ci = cc.createImageData(size, size), bi = bc.createImageData(size, size);
+  const o = { r: 0, g: 0, b: 0, h: 0.5, m: 1 };
+  let i = 0;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++, i += 4) {
+      o.m = 1;
+      fn(x / size, y / size, o);
+      ci.data[i] = clamp(o.r, 0, 1) * 255; ci.data[i + 1] = clamp(o.g, 0, 1) * 255; ci.data[i + 2] = clamp(o.b, 0, 1) * 255; ci.data[i + 3] = 255;
+      bi.data[i] = clamp(o.h, 0, 1) * 255; bi.data[i + 1] = clamp(o.m, 0, 1) * 255; bi.data[i + 2] = 0; bi.data[i + 3] = 255;
+    }
+  }
+  cc.putImageData(ci, 0, 0);
+  bc.putImageData(bi, 0, 0);
+  return { col, bmp, cc, bc, size, k: size / 512 };
+}
+
+// Weicher Fleck auf Farb- und Bump-Leinwand, horizontal umlaufend (nahtlos um Gliedmaßen).
+// col/bmp: Farbverläufe [[pos, 'rgba(..)'], ...]; Koordinaten in 512er-Einheiten
+function blob(p, x, y, rad, col, bmp, sy = 1, rot = 0) {
+  x *= p.k; y *= p.k; rad *= p.k;
+  for (const dx of [-p.size, 0, p.size]) {
+    const X = x + dx;
+    if (X + rad * 2 < 0 || X - rad * 2 > p.size) continue;
+    for (const [ctx, stops] of [[p.cc, col], [p.bc, bmp]]) {
+      if (!stops) continue;
+      ctx.save();
+      ctx.translate(X, y); ctx.rotate(rot); ctx.scale(1, sy);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rad);
+      for (const [o, c] of stops) g.addColorStop(o, c);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+const BLOOD_C = (a = 1) => [[0, `rgba(58,4,3,${a})`], [0.6, `rgba(48,4,3,${a * 0.9})`], [0.85, `rgba(32,3,2,${a * 0.6})`], [1, 'rgba(32,3,2,0)']];
+const BLOOD_B = (a = 1) => [[0, `rgba(150,0,0,${a})`], [0.85, `rgba(140,0,0,${a * 0.9})`], [1, 'rgba(140,0,0,0)']];
+
+// Verschmierter Blutfleck aus mehreren Klecksen
+function bloodStain(p, r, x, y, size, a = 1) {
+  const n = 4 + Math.floor(r() * 5);
+  for (let i = 0; i < n; i++) {
+    const bx = x + (r() - 0.5) * size * 1.4, by = y + (r() - 0.5) * size, br = size * (0.3 + r() * 0.45);
+    blob(p, bx, by, br, BLOOD_C(a * (0.75 + r() * 0.25)), BLOOD_B(a), 0.6 + r() * 0.6, r() * 3);
+  }
+  for (let i = 0; i < n; i++) {
+    const ang = r() * Math.PI * 2, d = size * (0.6 + r() * 0.6);
+    blob(p, x + Math.cos(ang) * d, y + Math.sin(ang) * d * 0.7, 1.2 + r() * 2.5, BLOOD_C(a * 0.8), BLOOD_B(a));
+  }
+}
+
+// Herablaufendes Blut (verjüngt sich nach unten)
+function bloodDrip(p, r, x, y, len, w, a = 1) {
+  let cx = x, cy = y, ww = w;
+  const steps = Math.ceil(len / 2);
+  for (let i = 0; i < steps; i++) {
+    blob(p, cx, cy, ww, BLOOD_C(a), BLOOD_B(a));
+    cy += 2; cx += (r() - 0.5) * 0.9;
+    ww = Math.max(0.9, ww * (0.985 - r() * 0.01));
+  }
+  blob(p, cx, cy + 1, ww * 1.6, BLOOD_C(a), BLOOD_B(a));
+}
+
+// Offene Wunde: dunkles Zentrum, rohes Fleisch, wulstiger Rand
+function wound(p, r, x, y, size) {
+  const sy = 0.45 + r() * 0.6, rot = r() * Math.PI;
+  blob(p, x, y, size * 1.5, [[0, 'rgba(70,12,10,0.95)'], [0.6, 'rgba(60,20,16,0.6)'], [1, 'rgba(50,20,16,0)']], [[0, 'rgba(120,0,0,0.9)'], [1, 'rgba(120,0,0,0)']], sy, rot);
+  blob(p, x, y, size, [[0, 'rgba(25,2,2,1)'], [0.45, 'rgba(120,22,18,1)'], [0.75, 'rgba(150,48,40,1)'], [1, 'rgba(90,20,16,0)']], [[0, 'rgba(10,0,0,1)'], [0.6, 'rgba(70,0,0,1)'], [1, 'rgba(110,0,0,0)']], sy, rot);
+  for (let i = 0; i < 3; i++) bloodDrip(p, r, x + (r() - 0.5) * size, y + size * sy * 0.5, 10 + r() * 40, 1.6 + r() * 1.6, 0.9);
+}
+
+function finishM(p) {
+  return { map: toTexture(p.col), bump: toTexture(p.bmp, { srgb: false }) };
+}
+
+const mix = (a, b, t) => a + (b - a) * t;
+
+// Haut: fahl (Grundton ~0.62, Farbe kommt pro Zombie), Fäulnis, Adern, Blut, Wunden
+export function zombieSkin(seed = 60) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixelsM(512, (u, v, o) => {
+    const f = n.fbm(u * 8, v * 8, 5, 8);
+    const rot = smoothstep(0.55, 0.7, n.fbm(u * 3 + 5, v * 3, 4, 3));
+    const vn = n.fbm(u * 12 + 3, v * 5 + 1, 4, 12);
+    const vein = smoothstep(0.022, 0, Math.abs(vn - 0.5)) * smoothstep(0.42, 0.6, n.fbm(u * 4 + 1, v * 4 + 7, 3, 4));
+    const bl = smoothstep(0.67, 0.7, n.fbm(u * 6 + 11, v * 6 + 2, 5, 6));
+    const pore = (n.noise(u * 180, v * 180, 180) - 0.5) * 0.06;
+    let c = 0.62 * (0.8 + f * 0.4) + pore;
+    let cr = c * (1 - rot * 0.42), cg = c * (1 - rot * 0.3), cb = c * 0.97 * (1 - rot * 0.5);
+    cr = mix(cr, 0.27, vein * 0.75); cg = mix(cg, 0.22, vein * 0.75); cb = mix(cb, 0.34, vein * 0.75);
+    cr = mix(cr, 0.3, bl); cg = mix(cg, 0.02, bl); cb = mix(cb, 0.02, bl);
+    o.r = cr; o.g = cg; o.b = cb;
+    o.m = clamp(1 - vein * 0.6 - bl - rot * 0.25, 0, 1);
+    o.h = 0.5 + (f - 0.5) * 0.6 - vein * 0.2 + pore * 2;
+  });
+  for (let i = 0; i < 7; i++) wound(p, r, r() * 512, 40 + r() * 430, 9 + r() * 14);
+  for (let i = 0; i < 6; i++) bloodStain(p, r, r() * 512, r() * 512, 14 + r() * 22, 0.85);
+  for (let i = 0; i < 10; i++) bloodDrip(p, r, r() * 512, r() * 380, 30 + r() * 110, 1.4 + r() * 2.2, 0.9);
+  return finishM(p);
+}
+
+// Gesicht (Kugel-UV, Gesicht in der Mitte): Augenhöhlen, Mund, Blutspuren; unten Kinn für den Unterkiefer
+export function zombieHead(seed = 62) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixelsM(512, (u, v, o) => {
+    const f = n.fbm(u * 8, v * 8, 5, 8);
+    const rot = smoothstep(0.55, 0.72, n.fbm(u * 4 + 5, v * 4, 4, 4));
+    const vn = n.fbm(u * 12 + 3, v * 8 + 1, 4, 12);
+    const vein = smoothstep(0.02, 0, Math.abs(vn - 0.5)) * smoothstep(0.5, 0.65, n.fbm(u * 4 + 1, v * 4 + 7, 3, 4));
+    const pore = (n.noise(u * 200, v * 200, 200) - 0.5) * 0.05;
+    let c = 0.62 * (0.82 + f * 0.36) + pore;
+    // Kopfhaut oben: dunkler, stoppelig
+    const scalp = smoothstep(0.3, 0.12, v) * 0.35;
+    c *= 1 - scalp * (0.6 + n.noise(u * 300, v * 300, 300) * 0.4);
+    let cr = c * (1 - rot * 0.4), cg = c * (1 - rot * 0.28), cb = c * 0.97 * (1 - rot * 0.5);
+    cr = mix(cr, 0.27, vein * 0.7); cg = mix(cg, 0.22, vein * 0.7); cb = mix(cb, 0.34, vein * 0.7);
+    o.r = cr; o.g = cg; o.b = cb;
+    o.m = clamp(1 - vein * 0.5 - rot * 0.2, 0, 1);
+    o.h = 0.5 + (f - 0.5) * 0.5 + pore * 2;
+  });
+  const dark = (a) => [[0, `rgba(14,8,7,${a})`], [0.55, `rgba(24,14,12,${a * 0.75})`], [1, 'rgba(30,18,16,0)']];
+  const darkB = (a) => [[0, `rgba(30,60,0,${a})`], [1, 'rgba(60,60,0,0)']];
+  // Augenhöhlen mit Augenringen
+  for (const ex of [225, 287]) {
+    blob(p, ex, 252, 22, [[0, 'rgba(70,24,36,0.5)'], [1, 'rgba(70,24,36,0)']], null, 0.6);
+    blob(p, ex, 236, 30, dark(0.95), darkB(0.9), 0.82);
+    blob(p, ex, 236, 15, dark(1), darkB(1), 0.9);
+  }
+  // Nase: Schatten seitlich, Nasenlöcher
+  for (const sx of [244, 268]) blob(p, sx, 268, 12, [[0, 'rgba(20,12,10,0.35)'], [1, 'rgba(20,12,10,0)']], null, 2.2);
+  for (const sx of [250, 262]) blob(p, sx, 297, 5, dark(1), darkB(1), 0.7);
+  // Eingefallene Wangen
+  for (const sx of [205, 307]) blob(p, sx, 300, 26, [[0, 'rgba(18,12,10,0.4)'], [1, 'rgba(18,12,10,0)']], null, 1.3);
+  // Mundhöhle (dunkel) und zerfetzte Lippen
+  blob(p, 256, 356, 72, [[0, 'rgba(10,2,2,1)'], [0.62, 'rgba(26,4,4,1)'], [0.85, 'rgba(60,10,8,0.9)'], [1, 'rgba(60,10,8,0)']], [[0, 'rgba(20,0,0,1)'], [0.8, 'rgba(40,0,0,1)'], [1, 'rgba(60,0,0,0)']], 0.62);
+  blob(p, 256, 314, 46, [[0, 'rgba(70,14,12,0.9)'], [0.7, 'rgba(60,12,10,0.6)'], [1, 'rgba(60,12,10,0)']], [[0, 'rgba(110,0,0,0.9)'], [1, 'rgba(110,0,0,0)']], 0.22);
+  // Blut um den Mund, blutige Tränen
+  bloodStain(p, r, 240, 322, 18, 0.9);
+  bloodStain(p, r, 276, 330, 14, 0.85);
+  for (const ex of [225, 287]) for (let i = 0; i < 2; i++) bloodDrip(p, r, ex + (r() - 0.5) * 16, 250, 30 + r() * 50, 1.3 + r(), 0.85);
+  // Wunden: aufgerissene Wange, Stirn, Hinterkopf
+  wound(p, r, 322, 286, 13);
+  wound(p, r, 268, 168, 9);
+  wound(p, r, 30 + r() * 60, 200 + r() * 80, 12);
+  // Unterkiefer-Bereich (unten): oben dunkler Mundraum, darunter Kinn mit Blut
+  p.cc.fillStyle = 'rgba(28,6,5,1)'; p.cc.fillRect(196 * p.k, 432 * p.k, 120 * p.k, 18 * p.k);
+  p.bc.fillStyle = 'rgba(40,0,0,1)'; p.bc.fillRect(196 * p.k, 432 * p.k, 120 * p.k, 18 * p.k);
+  for (let i = 0; i < 7; i++) bloodDrip(p, r, 214 + r() * 84, 452, 12 + r() * 46, 1.4 + r() * 2.2, 0.95);
+  bloodStain(p, r, 256, 458, 16, 0.9);
+  return finishM(p);
+}
+
+// Kleidung (Hemd/Hose): Gewebe, Dreck, durchgeblutete Flecken, Risse (darin Haut im Schatten), Einschusslöcher
+export function zombieCloth(seed, kind = 'shirt') {
+  const n = new ValueNoise(seed), n2 = new ValueNoise(seed + 5), r = mulberry32(seed);
+  const pants = kind === 'pants';
+  const p = pixelsM(512, (u, v, o) => {
+    const X = u * 512, Y = v * 512;
+    const weave = pants
+      ? Math.sin((X + Y) * 1.9) * 0.03 + (n.noise(u * 256, v * 64, 256) - 0.5) * 0.07
+      : Math.sin(X * 2.4) * Math.sin(Y * 2.4) * 0.025 + (n.noise(u * 200, v * 200, 200) - 0.5) * 0.035;
+    const f = n.fbm(u * 6, v * 6, 4, 6);
+    const dirt = smoothstep(0.45, 0.8, n.fbm(u * 3 + 4, v * 3, 4, 3)) * 0.38 + smoothstep(0.55, 1, v) * (pants ? 0.3 : 0.18);
+    // Blut: durchgeweichte Flecken mit weichem Rand, beim Hemd am Kragen und vorne gehäuft
+    const collar = pants ? 0 : Math.exp(-(((u - 0.5) / 0.22) ** 2)) * smoothstep(0.45, 0.0, v) * 0.2;
+    const bf = n.fbm(u * 3.5 + 9, v * 3.5 + 1, 5, 4) + collar - (pants ? 0.03 : 0);
+    const soak = smoothstep(0.6, 0.7, bf), wet = smoothstep(0.66, 0.74, bf);
+    // Risse (in die Länge gezogen): innen dunkle Haut im Schatten, Rand ausgefranst
+    const tf = n2.fbm(u * 5, v * 2.6, 4, 5) + (pants ? smoothstep(0.75, 0.95, v) * 0.05 : 0);
+    const tear = smoothstep(0.735, 0.745, tf), fray = smoothstep(0.71, 0.735, tf) * (1 - tear);
+    // Falten: in die Länge gezogene Wellen, in den Mulden dunkler
+    const fw = n2.fbm(u * 3 + 7, v * 1.2, 3, 3);
+    const fold = Math.sin((pants ? Y * 0.11 : X * 0.07) + fw * 9 + n.noise(u * 24, v * 6, 24) * 2.5);
+    const crease = smoothstep(0.55, 1, -fold) * 0.22;
+    let c = 0.72 * (0.86 + f * 0.28) + weave;
+    c *= (1 - dirt) * (1 - crease);
+    let cr = c, cg = c, cb = c, m = 1;
+    if (pants) { // Matsch unten am Hosenbein
+      const mud = smoothstep(0.82, 0.98, v) * smoothstep(0.4, 0.6, n.fbm(u * 8, v * 8, 3, 8));
+      cr = mix(cr, 0.2, mud); cg = mix(cg, 0.15, mud); cb = mix(cb, 0.09, mud);
+      m = 1 - mud * 0.8;
+    }
+    // Blut: Stoff dunkelt ein, Kern fast schwarzrot
+    const br = 0.2 + f * 0.05 - wet * 0.07;
+    cr = mix(cr, br, soak); cg = mix(cg, 0.018, soak); cb = mix(cb, 0.014, soak);
+    m *= 1 - soak;
+    // Ausgefranster Rand (helle Fäden), Riss innen dunkel
+    const thread = n.noise(u * 320, v * 80, 320) > 0.55 ? 1 : 0.35;
+    cr += fray * 0.1 * thread; cg += fray * 0.09 * thread; cb += fray * 0.07 * thread;
+    const deep = smoothstep(0.745, 0.79, tf);
+    const sk = (0.2 + f * 0.08) * (0.55 + deep * 0.45);
+    cr = mix(cr, sk * 1.05, tear); cg = mix(cg, sk, tear); cb = mix(cb, sk * 0.85, tear);
+    m *= 1 - tear;
+    o.r = cr; o.g = cg; o.b = cb; o.m = clamp(m, 0, 1);
+    o.h = 0.5 + weave * 3 + fold * 0.12 - tear * 0.4 + fray * 0.12 + soak * 0.03;
+  });
+  // Einschusslöcher mit Brandrand
+  for (let i = 0; i < 10; i++) {
+    const x = r() * 512, y = r() * 512;
+    blob(p, x, y, 6, [[0, 'rgba(8,4,3,1)'], [0.4, 'rgba(20,8,6,0.9)'], [0.7, 'rgba(40,20,10,0.5)'], [1, 'rgba(40,20,10,0)']], [[0, 'rgba(0,0,0,1)'], [0.5, 'rgba(60,0,0,1)'], [1, 'rgba(120,255,0,0)']]);
+    if (r() < 0.5) bloodDrip(p, r, x, y + 3, 16 + r() * 40, 1.3 + r(), 0.8);
+  }
+  if (!pants) for (let i = 0; i < 9; i++) bloodDrip(p, r, 170 + r() * 172, 20 + r() * 90, 50 + r() * 140, 1.4 + r() * 1.8, 0.85);
+  return finishM(p);
+}
+
+// Kochschürze: schmutzig weiß, Fett, viel Blut und Handabdrücke (feste Farbe)
+export function zombieApron(seed = 66) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixelsM(256, (u, v, o) => {
+    const f = n.fbm(u * 6, v * 6, 4, 6);
+    const grease = smoothstep(0.55, 0.75, n.fbm(u * 3 + 2, v * 3 + 5, 4, 3));
+    const c = 0.8 * (0.9 + f * 0.2);
+    o.r = c * (1 - grease * 0.25); o.g = c * (1 - grease * 0.3); o.b = c * (0.92 - grease * 0.4);
+    o.h = 0.5 + (f - 0.5) * 0.3;
+  });
+  for (let i = 0; i < 8; i++) bloodStain(p, r, r() * 512, r() * 512, 20 + r() * 30, 0.9);
+  for (let i = 0; i < 16; i++) bloodDrip(p, r, r() * 512, r() * 300, 40 + r() * 150, 2 + r() * 3, 0.9);
+  // Handabdrücke
+  for (let i = 0; i < 3; i++) {
+    const x = 80 + r() * 350, y = 80 + r() * 300, a = (r() - 0.5) * 1.2;
+    blob(p, x, y, 26, BLOOD_C(0.85), BLOOD_B(0.85), 0.9, a);
+    for (let k = 0; k < 4; k++) {
+      const fa = a - 0.6 + k * 0.4 - Math.PI / 2;
+      for (let s = 0; s < 5; s++) blob(p, x + Math.cos(fa) * (28 + s * 7), y + Math.sin(fa) * (28 + s * 7), 6, BLOOD_C(0.85), BLOOD_B(0.85));
+    }
+  }
+  return finishM(p);
+}
+
+// Bauhelm: gelber Kunststoff mit Kratzern und Dreck
+export function hardhatTex(seed = 68) {
+  const n = new ValueNoise(seed), r = mulberry32(seed);
+  const p = pixels(256, (u, v, o) => {
+    const f = n.fbm(u * 5, v * 5, 4, 5);
+    const d = smoothstep(0.5, 0.8, n.fbm(u * 3 + 4, v * 3, 4, 3)) * 0.45;
+    o.r = (0.78 + f * 0.1) * (1 - d); o.g = (0.6 + f * 0.08) * (1 - d); o.b = 0.08 * (1 - d);
+    o.h = 0.5 + (f - 0.5) * 0.2;
+  });
+  for (let i = 0; i < 60; i++) {
+    const x = r() * p.size, y = r() * p.size, a = r() * Math.PI, l = 6 + r() * 30;
+    p.cc.strokeStyle = `rgba(${r() < 0.5 ? '240,230,200' : '30,25,20'},${0.2 + r() * 0.4})`; p.cc.lineWidth = 0.8;
+    p.cc.beginPath(); p.cc.moveTo(x, y); p.cc.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); p.cc.stroke();
+  }
+  return finish(p);
+}

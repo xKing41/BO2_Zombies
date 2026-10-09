@@ -80,6 +80,7 @@ export class ZombieRenderer {
     for (const k in this.meshes) {
       const m = this.meshes[k];
       m.count = cur[k];
+      m.visible = m.count > 0; // seltene Teile (Helm, Schürze …) kosten keinen Draw-Call
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }

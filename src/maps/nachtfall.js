@@ -37,6 +37,7 @@ export default {
   id: 'nachtfall',
   name: 'Station Nachtfall',
   tagline: 'Kompakt · eng · klassisch',
+  intro: ['Station Nachtfall', 'Güterbahnhof bei Brennsdorf', '13. November – 2:47 Uhr'],
   description: 'Eine verlassene Station mit Depot-Halle, Diner, Werkstatt und Innenhof. Vier Bereiche, ein Stromschalter, die Äther-Schmiede im Innenhof.',
   layout: () => parseRows(ROWS),
   zones: [

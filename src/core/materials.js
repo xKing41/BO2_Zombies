@@ -70,26 +70,44 @@ export function buildMaterials(onProgress = () => {}) {
   M.papGun = std({ map: M.tex.papCamo, color: 0x8070a0, emissive: 0x5020d0, emissiveMap: M.tex.papCamo, emissiveIntensity: 0.3, roughness: 0.3, metalness: 0.8 });
 
   step('Zombies');
-  // Neutrale Texturen + Farbton pro Instanz (spart Speicher und Draw-Calls)
+  // Neutrale Texturen + Farbton pro Instanz (spart Speicher und Draw-Calls).
+  // Die Färbemaske im G-Kanal der Bump-Map hält Blut, Wunden und Risse farbecht.
   const tint = (base) => (c) => new THREE.Color().setRGB(c[0] / base, c[1] / base, c[2] / base, THREE.SRGBColorSpace);
-  const zs = T.skin(60, [0.62, 0.62, 0.6]);
-  const zsh = T.fabric(70, [0.72, 0.72, 0.72], 0.7);
-  const zp = T.fabric(80, [0.6, 0.6, 0.6], 0.35);
+  const masked = (m) => {
+    m.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', /* glsl */`
+        #if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
+          #ifdef USE_BUMPMAP
+            diffuseColor.rgb *= mix( vec3( 1.0 ), vColor.rgb, texture2D( bumpMap, vBumpMapUv ).g );
+          #else
+            diffuseColor *= vColor;
+          #endif
+        #endif`);
+    };
+    m.customProgramCacheKey = () => 'zombieTintMask';
+    return m;
+  };
+  const zs = T.zombieSkin(60), zh = T.zombieHead(62);
+  const zsh = T.zombieCloth(86, 'shirt'), zp = T.zombieCloth(87, 'pants');
+  const za = T.zombieApron(66), hh = T.hardhatTex(68);
   M.zombie = {
-    skin: std({ map: zs.map, bumpMap: zs.bump, bumpScale: 1.5, roughness: 0.75 }),
-    shirt: std({ map: zsh.map, bumpMap: zsh.bump, bumpScale: 1, roughness: 0.95 }),
-    pants: std({ map: zp.map, bumpMap: zp.bump, bumpScale: 1, roughness: 0.95 }),
+    skin: masked(std({ map: zs.map, bumpMap: zs.bump, bumpScale: 1.6, roughness: 0.62 })),
+    head: masked(std({ map: zh.map, bumpMap: zh.bump, bumpScale: 1.6, roughness: 0.6 })),
+    shirt: masked(std({ map: zsh.map, bumpMap: zsh.bump, bumpScale: 1.2, roughness: 0.92, side: THREE.DoubleSide })),
+    pants: masked(std({ map: zp.map, bumpMap: zp.bump, bumpScale: 1.2, roughness: 0.92, side: THREE.DoubleSide })),
+    apron: std({ map: za.map, bumpMap: za.bump, bumpScale: 1, roughness: 0.85, side: THREE.DoubleSide }),
+    tie: std({ color: 0x9a9a9a, roughness: 0.6, side: THREE.DoubleSide }),
+    hardhat: std({ map: hh.map, bumpMap: hh.bump, bumpScale: 0.6, roughness: 0.45 }),
     tints: {
-      skin: [[0.47, 0.49, 0.4], [0.42, 0.42, 0.37], [0.5, 0.45, 0.38], [0.36, 0.37, 0.32]].map(tint(0.62)),
-      shirt: [[0.36, 0.33, 0.27], [0.16, 0.2, 0.28], [0.32, 0.1, 0.08], [0.3, 0.3, 0.31], [0.2, 0.24, 0.16], [0.4, 0.38, 0.32]].map(tint(0.72)),
-      pants: [[0.15, 0.17, 0.22], [0.28, 0.24, 0.18], [0.12, 0.12, 0.12], [0.3, 0.32, 0.28]].map(tint(0.6)),
+      skin: [[0.4, 0.42, 0.33], [0.37, 0.37, 0.32], [0.42, 0.37, 0.3], [0.31, 0.33, 0.27], [0.39, 0.39, 0.4], [0.3, 0.24, 0.19], [0.38, 0.4, 0.3], [0.36, 0.33, 0.33]].map(tint(0.62)),
+      shirt: [[0.36, 0.33, 0.27], [0.16, 0.2, 0.28], [0.32, 0.1, 0.08], [0.3, 0.3, 0.31], [0.2, 0.24, 0.16], [0.4, 0.38, 0.32], [0.45, 0.44, 0.4], [0.12, 0.13, 0.15], [0.42, 0.28, 0.12], [0.2, 0.3, 0.38]].map(tint(0.72)),
+      pants: [[0.15, 0.17, 0.22], [0.28, 0.24, 0.18], [0.12, 0.12, 0.12], [0.3, 0.32, 0.28], [0.18, 0.22, 0.3], [0.32, 0.3, 0.25]].map(tint(0.72)),
     },
     eye: new THREE.MeshBasicMaterial({ color: new THREE.Color(6.0, 2.4, 0.3) }),
-    teeth: std({ color: 0x8f8466, roughness: 0.5 }),
-    mouth: std({ color: 0x1a0505, roughness: 0.6 }),
-    hair: std({ color: 0x161310, roughness: 0.9 }),
-    shoe: std({ color: 0x15110e, roughness: 0.7 }),
-    gore: std({ color: 0x4a0606, roughness: 0.35 }),
+    teeth: std({ color: 0x8a7a55, roughness: 0.45 }),
+    hair: std({ color: 0x14110f, roughness: 0.95 }),
+    shoe: std({ color: 0x17120e, roughness: 0.65 }),
+    gore: std({ color: 0xffffff, vertexColors: true, roughness: 0.3 }),
   };
 
   return M;
