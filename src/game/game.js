@@ -245,6 +245,7 @@ export class Game {
     this.weapons.reset();
     for (const f of this.features) if (f.reset) f.reset();
     this.hud.clearMapHud();
+    this.zombieEyes(false);
     this.station = null;
     this.audio.setMuffle(0);
     this.points = 500;
@@ -342,6 +343,14 @@ export class Game {
     }
     const pd = this.player.pos.distanceTo(pos);
     this.player.shake = Math.max(this.player.shake, clamp(1 - pd / (radius * 3), 0, 1) * (opts.small ? 0.3 : 0.9));
+  }
+
+  // Augenfarbe der Zombies: orange (normal) oder blau (nach dem Signal)
+  zombieEyes(blue) {
+    const z = this.zombies;
+    if (!z) return;
+    if (blue) { z.eyes.setColor(0.5, 1.5, 4.2); this.M.zombie.eye.color.setRGB(0.8, 2.4, 6.0); }
+    else { z.eyes.setColor(3.2, 1.5, 0.25); this.M.zombie.eye.color.setRGB(6.0, 2.4, 0.3); }
   }
 
   powerOn() {
@@ -467,9 +476,19 @@ export class Game {
     // Atmosphäre
     const cp = this.camera.position;
     for (const e of this.map.emberSources) {
-      if (Math.random() < 0.5 && (e.x - cp.x) ** 2 + (e.z - cp.z) ** 2 < 1600) this.effects.ember(e);
+      const d2 = (e.x - cp.x) ** 2 + (e.z - cp.z) ** 2;
+      if (Math.random() < 0.5 && d2 < 1600) this.effects.ember(e);
+      if (e.flame && d2 < 900) this.effects.flame(e);
     }
     if (Math.random() < 0.25) this.effects.ambientDust(this.camera.position);
+    // Asche rieselt im Freien
+    const ash = this.mapDef.env && this.mapDef.env.ash;
+    if (ash) {
+      const c = this.map.cellAt(cp.x, cp.z);
+      const outside = !c || !this.map.hasCeiling(c);
+      const n = outside ? ash * (this.rs.quality.lightTier >= 2 ? 1 : 0.5) : 0;
+      for (let i = 0; i < n || Math.random() < n - i; i++) { this.effects.ash(cp); if (i > 3) break; }
+    }
     this.flash = Math.max(0, this.flash - dt * 1.2);
     this.computeLightLevel();
     this.audio.updateListener(this.camera);

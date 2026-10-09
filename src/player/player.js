@@ -62,7 +62,6 @@ export class Player {
       this.maxHealth = 100;
       this.health = 1;
       this.g.hud.perks(this.perks);
-      this.g.hud.notice('Du bist am Boden … Phönix-Soda belebt dich wieder!');
       this.g.audio.setMuffle(0.85);
     } else {
       this.g.gameOver();
@@ -134,7 +133,8 @@ export class Player {
     // Bewegung
     let fx = 0, fz = 0;
     const active = g.state === 'playing' && !this.downed;
-    if (active) { fx = input.moveX; fz = input.moveY; }
+    // Am Boden (Last Stand) kann man sich noch langsam vorwärts schleppen
+    if (g.state === 'playing') { fx = input.moveX; fz = input.moveY; }
     // Analoge Eingaben (Joystick, Controller) erlauben stufenloses Gehen
     const mag = Math.min(1, Math.hypot(fx, fz));
     const flen = Math.hypot(fx, fz);
@@ -154,7 +154,7 @@ export class Player {
     this.speedMul = 1;
     if (this.crouching) speed *= 0.5;
     speed *= lerp(1, 0.6, g.weapons.ads);
-    if (this.downed) speed = 0;
+    if (this.downed) speed = 0.55 * mag;
 
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     const wx = fx * cy + fz * sy, wz = -fx * sy + fz * cy;
@@ -183,7 +183,7 @@ export class Player {
     }
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 1.8);
     const lowHp = 1 - this.health / this.maxHealth;
-    g.audio.setMuffle(this.downed ? 0.85 : Math.max(0, lowHp - 0.4) * 1.2);
+    g.audio.setMuffle(this.downed ? 0.7 : Math.max(0, lowHp - 0.4) * 1.2);
     if (lowHp > 0.5 && !this.downed) {
       this.heartT = (this.heartT || 0) - dt;
       if (this.heartT <= 0) { this.heartT = 0.85; g.audio.heartbeat(); }
@@ -222,5 +222,13 @@ export class Player {
       roll + Math.sin(t * 23) * sh * 0.03,
       'YXZ',
     );
+    // Spiel vorbei: Kamera löst sich vom Körper und steigt langsam auf (wie im Original)
+    if (g.state === 'gameover') {
+      this.deathT = (this.deathT || 0) + dt;
+      const k = Math.min(1, this.deathT / 3.2), e = k * k * (3 - 2 * k);
+      const a = this.yaw + this.deathT * 0.18;
+      cam.position.set(this.pos.x + Math.sin(a) * e * 2.2, this.pos.y + lerp(eye, 5.2, e), this.pos.z + Math.cos(a) * e * 2.2);
+      cam.rotation.set(lerp(this.pitch, -1.1, e), a, lerp(roll, 0.08, e), 'YXZ');
+    } else this.deathT = 0;
   }
 }

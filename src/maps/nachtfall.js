@@ -78,7 +78,7 @@ export default {
   ],
   powerSwitch: { cx: 3, cy: 11, wall: 'N' },
   papSpot: { cx: 17, cy: 14 },
-  env: { fogDensity: 0.032 },
+  env: { fogDensity: 0.032, ash: 1 },
 
   menuCamera(cam, t) {
     const a = t * 0.05;
@@ -138,7 +138,8 @@ export default {
     m.colliders[m.colliders.length - 1] = { minX: tr.position.x - 0.3, maxX: tr.position.x + 0.3, minZ: tr.position.z - 0.3, maxZ: tr.position.z + 0.3 };
     const fb = P.fireBarrel(M); solid(fb, 14, 16, null, 0, false, -0.3, 0.3);
     m.fireBarrelPos = fb.position.clone();
-    m.emberSources.push(fb.position.clone().setY(0.9));
+    const flame = fb.position.clone().setY(0.9); flame.flame = true;
+    m.emberSources.push(flame);
     const lp = P.lampPost(M); m.place(lp, 21, 12, null, 0, 0.6, -0.6);
     m.colliders.push({ minX: lp.position.x - 0.12, maxX: lp.position.x + 0.12, minZ: lp.position.z - 0.12, maxZ: lp.position.z + 0.12 });
 

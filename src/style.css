@@ -134,7 +134,7 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
 /* Runde geschafft: Zähler pulsiert zwischen Rot und Weiß */
 #round.ending #tally path { animation: roundBlink 1.15s ease-in-out infinite; }
 @keyframes roundBlink { 0%, 100% { stroke: var(--red); } 50% { stroke: #fff; filter: drop-shadow(0 0 12px #fff); } }
-#intro { position: absolute; left: calc(34px + var(--safe-l)); bottom: calc(170px + var(--safe-b)); font-family: 'Special Elite', 'Courier New', monospace;
+#intro { position: absolute; left: calc(34px + var(--safe-l)); bottom: calc(250px + var(--safe-b)); font-family: 'Special Elite', 'Courier New', monospace;
   font-size: 20px; line-height: 1.45; color: #e6dcc4; letter-spacing: 1px; text-shadow: 0 0 8px #000, 1px 1px 0 #000; transition: opacity 2s; max-width: 70vw; }
 #intro .first { font-size: 26px; color: #fff; }
 #intro.fade { opacity: 0; }

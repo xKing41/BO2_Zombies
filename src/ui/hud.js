@@ -62,32 +62,35 @@ function perkIcon(id) {
   return cv.toDataURL();
 }
 
-// Blutspritzer am Bildschirmrand (Schaden), einmalig erzeugt
+// Blutspritzer am Bildschirmrand (Schaden), einmalig erzeugt:
+// dunkelroter Rand und unregelmäßige Spritzer in Ecken und an Kanten
 function bloodOverlay() {
-  const W = 640, H = 360, cv = document.createElement('canvas');
+  const W = 1024, H = 576, cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const c = cv.getContext('2d'), r = mulberry32(5);
-  const v = c.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, W * 0.62);
-  v.addColorStop(0, 'rgba(90,0,0,0)'); v.addColorStop(0.7, 'rgba(110,0,0,0.45)'); v.addColorStop(1, 'rgba(50,0,0,0.92)');
+  const v = c.createRadialGradient(W / 2, H / 2, H * 0.36, W / 2, H / 2, W * 0.6);
+  v.addColorStop(0, 'rgba(70,0,0,0)'); v.addColorStop(0.75, 'rgba(90,0,0,0.38)'); v.addColorStop(1, 'rgba(40,0,0,0.85)');
   c.fillStyle = v; c.fillRect(0, 0, W, H);
   const blob = (x, y, rad, a) => {
     const g = c.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, `rgba(120,4,4,${a})`); g.addColorStop(0.7, `rgba(95,2,2,${a * 0.85})`); g.addColorStop(1, 'rgba(80,0,0,0)');
+    g.addColorStop(0, `rgba(105,3,3,${a})`); g.addColorStop(0.65, `rgba(85,2,2,${a * 0.9})`); g.addColorStop(1, 'rgba(70,0,0,0)');
     c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill();
   };
-  for (let i = 0; i < 70; i++) {
-    // nur am Rand
-    const side = Math.floor(r() * 4), t = r();
-    const x = side === 0 ? r() * 70 : side === 1 ? W - r() * 70 : t * W;
-    const y = side === 2 ? r() * 55 : side === 3 ? H - r() * 55 : t * H;
-    blob(x, y, 6 + r() * 26, 0.55 + r() * 0.4);
-    if (r() < 0.25) for (let k = 0; k < 8; k++) blob(x + (r() - 0.5) * 60, y + (r() - 0.5) * 60, 1 + r() * 3, 0.8);
-  }
-  // Tropfen oben
-  for (let i = 0; i < 14; i++) {
-    let x = r() * W, y = 0, w = 2 + r() * 4;
-    const len = 20 + r() * 90;
-    for (let s = 0; s < len; s += 2) { blob(x, y + s, w, 0.7); x += (r() - 0.5) * 0.6; w *= 0.985; }
+  // Spritzer-Cluster: viele kleine Kleckse um einen Kern, nach außen kleiner
+  const spots = [[0.02, 0.05], [0.97, 0.08], [0.03, 0.92], [0.96, 0.95], [0.5, 0.0], [0.25, 0.99], [0.78, 0.02], [0.0, 0.5], [1.0, 0.45]];
+  for (const [fx, fy] of spots) {
+    const cx = fx * W, cy = fy * H, R = 60 + r() * 90;
+    blob(cx, cy, R * 0.55, 0.55);
+    for (let i = 0; i < 40; i++) {
+      const a = r() * Math.PI * 2, d = Math.pow(r(), 0.6) * R * 1.3;
+      blob(cx + Math.cos(a) * d, cy + Math.sin(a) * d, (1.2 - d / (R * 1.3)) * (3 + r() * 12), 0.4 + r() * 0.35);
+    }
+    // Tropfen nach unten
+    if (fy < 0.2) for (let k = 0; k < 4; k++) {
+      let x = cx + (r() - 0.5) * R, y = cy + R * 0.2, w = 2 + r() * 3.5;
+      const len = 30 + r() * 120;
+      for (let s = 0; s < len; s += 2) { blob(x, y + s, w, 0.6); x += (r() - 0.5) * 0.5; w *= 0.988; }
+    }
   }
   return cv.toDataURL();
 }
@@ -313,7 +316,7 @@ export class HUD {
     this.dirT = Math.max(0, this.dirT - dt * 1.2);
     this.el.dmgdir.style.opacity = this.dirT;
     const low = 1 - player.health / player.maxHealth;
-    const dmg = Math.max(player.hurtFlash * 0.85, low > 0.3 ? low * 0.95 : 0, player.downed ? 0.85 : 0);
+    const dmg = Math.min(0.85, Math.max(player.hurtFlash * 0.6, (low - 0.3) * 1.15, player.downed ? 0.75 : 0));
     this.set('dmg', Math.round(dmg * 50), () => (this.el.damage.style.opacity = dmg));
     this.set('downed', player.downed, (x) => this.el.downed.classList.toggle('hidden', !x));
     if (player.downed) {

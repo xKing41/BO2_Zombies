@@ -341,6 +341,30 @@ export class Effects {
     if (Math.random() < 0.3) this.norm.spawn({ x: pos.x, y: pos.y + 0.3, z: pos.z, vx: rand(-0.1, 0.1), vy: rand(0.5, 1), vz: rand(-0.1, 0.1), life: rand(2, 3.5), size: 0.2, size1: 1.2, alpha: 0.18, r: 0.15, g: 0.14, b: 0.13, drag: 0.5 });
   }
 
+  // Flammen einer Feuertonne: helle, schnell steigende und schrumpfende Zungen
+  flame(pos) {
+    for (let i = 0; i < 2; i++) {
+      const hot = Math.random();
+      this.add.spawn({
+        x: pos.x + rand(-0.16, 0.16), y: pos.y - 0.05, z: pos.z + rand(-0.16, 0.16),
+        vx: rand(-0.15, 0.15), vy: rand(0.9, 1.7), vz: rand(-0.15, 0.15),
+        life: rand(0.35, 0.6), size: rand(0.18, 0.3), size1: 0.02,
+        r: 2.6 + hot, g: 0.9 + hot * 0.8, b: 0.15 + hot * 0.15, alpha: 0.55, drag: 1.2,
+      });
+    }
+  }
+
+  // Fallende Asche und vereinzelte Glut im Freien (Weltuntergangs-Stimmung)
+  ash(center, glow = 0.15) {
+    const x = center.x + rand(-14, 14), z = center.z + rand(-14, 14);
+    if (Math.random() < glow) {
+      this.add.spawn({ x, y: rand(3, 7), z, vx: rand(-0.4, 0.4), vy: rand(-0.5, -0.2), vz: rand(-0.4, 0.4), life: rand(4, 7), size: rand(0.015, 0.03), r: 3, g: 1.1, b: 0.25, alpha: 0.9, drag: 0.1 });
+    } else {
+      const c = rand(0.14, 0.24);
+      this.norm.spawn({ x, y: rand(3, 8), z, vx: rand(-0.35, 0.35), vy: rand(-0.55, -0.25), vz: rand(-0.35, 0.35), life: rand(5, 9), size: rand(0.02, 0.04), r: c, g: c * 0.97, b: c * 0.93, alpha: 0.6, drag: 0.15, fade: 1 });
+    }
+  }
+
   ambientDust(center) {
     this.add.spawn({ x: center.x + rand(-6, 6), y: rand(0.3, 3.5), z: center.z + rand(-6, 6), vx: rand(-0.05, 0.05), vy: rand(-0.03, 0.03), vz: rand(-0.05, 0.05), life: rand(4, 8), size: rand(0.008, 0.016), r: 0.5, g: 0.48, b: 0.42, alpha: 0.6, fade: 1 });
   }

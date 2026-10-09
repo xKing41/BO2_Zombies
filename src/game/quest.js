@@ -258,6 +258,7 @@ export class Quest {
     this.beam.visible = false;
     g.map.fogScale = 0.42;
     g.flash = 0.8;
+    g.zombieEyes(true); // die Toten gehorchen jetzt einer anderen Stimme
     g.audio.signalFinale();
     this.voice('Funkstimme', 'Ihr habt es geschafft. Das Signal ist draußen. Der Nebel weicht. Und jetzt … hören sie uns.');
     g.hud.notice('DAS SIGNAL IST GESENDET', 5000);

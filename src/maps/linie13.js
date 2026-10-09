@@ -75,7 +75,7 @@ export default {
   papSpot: { cx: 150, cy: 44, build: true },
   env: {
     background: 0x06080d, fogColor: 0x0c1016, fogDensity: 0.03, hemi: 0.62, moon: 0.95,
-    moonFollow: true, shadowBox: 42, far: 190, fogCull: 2.6, minCull: 60,
+    moonFollow: true, shadowBox: 42, far: 190, fogCull: 2.6, minCull: 60, ash: 2,
   },
   lightPool: (q) => ({
     spots: q.lightTier >= 3 ? 4 : q.lightTier >= 2 ? 3 : 2,

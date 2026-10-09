@@ -867,7 +867,8 @@ function buildProps(D) {
   place(busWreck(D), 28, 63.4, 0.08);
   place(barrels(D, 2, M.paintRed), 39.6, 84.5, 0.4);
   const fb = P.fireBarrel(M); place(fb, 39.5, 66.5, 0, true);
-  m.emberSources.push(fb.position.clone().setY(0.9));
+  const flame = fb.position.clone().setY(0.9); flame.flame = true;
+  m.emberSources.push(flame);
   m.lightPool.add({ type: 'point', pos: fb.position.clone().setY(1.4), color: 0xff7a2a, intensity: 13, distance: 13, flicker: 1, offFactor: 1 });
   facadeSign(D, T.placeSign('BUSBAHNHOF', 'GRAUWEILER', '#16212c', '#e6dfc8', 1024, 256), 8, 2, edge(39) + 0.06, WALL_H + 0.65, edge(76), Math.PI / 2);
 

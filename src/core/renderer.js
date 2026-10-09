@@ -83,6 +83,9 @@ const GradeShader = {
       // Color-Grading: kühle Schatten, warme Lichter
       col = mix(col * vec3(0.9, 1.0, 1.1), col, smoothstep(0.0, 0.45, l));
       col = mix(col, col * vec3(1.06, 1.0, 0.9), smoothstep(0.55, 1.0, l));
+      // S-Kurve für mehr Kontrast (dunkle Ecken, kräftige Lichter)
+      vec3 sc = clamp(col, 0.0, 1.0);
+      col = mix(col, sc * sc * (3.0 - 2.0 * sc), 0.2);
       col = mix(col, vec3(l), uDesat);
       // Schaden: roter, pulsierender Rand
       float edge = smoothstep(0.25, 0.8, r);
