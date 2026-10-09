@@ -35,9 +35,9 @@ const KICK = {
 };
 // Sprint-Haltung [dx, dy, dz, Nicken, Gieren, Rollen]
 const SPRINT = {
-  light: [-0.015, -0.035, 0.02, -0.5, 0.35, 0.62],
-  rifle: [0.03, -0.055, 0.04, -0.32, 0.72, 0.45],
-  heavy: [0.02, -0.075, 0.05, -0.38, 0.85, 0.5],
+  light: [-0.02, -0.01, 0.0, -0.45, 0.35, 0.62],
+  rifle: [-0.01, 0.03, -0.03, -0.25, 0.6, 0.55],
+  heavy: [-0.01, 0.015, -0.02, -0.3, 0.7, 0.55],
 };
 const DRAW = { p45: 'pistol', ar: 'handle', vmp: 'handle', k14: 'handle', sniper: 'handle', lmg: 'handle', pump: 'pump', dlf: 'break', ray: 'energy', tesla: 'energy' };
 
@@ -54,6 +54,11 @@ const TL = {
     mag: [[0, 0, 0, 1], [0.16, 0, 0, 1], [0.21, 0.035, 0, 1], [0.36, 0.1, 1, 1], [0.44, 0.1, 1, 1], [0.56, 0.045, 0, 1], [0.62, 0, 0, 1]],
     ev: [[0.16, 'magOut'], [0.61, 'magIn'], [0.79, 'boltBack'], [0.86, 'boltForward']],
     handle: [[0, 0], [0.77, 0], [0.82, 1], [0.855, 1], [0.875, 0]],
+  },
+  magSlap: {
+    hand: [[0, 'rest', 'G'], [0.13, 'mag', 'pinch'], [0.64, 'mag', 'pinch'], [0.73, 'catch', 'flat'], [0.8, 'catch', 'flat'], [0.93, 'rest', 'G']],
+    mag: [[0, 0, 0, 1], [0.16, 0, 0, 1], [0.21, 0.035, 0, 1], [0.36, 0.1, 1, 1], [0.44, 0.1, 1, 1], [0.56, 0.045, 0, 1], [0.62, 0, 0, 1]],
+    ev: [[0.16, 'magOut'], [0.61, 'magIn'], [0.775, 'boltForward']],
   },
   pistol: {
     hand: [[0, 'rest', 'G'], [0.1, 'rest', 'G'], [0.3, 'off', 'pinch'], [0.42, 'mag', 'pinch'], [0.56, 'mag', 'flat'], [0.64, 'mag', 'flat'], [0.84, 'rest', 'G']],
@@ -113,23 +118,27 @@ function keyed(list, k, i = 1) {
 
 // Freie Hand-Schlüssel (Kameraraum) für Messer, Wurf, Trinken: [k, Position, Fingerrichtung, Handrücken, Pose]
 const K = (k, p, f, u, pose) => ({ k, p: V(...p), q: Q(f, u), pose });
+// Lage über die Handachse X (rechte Hand: Daumenseite = -X) und Handrücken Y
+const KX = (k, p, x, y, pose) => { const X = V(...x).normalize(), Y = V(...y); Y.addScaledVector(X, -Y.dot(X)).normalize(); const Z = new THREE.Vector3().crossVectors(X, Y); return { k, p: V(...p), q: setFrame(new THREE.Quaternion(), Z.negate(), Y), pose }; };
+// Messer: Klinge zeigt zur Daumenseite (-X), Schneide zur Handfläche (-Y)
+const KB = (k, p, blade, edge) => KX(k, p, blade.map((v) => -v), edge.map((v) => -v), 'knife');
 const KNIFE = [
-  K(0.12, [0.25, -0.11, -0.27], [-0.45, -0.75, -0.2], [0.85, -0.3, 0.4], 'knife'),
-  K(0.24, [0.0, -0.085, -0.5], [-0.15, -0.95, 0.1], [0.75, 0.1, 0.65], 'knife'),
-  K(0.42, [-0.1, -0.15, -0.43], [-0.05, -0.95, 0.25], [0.5, 0.15, 0.85], 'knife'),
-  K(0.78, [0.2, -0.38, -0.24], [0.0, -0.8, -0.6], [0.9, -0.2, 0.3], 'knife'),
+  KB(0.12, [0.14, -0.08, -0.26], [0.1, 0.4, -0.91], [-1, 0, 0]),
+  KB(0.24, [0.04, -0.07, -0.29], [-0.35, 0.15, -0.92], [-0.8, -0.5, 0.2]),
+  KB(0.42, [-0.07, -0.08, -0.3], [-0.75, 0.0, -0.66], [-0.6, -0.3, 0.7]),
+  KB(0.78, [0.18, -0.3, -0.22], [0.0, -0.6, -0.8], [-1, 0, 0]),
 ];
 const THROW = [
-  K(0.15, [0.12, -0.13, -0.3], [-0.1, 0.55, -0.83], [0.85, 0.35, 0.35], 'grenade'),
-  K(0.32, [0.22, 0.0, -0.12], [-0.1, 0.9, -0.4], [0.95, 0.0, 0.3], 'grenade'),
-  K(0.46, [0.05, -0.02, -0.55], [-0.1, 0.3, -0.95], [0.4, 0.85, 0.3], 'open'),
-  K(0.64, [-0.02, -0.3, -0.42], [0.0, -0.4, -0.9], [0.3, 0.9, -0.3], 'relaxed'),
+  K(0.15, [0.12, -0.12, -0.32], [-0.1, 0.55, -0.83], [0.85, 0.35, 0.35], 'grenade'),
+  K(0.32, [0.24, 0.0, -0.36], [-0.1, 0.9, -0.4], [0.95, 0.0, 0.3], 'grenade'),
+  K(0.46, [0.05, 0.015, -0.55], [-0.1, 0.3, -0.95], [0.4, 0.85, 0.3], 'open'),
+  K(0.64, [-0.035, -0.16, -0.4], [0.0, -0.4, -0.9], [0.3, 0.9, -0.3], 'relaxed'),
 ];
 const DRINK = [
-  K(0.3 / 2.4, [0.12, -0.19, -0.3], [0, 0, -1], [1, 0, 0.25], 'bottle'),
-  K(0.42 / 2.4, [0.045, -0.13, -0.18], [0, -0.93, -0.36], [1, 0, 0.25], 'bottle'),
-  K(1.6 / 2.4, [0.04, -0.115, -0.175], [0, -0.99, 0.12], [1, 0, 0.25], 'bottle'),
-  K(1.82 / 2.4, [0.14, -0.2, -0.32], [0, -0.3, -0.95], [1, 0.1, 0.2], 'bottle'),
+  KX(0.3 / 2.4, [0.11, -0.13, -0.3], [0, -1, 0], [1, 0, 0.2], 'bottle'),
+  KX(0.42 / 2.4, [0.036, -0.068, -0.175], [0, 0.55, -0.83], [1, 0, 0], 'bottle'),
+  KX(1.6 / 2.4, [0.036, -0.046, -0.17], [0, 0.75, -0.66], [1, 0, 0], 'bottle'),
+  KX(1.82 / 2.4, [0.13, -0.17, -0.32], [0, -0.9, -0.4], [1, 0.1, 0.2], 'bottle'),
   K(1.92 / 2.4, [0.22, -0.16, -0.3], [0.3, 0.2, -0.93], [0.9, -0.3, 0.3], 'open'),
   K(2.2 / 2.4, [0.26, -0.52, -0.25], [0.2, -0.3, -0.93], [0.9, -0.2, 0.3], 'relaxed'),
 ];
@@ -341,7 +350,7 @@ export class Weapons {
       Object.assign(this.rl, { n, s0, per, s1: s0 + n * per, done: 0 });
     } else {
       const base = info.reload === 'pistol' ? 'pistol' : info.reload === 'lmg' ? 'lmg' : info.reload === 'cell' ? 'cell' : info.reload === 'break' ? 'break' : 'mag';
-      this.rl.tl = TL[base + (empty && TL[base + 'Empty'] && (base !== 'mag' || info.handle) ? 'Empty' : '')] || TL[base];
+      this.rl.tl = empty && base === 'mag' && info.emptyAction === 'slap' ? TL.magSlap : TL[base + (empty && TL[base + 'Empty'] && (base !== 'mag' || info.handle) ? 'Empty' : '')] || TL[base];
     }
   }
 
@@ -914,7 +923,7 @@ export class Weapons {
     const pos = _p.copy(hip);
     const sightY = info ? info.sightY : 0.07;
     pos.lerp(_w.set(0, -sightY, info ? info.adsZ : -0.2), ads);
-    let rx = 0.0 * (1 - ads), ry = 0.035 * (1 - ads), rz = 0;
+    let rx = 0.015 * (1 - ads), ry = 0.05 * (1 - ads), rz = 0;
     // Kimme: kurzes Einrollen beim Anlegen
     rz -= Math.sin(ads * Math.PI) * 0.045;
 
@@ -952,13 +961,16 @@ export class Weapons {
       const e = plateau(k, 0.14, 0.2);
       const style = this.rl ? this.rl.style : 'mag';
       if (style === 'cell' && info.id === 'ray') { rz += 0.5 * e; rx += 0.15 * e; ry -= 0.15 * e; pos.x -= 0.02 * e; pos.y += 0.01 * e; }
-      else if (style === 'break') { const o = keyed(TL.break.brk, k); rx -= 0.28 * o; pos.y -= 0.02 * o; pos.x -= 0.02 * o; rz -= 0.1 * o; }
-      else { rz -= 0.42 * e; rx += 0.16 * e; ry += 0.18 * e; pos.x -= 0.035 * e; pos.y -= 0.01 * e; pos.z += 0.02 * e; }
+      else if (style === 'break') { const o = keyed(TL.break.brk, k); rx += 0.2 * o; rz -= 0.25 * o; ry += 0.12 * o; pos.x -= 0.045 * o; pos.y += 0.05 * o; pos.z -= 0.04 * o; }
+      else if (style === 'shells') { rz -= 0.55 * e; rx += 0.08 * e; ry += 0.15 * e; pos.x -= 0.04 * e; pos.y += 0.03 * e; pos.z -= 0.06 * e; }
+      else { rz -= 0.5 * e; rx += 0.24 * e; ry += 0.2 * e; pos.x -= 0.05 * e; pos.y += 0.065 * e; pos.z += 0.03 * e; }
+      // Pistole: beim Durchladen nach vorn schieben (Hand bleibt vor dem Gesicht weg)
+      if (style === 'pistol' && this.rl.empty) { const e2 = plateau(seg(k, 0.6, 0.92), 0.25, 0.3); pos.z -= 0.06 * e2; pos.x -= 0.02 * e2; rz += 0.15 * e2; }
     } else if (st === 'raise') hide = 1 - smooth(k);
     else if (st === 'draw') {
       hide = 1 - sseg(k, 0, 0.32);
       if (DRAW[info && info.id] === 'energy') { rz += Math.sin(sseg(k, 0.25, 0.75) * Math.PI) * 0.6; rx += Math.sin(sseg(k, 0.25, 0.75) * Math.PI) * 0.15; }
-      else { const e = plateau(seg(k, 0.36, 0.9), 0.2, 0.3); rz -= 0.3 * e; ry += 0.12 * e; rx += 0.06 * e; }
+      else { const e = plateau(seg(k, 0.36, 0.9), 0.2, 0.3); rz -= 0.3 * e; ry += 0.12 * e; rx += 0.06 * e; pos.z -= 0.06 * e; pos.x -= 0.02 * e; pos.y += 0.02 * e; }
     } else if (st === 'lower') hide = smooth(k);
     else if (st === 'knife') hide = plateau(k, 0.12, 0.3);
     else if (st === 'throw') hide = plateau(k, 0.12, 0.3);
@@ -1044,7 +1056,12 @@ export class Weapons {
       else if (info.id === 'k14' || info.id === 'lmg') s = this.cycleT < 0.08 ? Math.sin((this.cycleT / 0.08) * Math.PI) * 0.85 : 0;
       info.handle.position.copy(info.handleHome).addScaledVector(info.handleTravel, s);
     }
-    if (info.bolt) info.bolt.position.z = this.cycleT < 0.05 ? Math.sin((this.cycleT / 0.05) * Math.PI) * 0.02 : 0;
+    if (info.bolt) {
+      let b = this.cycleT < 0.05 ? Math.sin((this.cycleT / 0.05) * Math.PI) : 0;
+      if (w && w.mag === 0 && this.cycleT > 0.025) b = 1;
+      if (R && R.empty && R.tl === TL.magSlap) b = k < 0.775 ? 1 : 0;
+      info.bolt.position.z = b * 0.022;
+    }
     // Vorderschaft (Pumpgun): nach dem Schuss, beim Nachladen (leer) und beim Ziehen
     if (info.pump) {
       let s = 0;
@@ -1079,7 +1096,7 @@ export class Weapons {
   frame(name, P, Qt) {
     const info = this.info;
     let o = null;
-    if (info) o = name === 'rest' ? info.handL : name === 'mag' ? info.magGrab : name === 'handle' ? info.handleGrab : name === 'slide' ? info.slideGrab : name === 'cover' ? info.coverGrab : name === 'shell' ? info.shellGrab : name === 'off' ? info.offL : name === 'grip' ? info.handR : null;
+    if (info) o = name === 'rest' ? info.handL : name === 'mag' ? info.magGrab : name === 'handle' ? info.handleGrab : name === 'catch' ? info.catchGrab : name === 'slide' ? info.slideGrab : name === 'cover' ? info.coverGrab : name === 'shell' ? info.shellGrab : name === 'off' ? info.offL : name === 'grip' ? info.handR : null;
     if (!o) o = info && name !== 'off' ? info.handL : null;
     if (o) o.matrixWorld.decompose(P, Qt, _sc);
     else { const f = name === 'grip' ? this.offR : this.offL; P.copy(f.p); Qt.copy(f.q); }

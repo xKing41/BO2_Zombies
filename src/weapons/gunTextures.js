@@ -88,8 +88,8 @@ function steelTex(seed = 3) {
     o.rough = 0.5 + (f - 0.5) * 0.28 + (brushed - 0.5) * 0.12 - smudge * 0.14;
     o.wear = smoothstep(0.32, 0.78, n.fbm(u * 5 + 7, v * 5 + 3, 4, 5)) * 0.8;
     // Lochfraß
-    const pit = smoothstep(0.82, 0.9, n.noise(u * 64 + 3, v * 64 + 9, 64));
-    o.h -= pit * 0.35; o.rough += pit * 0.3; o.r -= pit * 0.15; o.g -= pit * 0.17; o.b -= pit * 0.2;
+    const pit = smoothstep(0.88, 0.95, n.noise(u * 64 + 3, v * 64 + 9, 64));
+    o.h -= pit * 0.2; o.rough += pit * 0.15; o.r -= pit * 0.05; o.g -= pit * 0.06; o.b -= pit * 0.07;
   });
   scratches(p, r, IS_MOBILE ? 70 : 150);
   return finish(p);
@@ -120,8 +120,8 @@ function woodTex(seed = 7, checker = 0) {
     const ring = Math.sin((v * 18 + warp * 5 + n.noise(u * 3, v * 3, 3) * 0.6) * Math.PI * 2) * 0.5 + 0.5;
     const pore = n.noise(u * 6, v * 340, 6);
     const figure = n.fbm(u * 2 + 5, v * 2, 3, 2);
-    const dark = smoothstep(0.55, 0.95, ring) * 0.5 + smoothstep(0.62, 0.8, pore) * 0.35;
-    let cr = 0.4 + (figure - 0.5) * 0.14, cg = 0.22 + (figure - 0.5) * 0.08, cb = 0.11 + (figure - 0.5) * 0.04;
+    const dark = (smoothstep(0.55, 0.95, ring) * 0.5 + smoothstep(0.62, 0.8, pore) * 0.35) * (checker ? 0.35 : 1);
+    let cr = 0.27 + (figure - 0.5) * 0.1, cg = 0.158 + (figure - 0.5) * 0.06, cb = 0.098 + (figure - 0.5) * 0.03;
     cr *= 1 - dark * 0.55; cg *= 1 - dark * 0.62; cb *= 1 - dark * 0.65;
     o.r = cr; o.g = cg; o.b = cb;
     o.h = 0.55 - dark * 0.3 + (pore - 0.5) * 0.15;
@@ -199,7 +199,7 @@ export function gunMats(M) {
 // Vertexfarben (linear) mit Rauheits-Faktor in Alpha (0.5 = neutral)
 export const TINT = {
   steel: [0.07, 0.072, 0.08, 0.5],
-  blued: [0.045, 0.05, 0.065, 0.42],
+  blued: [0.05, 0.052, 0.06, 0.42],
   alu: [0.055, 0.055, 0.06, 0.55],
   dark: [0.02, 0.02, 0.022, 0.6],
   bore: [0.004, 0.004, 0.004, 0.9],

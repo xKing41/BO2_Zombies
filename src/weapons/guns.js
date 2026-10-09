@@ -45,6 +45,11 @@ function hand(parent, name, pos, fwd, up) {
 // Pistolengriff-Haltung der rechten Hand (Griffwinkel ang, Handgelenk-Position)
 const gripR = (parent, pos, ang = 0.33, roll = 0.12) => hand(parent, 'handR', pos, [0, -Math.sin(ang), -Math.cos(ang)], [Math.cos(roll), Math.sin(roll) * Math.cos(ang), Math.sin(roll) * Math.sin(ang) * -1 + 0.0]);
 
+// Linke Hand von unten am Handschutz: Handfläche oben, Finger nach rechts, Daumen nach vorn
+const guardL = (parent, pos, name = 'handL') => hand(parent, name, pos, [0.95, 0.12, -0.2], [-0.15, -1, 0]);
+// Linke Stützhand an der Pistole: umfasst die rechte Hand von links unten
+const supportL = (parent, pos) => hand(parent, 'handL', pos, [0.05, -0.32, -0.95], [-0.95, -0.3, 0.0]);
+
 // ── Wiederkehrende Bauteile ───────────────────────────────────
 // Abzug (Seitenprofil) bei a, Oberkante y0
 function trigger(P, mat, a, y0, len = 0.022) {
@@ -124,8 +129,8 @@ const BUILDERS = {
     const slide = grp(g, 'slide');
     S.add(met, T.blued, front([[-0.0118, 0.012], [0.0118, 0.012], [0.0118, 0.039], ['q', 0.0118, 0.0465, 0.0062, 0.0465], [-0.0062, 0.0465], ['q', -0.0118, 0.0465, -0.0118, 0.039]], 0.218, 0.0022), [0, 0, -0.066]);
     for (let i = 0; i < 9; i++) for (const s of [-1, 1]) S.add(dk, T.dark, box(0.0008, 0.024, 0.0011), [s * 0.0119, 0.029, 0.038 - i * 0.0031]);
-    S.add(dk, T.hole, box(0.001, 0.0125, 0.034), [0.0115, 0.0335, -0.03]);
-    S.add(met, T.brass, cylZ(0.0062, 0.0062, 0.026, 10), [0.006, 0.03, -0.03]); // Lauf-Haube im Fenster
+    S.add(dk, T.hole, box(0.0006, 0.011, 0.03), [0.0118, 0.0335, -0.03]);
+    S.add(met, T.chrome, cylZ(0.0058, 0.0058, 0.026, 10), [0.0072, 0.031, -0.03]); // Lauf-Haube im Fenster
     for (const s of [-1, 1]) S.add(met, T.blued, rbox(0.0042, 0.0075, 0.007, 0.0009), [s * 0.0034, 0.0503, 0.034]);
     S.add(met, T.blued, rbox(0.011, 0.003, 0.007, 0.0006), [0, 0.048, 0.034]);
     S.add(met, T.blued, rbox(0.0032, 0.0075, 0.009, 0.0012), [0, 0.0503, -0.165]);
@@ -148,10 +153,10 @@ const BUILDERS = {
     F.build(g, 'frame');
     I.muzzle.position.set(0, 0.03, -0.18);
     I.ejectPort.position.set(0.012, 0.035, -0.03);
-    I.sightY = 0.054; I.adsZ = -0.19; I.hip = V(0.098, -0.112, -0.26);
-    gripR(g, [0.012, -0.012, 0.082], 0.36, 0.25);
-    hand(g, 'handL', [-0.03, -0.075, 0.05], [0.42, 0.2, -0.88], [-0.75, -0.55, 0.1]);
-    hand(slide, 'slideGrab', [-0.01, 0.075, 0.08], [0.2, -0.75, -0.6], [-0.4, 0.5, -0.75]);
+    I.sightY = 0.054; I.adsZ = -0.19; I.hip = V(0.11, -0.098, -0.32);
+    gripR(g, [0.014, -0.008, 0.078], 0.36, 0.25);
+    supportL(g, [-0.03, -0.035, 0.06]);
+    hand(slide, 'slideGrab', [-0.1, 0.05, 0.02], [0.95, -0.3, -0.05], [0.25, 0.95, 0.1]);
     I.poseR = 'pistol'; I.poseL = 'support'; I.reload = 'pistol'; I.eject = 'pistol'; I.flash = 0.7;
   },
 
@@ -198,7 +203,7 @@ const BUILDERS = {
     B.add(met, T.steel, rbox(0.015, 0.012, 0.016, 0.003), [0.026, 0.026, -0.12]);
     B.build(bolt, 'handle');
     I.handle = bolt; I.handleTravel = V(0, 0, 0.065);
-    hand(bolt, 'handleGrab', [0.075, 0.045, -0.05], [-0.85, -0.2, -0.45], [0.3, 0.9, -0.2]);
+    hand(bolt, 'handleGrab', [0.055, -0.045, -0.085], [0.0, 0.95, -0.3], [1, 0.0, 0.1]);
     // Magazin (20 Schuss)
     const mag = grp(g, 'mag', 0, -0.004, -0.1);
     Mg.add(met, T.steel, side([[-0.034, 0.004], [0.034, 0.004], [0.036, -0.09], ['q', 0.038, -0.098, 0.033, -0.1], [-0.026, -0.108], ['q', -0.032, -0.106, -0.032, -0.1]], 0.026, 0.0025));
@@ -207,13 +212,13 @@ const BUILDERS = {
     Mg.add(met, T.copper, lathe([[0.0062, 0], [0.005, 0.007], [0.0025, 0.016], [0.0, 0.018]], 10), [0, 0.01, -0.023]);
     Mg.build(mag, 'mag');
     I.mag = mag;
-    hand(mag, 'magGrab', [-0.02, -0.12, 0.07], [0.25, 0.85, -0.45], [-0.95, 0.15, 0.2]);
+    hand(mag, 'magGrab', [-0.034, -0.08, 0.085], [0.35, 0.35, -0.87], [-0.9, -0.2, 0.3]);
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.03, -0.71);
     I.ejectPort.position.set(0.012, 0.045, -0.07);
-    I.sightY = 0.064; I.adsZ = -0.105; I.hip = V(0.105, -0.13, -0.2);
+    I.sightY = 0.064; I.adsZ = -0.105; I.hip = V(0.13, -0.112, -0.3);
     hand(g, 'handR', [0.022, -0.02, 0.085], [0.0, -0.55, -0.83], [0.95, 0.2, 0.2]);
-    hand(g, 'handL', [-0.045, -0.06, -0.3], [0.62, 0.45, -0.62], [-0.65, -0.72, -0.15]);
+    guardL(g, [-0.046, -0.034, -0.31]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'mag'; I.eject = 'rifle'; I.flash = 1.1;
   },
 
@@ -260,12 +265,12 @@ const BUILDERS = {
     Ch.build(ch, 'chamber');
     I.breakPart = br; I.chamber = ch;
     I.chamberPos = [V(-0.0118, by, 0.0), V(0.0118, by, 0.0)];
-    hand(br, 'handL', [-0.04, -0.035, -0.16], [0.62, 0.42, -0.65], [-0.62, -0.78, -0.1]);
-    hand(br, 'shellGrab', [-0.012, by + 0.02, 0.1], [0.05, -0.45, -0.89], [-0.6, 0.7, -0.35]);
+    guardL(br, [-0.046, -0.026, -0.115]);
+    hand(br, 'shellGrab', [-0.1, by + 0.035, 0.01], [0.9, -0.38, -0.15], [0.3, 0.9, 0.2]);
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.026, -0.67);
     I.ejectPort.position.set(0, 0.03, -0.14);
-    I.sightY = 0.046; I.adsZ = -0.115; I.hip = V(0.11, -0.13, -0.2);
+    I.sightY = 0.046; I.adsZ = -0.115; I.hip = V(0.13, -0.108, -0.3);
     hand(g, 'handR', [0.02, -0.018, 0.085], [0.0, -0.45, -0.89], [0.95, 0.2, 0.15]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'break'; I.eject = 'shell'; I.flash = 1.35;
   },
@@ -298,7 +303,7 @@ const BUILDERS = {
     // Auswurffenster rechts, Unterschiene + Frontgriff
     P.add(dk, T.hole, box(0.001, 0.016, 0.04), [0.0232, 0.034, -0.07]);
     P.add(met, T.alu, rail(0.05, 0.02, 0.007), [0, 0.012, -0.245], [Math.PI, 0, 0]);
-    P.add(pol, T.black, lathe([[0.0, 0.0], [0.0135, 0.0], [0.0145, 0.01], [0.0138, 0.03], [0.014, 0.05], [0.0155, 0.056], [0.0155, 0.064], [0.0, 0.066]], 14), [0, 0.006, -0.245], [Math.PI / 2, 0, 0]);
+    P.add(pol, T.black, lathe([[0.0, 0.0], [0.0135, 0.0], [0.0145, 0.01], [0.0138, 0.03], [0.014, 0.05], [0.0155, 0.056], [0.0155, 0.064], [0.0, 0.066]], 14), [0, 0.006, -0.245], [-Math.PI / 2, 0, 0]);
     // Klappschaft
     P.add(pol, T.black, side([[-0.075, 0.047], [-0.305, 0.047], [-0.318, 0.038], [-0.318, -0.04], [-0.302, -0.05], [-0.27, -0.04], [-0.13, 0.005], [-0.075, 0.012]], 0.02, 0.003,
       [[[-0.13, 0.036], [-0.29, 0.036], [-0.296, -0.026], [-0.272, -0.026], [-0.14, 0.014]]]));
@@ -308,7 +313,7 @@ const BUILDERS = {
     H.add(met, T.steel, rbox(0.014, 0.009, 0.014, 0.003), [-0.029, 0.036, -0.17]);
     H.build(h, 'handle');
     I.handle = h; I.handleTravel = V(0, 0, 0.06);
-    hand(h, 'handleGrab', [-0.085, 0.045, -0.11], [0.85, -0.25, -0.45], [-0.35, 0.92, -0.1]);
+    hand(h, 'handleGrab', [-0.065, -0.035, -0.1], [0.15, 0.95, -0.3], [-1, 0.1, 0.1]);
     // Magazin
     const mag = grp(g, 'mag', 0, -0.03, -0.11); mag.rotation.x = 0.06;
     Mg.add(met, T.dark, side([[-0.024, 0.02], [0.024, 0.02], [0.024, -0.15], [-0.024, -0.15]], 0.025, 0.0028));
@@ -316,13 +321,13 @@ const BUILDERS = {
     Mg.add(met, T.brass, cylZ(0.0058, 0.0058, 0.016, 10), [0, 0.024, 0.006]);
     Mg.build(mag, 'mag');
     I.mag = mag;
-    hand(mag, 'magGrab', [-0.012, -0.175, 0.07], [0.2, 0.85, -0.5], [-0.95, 0.15, 0.25]);
+    hand(mag, 'magGrab', [-0.034, -0.1, 0.085], [0.35, 0.35, -0.87], [-0.9, -0.2, 0.3]);
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.026, -0.385);
     I.ejectPort.position.set(0.024, 0.035, -0.07);
-    I.sightY = 0.08; I.adsZ = -0.14; I.hip = V(0.11, -0.13, -0.22);
+    I.sightY = 0.08; I.adsZ = -0.14; I.hip = V(0.125, -0.115, -0.3);
     gripR(g, [0.012, -0.03, 0.088], 0.32, 0.18);
-    hand(g, 'handL', [-0.035, -0.075, -0.2], [0.55, -0.1, -0.83], [-0.82, 0.0, -0.55]);
+    hand(g, 'handL', [-0.024, -0.034, -0.198], [0.12, 0.0, -1], [-1, 0.0, 0.1]);
     I.poseR = 'pistol'; I.poseL = 'vgrip'; I.reload = 'mag'; I.eject = 'pistol'; I.flash = 0.8;
   },
 
@@ -359,13 +364,13 @@ const BUILDERS = {
     Pm.add(met, T.chrome, rbox(0.012, 0.016, 0.05, 0.002), [0.011, 0.024, -0.09]);
     Pm.build(pump, 'pump');
     I.pump = pump; I.pumpTravel = 0.085;
-    hand(pump, 'handL', [-0.045, -0.04, -0.33], [0.62, 0.45, -0.64], [-0.65, -0.74, -0.14]);
+    guardL(pump, [-0.046, -0.03, -0.32]);
     P.build(g, 'body');
     I.loadPort = node(g, 'loadPort', 0, -0.025, -0.1);
     hand(g, 'shellGrab', [-0.03, -0.11, -0.05], [0.1, 0.8, -0.6], [-0.95, 0.15, 0.25]);
     I.muzzle.position.set(0, 0.03, -0.71);
     I.ejectPort.position.set(0.019, 0.025, -0.085);
-    I.sightY = 0.045; I.adsZ = -0.11; I.hip = V(0.11, -0.13, -0.2);
+    I.sightY = 0.045; I.adsZ = -0.11; I.hip = V(0.13, -0.108, -0.3);
     hand(g, 'handR', [0.022, -0.02, 0.09], [0.0, -0.5, -0.86], [0.95, 0.2, 0.15]);
     I.poseR = 'wrist'; I.poseL = 'forend'; I.reload = 'shells'; I.eject = 'shell'; I.flash = 1.35;
   },
@@ -414,12 +419,13 @@ const BUILDERS = {
     H.add(met, T.alu, top([[-0.019, 0.0], [0.019, 0.0], [0.016, -0.009], [-0.016, -0.009]], 0.0055, 0.0012), [0, 0.052, 0.083]);
     H.build(h, 'handle');
     I.handle = h; I.handleTravel = V(0, 0, 0.06);
-    hand(h, 'handleGrab', [-0.035, 0.12, 0.13], [0.35, -0.85, -0.4], [-0.3, 0.3, -0.9]);
+    hand(h, 'handleGrab', [-0.115, 0.06, 0.085], [0.95, -0.15, -0.1], [0.15, 0.97, 0.1]);
     // Verschlussträger im Auswurffenster
     const bolt = grp(g, 'bolt');
     Bo.add(met, T.chrome, rbox(0.006, 0.012, 0.048, 0.002), [0.0098, 0.029, -0.03]);
     Bo.build(bolt, 'bolt');
-    I.bolt = bolt;
+    I.bolt = bolt; I.emptyAction = 'slap';
+    hand(g, 'catchGrab', [-0.045, -0.06, 0.02], [0.25, 0.6, -0.75], [-0.95, 0.0, 0.3]);
     // Gebogenes 30-Schuss-Magazin
     const mag = grp(g, 'mag', 0, -0.012, -0.085);
     Mg.add(met, T.alu, side([[-0.031, 0.012], [0.031, 0.012], [0.031, -0.035], ['q', 0.035, -0.12, 0.062, -0.176], [0.003, -0.198], ['q', -0.025, -0.13, -0.031, -0.035]], 0.0215, 0.0022));
@@ -429,13 +435,13 @@ const BUILDERS = {
     Mg.add(met, T.copper, lathe([[0.0032, 0], [0.0028, 0.006], [0.0012, 0.013], [0.0, 0.0145]], 10), [0, 0.016, -0.0135]);
     Mg.build(mag, 'mag');
     I.mag = mag;
-    hand(mag, 'magGrab', [-0.012, -0.19, 0.075], [0.3, 0.85, -0.45], [-0.95, 0.2, 0.25]);
+    hand(mag, 'magGrab', [-0.032, -0.095, 0.09], [0.35, 0.35, -0.87], [-0.9, -0.2, 0.3]);
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.028, -0.605);
     I.ejectPort.position.set(0.014, 0.03, -0.03);
-    I.sightY = 0.094; I.adsZ = -0.13; I.hip = V(0.11, -0.135, -0.21);
+    I.sightY = 0.094; I.adsZ = -0.13; I.hip = V(0.13, -0.122, -0.32);
     gripR(g, [0.012, -0.034, 0.088], 0.42, 0.18);
-    hand(g, 'handL', [-0.05, -0.04, -0.27], [0.62, 0.45, -0.64], [-0.62, -0.77, -0.14]);
+    guardL(g, [-0.046, -0.018, -0.262]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'mag'; I.eject = 'rifle'; I.flash = 1;
   },
 
@@ -474,13 +480,13 @@ const BUILDERS = {
     Cv.add(met, T.steel, rbox(0.012, 0.008, 0.016, 0.002), [0.02, 0.012, 0.19]);
     Cv.build(cover, 'cover');
     I.cover = cover;
-    hand(cover, 'coverGrab', [-0.02, 0.07, 0.25], [0.3, -0.7, -0.65], [-0.3, 0.6, -0.75]);
+    hand(cover, 'coverGrab', [-0.1, 0.025, 0.17], [0.95, -0.22, -0.1], [0.2, 0.97, 0.1]);
     // Ladehebel rechts
     const h = grp(g, 'handle');
     H.add(met, T.steel, rbox(0.02, 0.012, 0.014, 0.003), [0.033, 0.015, -0.17]);
     H.build(h, 'handle');
     I.handle = h; I.handleTravel = V(0, 0, 0.08);
-    hand(h, 'handleGrab', [0.08, 0.035, -0.11], [-0.85, -0.2, -0.45], [0.3, 0.92, -0.2]);
+    hand(h, 'handleGrab', [0.065, -0.06, -0.135], [0.0, 0.95, -0.3], [1, 0.0, 0.1]);
     // Trommel mit Gurt (Magazin)
     const mag = grp(g, 'mag', 0, -0.016, -0.105);
     Mg.add(met, T.od, cylX(0.068, 0.056, 28), [0, -0.068, 0]);
@@ -498,9 +504,9 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.032, -0.885);
     I.ejectPort.position.set(0.0, -0.012, -0.08);
-    I.sightY = 0.072; I.adsZ = -0.17; I.hip = V(0.12, -0.14, -0.22);
+    I.sightY = 0.072; I.adsZ = -0.17; I.hip = V(0.135, -0.128, -0.32);
     gripR(g, [0.012, -0.034, 0.085], 0.33, 0.18);
-    hand(g, 'handL', [-0.05, -0.04, -0.3], [0.62, 0.45, -0.64], [-0.62, -0.77, -0.14]);
+    guardL(g, [-0.05, -0.038, -0.33]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'lmg'; I.eject = 'rifle'; I.flash = 1.15;
   },
 
@@ -547,7 +553,7 @@ const BUILDERS = {
     H.add(met, T.steel, rbox(0.012, 0.006, 0.01, 0.002), [0.034, 0.034, -0.1]);
     H.build(h, 'handle');
     I.handle = h; I.handleTravel = V(0, 0, 0.09);
-    hand(h, 'handleGrab', [0.085, 0.05, -0.04], [-0.85, -0.2, -0.45], [0.3, 0.92, -0.2]);
+    hand(h, 'handleGrab', [0.068, -0.05, -0.06], [0.0, 0.95, -0.3], [1, 0.0, 0.1]);
     // Magazin (.50, 10 Schuss)
     const mag = grp(g, 'mag', 0, -0.03, -0.1);
     Mg.add(met, T.steel, side([[-0.055, 0.03], [0.055, 0.03], [0.055, -0.07], [0.05, -0.078], [-0.05, -0.078], [-0.055, -0.07]], 0.034, 0.003));
@@ -555,13 +561,13 @@ const BUILDERS = {
     Mg.add(met, T.brass, cylZ(0.0105, 0.0105, 0.07, 12), [0, 0.04, 0.012]);
     Mg.build(mag, 'mag');
     I.mag = mag;
-    hand(mag, 'magGrab', [-0.02, -0.11, 0.07], [0.3, 0.85, -0.45], [-0.95, 0.2, 0.25]);
+    hand(mag, 'magGrab', [-0.042, -0.06, 0.1], [0.35, 0.35, -0.87], [-0.9, -0.2, 0.3]);
     P.build(g, 'body');
     I.muzzle.position.set(0, 0.03, -0.93);
     I.ejectPort.position.set(0.032, 0.03, 0.0);
-    I.sightY = 0.105; I.adsZ = -0.2; I.hip = V(0.12, -0.15, -0.24);
+    I.sightY = 0.105; I.adsZ = -0.2; I.hip = V(0.135, -0.14, -0.33);
     gripR(g, [0.012, -0.056, 0.085], 0.3, 0.18);
-    hand(g, 'handL', [-0.052, -0.035, -0.2], [0.62, 0.45, -0.64], [-0.62, -0.77, -0.14]);
+    guardL(g, [-0.056, -0.034, -0.21]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'mag'; I.eject = 'big'; I.flash = 1.6;
   },
 
@@ -603,9 +609,9 @@ const BUILDERS = {
     P.build(g, 'body');
     I.muzzle.position.set(0, y0, -0.275);
     I.ejectPort.position.set(0, 0.05, 0.0);
-    I.sightY = 0.088; I.adsZ = -0.2; I.hip = V(0.1, -0.12, -0.25);
+    I.sightY = 0.088; I.adsZ = -0.2; I.hip = V(0.11, -0.1, -0.32);
     gripR(g, [0.012, -0.012, 0.085], 0.28, 0.2);
-    hand(g, 'handL', [-0.03, -0.075, 0.05], [0.42, 0.2, -0.88], [-0.75, -0.55, 0.1]);
+    supportL(g, [-0.03, -0.035, 0.065]);
     I.poseR = 'pistol'; I.poseL = 'support'; I.reload = 'cell'; I.eject = null; I.flash = 0;
     I.glow = glow;
   },
@@ -660,9 +666,9 @@ const BUILDERS = {
     I.core = core;
     I.muzzle.position.set(0, 0.014, -0.375);
     I.ejectPort.position.set(0, 0.05, 0.0);
-    I.sightY = 0.124; I.adsZ = -0.17; I.hip = V(0.11, -0.13, -0.24);
+    I.sightY = 0.124; I.adsZ = -0.17; I.hip = V(0.125, -0.125, -0.32);
     gripR(g, [0.012, -0.012, 0.085], 0.33, 0.2);
-    hand(g, 'handL', [-0.048, -0.06, -0.14], [0.62, 0.45, -0.64], [-0.62, -0.77, -0.14]);
+    guardL(g, [-0.05, -0.044, -0.14]);
     I.poseR = 'pistol'; I.poseL = 'handguard'; I.reload = 'cell'; I.eject = null; I.flash = 0;
   },
 };
@@ -672,7 +678,7 @@ const BUILDERS = {
 // und teilen Geometrien/Materialien.
 const PROTO = new Map();
 const REFS = ['muzzle', 'ejectPort', 'mag', 'slide', 'pump', 'breakPart', 'handle', 'bolt', 'cover', 'chamber', 'loadPort'];
-const ANCHORS = ['handR', 'handL', 'magGrab', 'handleGrab', 'slideGrab', 'coverGrab', 'shellGrab'];
+const ANCHORS = ['handR', 'handL', 'magGrab', 'handleGrab', 'slideGrab', 'coverGrab', 'shellGrab', 'catchGrab'];
 
 function buildProto(id, M, pap) {
   const G = gunMats(M);

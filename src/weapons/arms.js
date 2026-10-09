@@ -26,7 +26,7 @@ export const POSES = {
   relaxed: P([[0.3, 0.4, 0.25, 0], [0.35, 0.45, 0.25, 0], [0.4, 0.5, 0.25, 0], [0.45, 0.55, 0.3, 0]], [0.25, 0.1, 0.0, 0.15, 0.15]),
   open: P([[0.12, 0.12, 0.08, 0.05], [0.1, 0.1, 0.06, 0], [0.12, 0.12, 0.08, -0.04], [0.15, 0.15, 0.1, -0.08]], [0.1, -0.1, 0.0, 0.1, 0.1]),
   flat: P([[0.05, 0.05, 0.03, 0.03], [0.04, 0.04, 0.03, 0], [0.05, 0.05, 0.03, -0.03], [0.07, 0.06, 0.04, -0.06]], [0.05, -0.2, 0.0, 0.05, 0.05]),
-  pistol: P([[0.5, 0.75, 0.35, 0.0], [1.35, 1.45, 0.8, 0], [1.4, 1.45, 0.8, 0], [1.45, 1.4, 0.8, 0]], [0.55, 0.25, 0.5, 0.25, 0.2]),
+  pistol: P([[0.5, 0.75, 0.35, 0.0], [1.35, 1.45, 0.8, 0], [1.4, 1.45, 0.8, 0], [1.45, 1.4, 0.8, 0]], [0.3, -0.5, 0.3, 0.2, 0.1]),
   wrist: P([[0.55, 0.8, 0.35, 0], [1.2, 1.35, 0.75, 0], [1.25, 1.35, 0.75, 0], [1.3, 1.3, 0.75, 0]], [0.5, 0.2, 0.4, 0.2, 0.2]),
   handguard: P([[1.0, 1.05, 0.55, 0.05], [1.05, 1.1, 0.6, 0], [1.1, 1.1, 0.6, 0], [1.15, 1.1, 0.6, -0.05]], [0.3, 0.0, -0.2, 0.1, 0.1]),
   forend: P([[0.85, 0.95, 0.5, 0.05], [0.9, 1.0, 0.55, 0], [0.95, 1.0, 0.55, 0], [1.0, 1.0, 0.55, -0.05]], [0.3, 0.0, -0.2, 0.1, 0.1]),
@@ -128,8 +128,8 @@ export class Arms {
     this.root.add(this.mesh);
     this.mesh.bind(this.skeleton, new THREE.Matrix4());
     // Schultern (Kameraraum) und Ellbogen-Pole
-    this.side[0].shoulder.set(0.2, -0.36, 0.1); this.side[0].pole.set(0.85, -0.6, 0.15);
-    this.side[1].shoulder.set(-0.21, -0.36, 0.08); this.side[1].pole.set(-0.85, -0.6, 0.15);
+    this.side[0].shoulder.set(0.22, -0.36, 0.05); this.side[0].pole.set(0.85, -0.6, 0.1);
+    this.side[1].shoulder.set(-0.23, -0.36, -0.06); this.side[1].pole.set(-0.8, -0.65, 0.1);
     for (const S of this.side) { S.pose.set(POSES.relaxed); S.target.set(S.s * 0.2, -0.5, -0.3); }
   }
 
@@ -177,7 +177,7 @@ export class Arms {
       parts.push(geo);
     };
     const local = (g) => { const p = g.attributes.position; g.userData.lz = Float32Array.from({ length: p.count }, (_, i) => p.getZ(i)); return g; };
-    const fold = (a, z, j) => Math.sin(z * 90 + Math.sin(a * 3 + j) * 1.5) * 0.045 + Math.sin(a * 5 + z * 40) * 0.02;
+    const fold = (a, z, j) => Math.sin(z * 55 + Math.sin(a * 2 + j * 1.7) * 2.2) * 0.022 * (0.6 + 0.4 * Math.sin(a * 3 + j)) + Math.sin(a * 5 + z * 31) * 0.012;
     // Oberarm (Jacke)
     const upRings = [];
     for (let j = 0; j <= 8; j++) { const t = j / 8; upRings.push({ z: 0.03 - t * (LU + 0.04), rx: 0.062 - t * 0.008, ry: 0.058 - t * 0.008 }); }
@@ -185,17 +185,17 @@ export class Arms {
     // Unterarm: Ärmel mit Falten, aufgekrempelter Saum, nackter Unterarm
     const foRings = [];
     const sleeveEnd = LF - 0.1;
-    for (let j = 0; j <= 9; j++) { const t = j / 9; foRings.push({ z: 0.035 - t * (sleeveEnd + 0.035), rx: 0.054 - t * 0.009, ry: 0.05 - t * 0.009 }); }
+    for (let j = 0; j <= 9; j++) { const t = j / 9; foRings.push({ z: 0.035 - t * (sleeveEnd + 0.035), rx: 0.05 - t * 0.01, ry: 0.046 - t * 0.01 }); }
     add(local(tube(foRings, 12, ATLAS.sleeve, { noise: fold })), S.fore, S.upper, (z) => 0.5 * smoothstep(-0.07, 0.0, z) + 0.5 * smoothstep(0.0, 0.035, z));
     const cuff = [
-      { z: -sleeveEnd + 0.012, rx: 0.046, ry: 0.042 }, { z: -sleeveEnd + 0.004, rx: 0.051, ry: 0.047 }, { z: -sleeveEnd - 0.006, rx: 0.052, ry: 0.048 },
-      { z: -sleeveEnd - 0.017, rx: 0.049, ry: 0.045 }, { z: -sleeveEnd - 0.024, rx: 0.04, ry: 0.037 },
+      { z: -sleeveEnd + 0.012, rx: 0.041, ry: 0.037 }, { z: -sleeveEnd + 0.004, rx: 0.046, ry: 0.042 }, { z: -sleeveEnd - 0.006, rx: 0.047, ry: 0.043 },
+      { z: -sleeveEnd - 0.017, rx: 0.044, ry: 0.04 }, { z: -sleeveEnd - 0.024, rx: 0.036, ry: 0.033 },
     ];
     add(local(tube(cuff, 12, ATLAS.sleeve, { noise: (a, z, j) => Math.sin(a * 7 + j) * 0.03 })), S.fore);
     const skinF = [{ z: -sleeveEnd + 0.02, rx: 0.037, ry: 0.033 }, { z: -sleeveEnd - 0.03, rx: 0.034, ry: 0.029 }, { z: -LF + 0.035, rx: 0.031, ry: 0.025 }];
     add(local(tube(skinF, 10, ATLAS.skin)), S.fore);
     // Handschuh-Stulpe am Handgelenk (Hand-Raum: +z Richtung Ellbogen)
-    const glove = [{ z: 0.06, rx: 0.033, ry: 0.027 }, { z: 0.045, rx: 0.035, ry: 0.029 }, { z: 0.02, rx: 0.034, ry: 0.026 }, { z: -0.005, rx: 0.032, ry: 0.022 }];
+    const glove = [{ z: 0.045, rx: 0.03, ry: 0.025 }, { z: 0.035, rx: 0.0315, ry: 0.0265 }, { z: 0.015, rx: 0.031, ry: 0.024 }, { z: -0.008, rx: 0.031, ry: 0.021 }];
     add(local(tube(glove, 12, ATLAS.pad, { pw: 0.85 })), S.hand, S.fore, (z) => smoothstep(0.005, 0.055, z));
     // Handfläche/Handrücken (Leder), Daumenballen, Knöchelschutz
     const palm = [
@@ -210,7 +210,7 @@ export class Arms {
     { const uv = pad.attributes.uv, [u0, v0, u1, v1] = ATLAS.pad; for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + (u1 - u0) * (0.05 + 0.9 * uv.getX(i)), v0 + (v1 - v0) * (0.05 + 0.9 * uv.getY(i))); }
     pad.translate(0.0, 0.0175, -0.072);
     add(local(pad), S.hand);
-    const strap = new THREE.BoxGeometry(0.05, 0.006, 0.02); strap.translate(0.0, 0.028, 0.032);
+    const strap = new THREE.BoxGeometry(0.044, 0.005, 0.016); strap.translate(0.0, 0.025, 0.026);
     { const uv = strap.attributes.uv, [u0, v0, u1, v1] = ATLAS.pad; for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + (u1 - u0) * (0.1 + 0.3 * uv.getX(i)), v0 + (v1 - v0) * (0.1 + 0.3 * uv.getY(i))); }
     add(local(strap), S.hand, S.fore, (z) => smoothstep(0.005, 0.055, z));
     // Finger: Grundglied mit Handschuh (fingerlos), Rest Haut
