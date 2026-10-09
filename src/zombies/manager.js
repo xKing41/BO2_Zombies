@@ -243,7 +243,7 @@ export class ZombieManager {
       g.effects.bloodDecal(z.pos.x + rand(-0.3, 0.3), z.pos.z + rand(-0.3, 0.3), head ? 1.2 : 0.9);
       g.audio.hitFlesh(point, head);
       if (Math.random() < 0.6) g.audio.zombieDeath(point);
-      let pts = opts.knife ? POINTS.knife : head ? POINTS.head : POINTS.kill;
+      let pts = opts.knife ? POINTS.knife : opts.explosive || opts.fling || shock || opts.wonder ? POINTS.blast : head ? POINTS.head : part === 'limb' ? POINTS.limb : POINTS.kill;
       if (opts.nuke) pts = 0;
       if (pts) g.addPoints(pts);
       g.stats.kills++;

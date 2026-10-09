@@ -5,6 +5,7 @@ import { CELL, WEAPONS, PERKS, PERK_LIMIT, BOX_COST, BOX_POOL, PAP_COST, GRENADE
 import { WALLDIR } from '../world/map.js';
 import { buildGun } from '../weapons/guns.js';
 import { mergeByMaterial } from '../world/batch.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import * as T from '../core/textures.js';
 import { rand, smooth, weightedPick, clamp } from '../core/utils.js';
 
@@ -63,7 +64,7 @@ class Barricade extends Interactable {
     if (this.win.boards >= 6) return;
     this.t -= dt;
     if (this.t <= 0) {
-      this.t = 0.55;
+      this.t = this.g.player.perks.has('blitz') ? 0.3 : 0.55;
       if (this.g.map.addBoard(this.win)) {
         this.g.audio.boardPlace(this.win.center.clone().setY(1.6));
         if (this.g.repairPoints < 500) { this.g.addPoints(POINTS.board); this.g.repairPoints += POINTS.board; }
@@ -129,21 +130,43 @@ class PerkMachine extends Interactable {
     this.id = id;
     const col = new THREE.Color(P.color);
     const g = new THREE.Group();
-    const paint = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.55), roughness: 0.45, metalness: 0.4 });
+    // Automat im Stil der alten Perk-Automaten: abgerundetes Gehäuse, gewölbte Krone
+    // mit leuchtendem Kronkorken-Logo, Namensschild, Glasfront mit Flaschen, Chromleisten
+    const paint = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.5), roughness: 0.32, metalness: 0.5 });
+    const dark = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.18), roughness: 0.5, metalness: 0.4 });
     const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
-    add(new THREE.BoxGeometry(1.1, 2.1, 0.75), paint, 0, 1.05, 0);
-    add(new THREE.BoxGeometry(1.16, 0.12, 0.8), M.chrome, 0, 2.12, 0);
-    add(new THREE.BoxGeometry(1.16, 0.1, 0.8), M.chrome, 0, 0.05, 0);
+    add(new RoundedBoxGeometry(1.1, 1.9, 0.76, 3, 0.07), paint, 0, 0.95, 0);
+    const crown = new THREE.CylinderGeometry(0.55, 0.55, 0.7, 28, 1, false, Math.PI / 2, Math.PI);
+    crown.rotateX(Math.PI / 2);
+    add(crown, paint, 0, 1.9, -0.02);
+    const rim = new THREE.TorusGeometry(0.55, 0.035, 8, 28, Math.PI);
+    add(rim, M.chrome, 0, 1.9, 0.34);
+    add(new THREE.BoxGeometry(1.18, 0.08, 0.82), M.chrome, 0, 0.04, 0);
+    add(new THREE.BoxGeometry(1.14, 0.05, 0.8), M.chrome, 0, 1.9, 0);
+    for (const x of [-0.53, 0.53]) add(new THREE.BoxGeometry(0.05, 1.8, 0.05), M.chrome, x, 0.95, 0.37);
+    // Logo in der Krone, Namensschild darunter (beide leuchten mit Strom)
+    this.logoMat = new THREE.MeshBasicMaterial({ map: T.toTexture(T.perkIconCanvas(id, 256), { repeat: false }), transparent: true, color: new THREE.Color(0.25, 0.25, 0.25) });
+    add(new THREE.CircleGeometry(0.34, 32), this.logoMat, 0, 2.08, 0.335);
+    add(new THREE.CircleGeometry(0.4, 32), dark, 0, 2.08, 0.332);
     this.signMat = new THREE.MeshBasicMaterial({ map: T.perkSign(P.name, P.color), color: new THREE.Color(0.25, 0.25, 0.25) });
-    add(new THREE.PlaneGeometry(1.02, 0.32), this.signMat, 0, 1.85, 0.376);
-    this.panelMat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: col, emissiveIntensity: 0.05, roughness: 0.1, metalness: 0.2 });
-    add(new THREE.PlaneGeometry(0.75, 0.95), this.panelMat, -0.08, 1.15, 0.376);
+    add(new THREE.PlaneGeometry(1.0, 0.31), this.signMat, 0, 1.66, 0.383);
+    // Glasfront mit Flaschen
+    this.panelMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0c, emissive: col, emissiveIntensity: 0.05, roughness: 0.08, metalness: 0.3 });
+    add(new THREE.PlaneGeometry(0.74, 0.86), this.panelMat, -0.08, 1.06, 0.383);
+    const glass = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.18, roughness: 0.12, metalness: 0.1 });
     for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
-      const b = add(new THREE.CylinderGeometry(0.05, 0.05, 0.22, 10), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.15, roughness: 0.2 }), -0.3 + i * 0.22, 0.85 + j * 0.45, 0.3);
+      const b = add(new THREE.CylinderGeometry(0.048, 0.048, 0.2, 12), glass, -0.3 + i * 0.22, 0.82 + j * 0.42, 0.31);
+      add(new THREE.CylinderGeometry(0.016, 0.042, 0.08, 10), glass, -0.3 + i * 0.22, 0.96 + j * 0.42, 0.31);
       b.userData.bottle = true;
     }
-    add(new THREE.BoxGeometry(0.12, 0.2, 0.05), M.chrome, 0.42, 1.2, 0.38);
-    add(new THREE.BoxGeometry(0.6, 0.18, 0.08), M.dark, -0.05, 0.4, 0.38);
+    add(new THREE.BoxGeometry(0.12, 0.22, 0.05), M.chrome, 0.42, 1.12, 0.39);
+    add(new THREE.BoxGeometry(0.05, 0.06, 0.06), M.dark, 0.42, 1.16, 0.42);
+    add(new THREE.BoxGeometry(0.62, 0.2, 0.1), M.dark, -0.05, 0.36, 0.39);
+    add(new THREE.BoxGeometry(0.7, 0.04, 0.14), M.chrome, -0.05, 0.47, 0.4);
+    // Statische Teile verschmelzen (wenige Draw-Calls)
+    const merged = mergeByMaterial(g);
+    g.clear();
+    g.add(...merged.children);
     map.place(g, s.cx, s.cy, s.wall, 0.75);
     g.updateMatrixWorld(true);
     map.colliders.push(map.aabb(g, 0.03));
@@ -168,7 +191,7 @@ class PerkMachine extends Interactable {
   prompt() {
     const p = this.g.player, P = PERKS[this.id];
     if (p.perks.has(this.id)) return null;
-    if (this.id === 'phoenix' && p.selfRevives >= 3) return 'Phönix-Soda ist ausverkauft';
+    if (this.gone) return null;
     if (!this.powered) return 'Kein Strom';
     if (p.perks.size >= PERK_LIMIT) return `Perk-Limit erreicht (${PERK_LIMIT})`;
     return `${this.press} für ${P.name} – ${P.desc} [Kosten: ${P.cost}]`;
@@ -186,9 +209,24 @@ class PerkMachine extends Interactable {
       g.hud.notice(P.name);
     });
   }
+  // Phönix-Soda: Nach der dritten Selbst-Wiederbelebung verschwindet der Automat
+  get gone() { return this.id === 'phoenix' && this.g.player.selfRevives >= 3 && !this.g.player.downed; }
   update(dt, time) {
-    const on = this.powered;
-    this.signMat.color.setScalar(on ? 1.6 + Math.sin(time * 3 + this.id.length) * 0.15 : 0.25);
+    const gone = this.gone;
+    if (gone === this.group.visible) {
+      this.group.visible = !gone;
+      if (this.light.pos) this.light.enabled = !gone; else if (this.light.light) this.light.light.visible = !gone;
+      if (gone) {
+        const c = this.group.position;
+        this.g.effects.explosion(c.clone().setY(1.2), 2.2, [0.5, 1.2, 3], true);
+        if (this.g.audio.boxWhoosh) this.g.audio.boxWhoosh(c);
+        this.g.hud.notice('Phönix-Soda ist weitergezogen', 2600);
+      }
+    }
+    const on = this.powered && !gone;
+    const k = on ? 1.6 + Math.sin(time * 3 + this.id.length) * 0.15 : 0.25;
+    this.signMat.color.setScalar(k);
+    this.logoMat.color.setScalar(on ? k * 1.15 : 0.2);
     this.panelMat.emissiveIntensity = on ? 0.22 : 0.03;
     this.sound(dt, on);
   }
@@ -207,6 +245,8 @@ class PerkMachine extends Interactable {
   reset() {
     this.jingleT = rand(15, 45);
     if (this.hum) { this.hum.stop(); this.hum = null; }
+    this.group.visible = true;
+    if (this.light.pos) this.light.enabled = true; else if (this.light.light) this.light.light.visible = true;
   }
 }
 
@@ -265,6 +305,7 @@ class MysteryBox extends Interactable {
     this.spot = game.mapDef.boxStart || 0;
     this.uses = 0;
     this.totalUses = 0;
+    this.moves = 0;
     this.state = 'idle';
     this.t = 0;
     this.models = {};
@@ -337,7 +378,7 @@ class MysteryBox extends Interactable {
 
   reset() {
     this.state = 'idle'; this.t = 0;
-    this.uses = 0; this.totalUses = 0;
+    this.uses = 0; this.totalUses = 0; this.moves = 0;
     this.teddy.visible = false;
     this.showWeapon(null);
     this.group.rotation.set(0, 0, 0);
@@ -390,8 +431,27 @@ class MysteryBox extends Interactable {
     this.display.add(m);
   }
 
+  get cost() { return this.g.powerups && this.g.powerups.fireSale ? 10 : BOX_COST; }
+
+  // Ausverkauf: Kiste kostet 10 Punkte und zieht nicht um
+  onFireSale(on) {
+    this.beamMat.uniforms.uColor.value.setRGB(on ? 1.6 : 0.35, on ? 0.9 : 0.75, on ? 0.3 : 1.6);
+  }
+
+  // Teddy-Regel wie bei Treyarch: an einem Standort frühestens ab der 4. Benutzung
+  // (15 %), beim allerersten Standort spätestens bei der 8.; danach 30 % ab 8, 50 % ab 13
+  rollTeddy() {
+    if (this.g.powerups && this.g.powerups.fireSale) return false;
+    const n = this.uses, r = Math.random();
+    if (this.moves === 0 && n >= 8) return true;
+    if (n >= 4 && n < 8) return r < 0.15;
+    if (this.moves > 0 && n >= 8 && n < 13) return r < 0.3;
+    if (this.moves > 0 && n >= 13) return r < 0.5;
+    return false;
+  }
+
   prompt() {
-    if (this.state === 'idle') return `${this.press} für eine Zufallswaffe [Kosten: ${BOX_COST}]`;
+    if (this.state === 'idle') return `${this.press} für eine Zufallswaffe [Kosten: ${this.cost}]`;
     if (this.state === 'offer') return `${this.press} für ${WEAPONS[this.result].name}`;
     return null;
   }
@@ -399,13 +459,15 @@ class MysteryBox extends Interactable {
   use() {
     const g = this.g;
     if (this.state === 'idle') {
-      if (!g.spend(BOX_COST)) return;
+      const price = this.cost;
+      if (!g.spend(price)) return;
+      this.paid = price;
       this.state = 'spin'; this.t = 0; this.uses++; this.totalUses++;
       g.audio.boxJingle();
       const owned = g.weapons.slots.filter(Boolean).map((s) => s.id);
       const pool = Object.entries(BOX_POOL).filter(([k]) => !owned.includes(k));
       this.result = weightedPick(pool);
-      this.isTeddy = this.totalUses > 1 && this.uses >= 3 && Math.random() < 0.3;
+      this.isTeddy = this.rollTeddy();
       this.cycleT = 0;
     } else if (this.state === 'offer') {
       if (g.weapons.busy) return;
@@ -471,7 +533,7 @@ class MysteryBox extends Interactable {
         if (this.t > 2.2) {
           this.teddy.visible = false;
           this.state = 'leaving'; this.t = 0;
-          g.addPoints(BOX_COST);
+          g.addPoints(this.paid || BOX_COST, true);
           g.hud.notice('Die Kiste zieht weiter …');
         }
         break;
@@ -494,6 +556,7 @@ class MysteryBox extends Interactable {
           do { n = Math.floor(Math.random() * this.spots.length); } while (n === this.spot && this.spots.length > 1);
           this.moveTo(n);
           this.uses = 0;
+          this.moves++;
           this.state = 'idle';
           g.effects.explosion(this.group.position.clone().setY(0.6), 2, [0.4, 1.4, 3]);
         }

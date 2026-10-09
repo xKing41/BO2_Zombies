@@ -96,10 +96,14 @@ export const PERK_LIMIT = 4;
 // ── Runden & Zombies ─────────────────────────────────────────
 export const MAX_ALIVE = 24;
 
+// Zombies pro Runde (solo), wie bei Treyarch: 24 + 3 × Multiplikator, die ersten
+// fünf Runden anteilig (25 %, 30 %, 50 %, 70 %, 90 %) → 6, 8, 13, 18, 24, 27, …
 export function zombiesForRound(r) {
-  const early = [6, 8, 13, 18, 24];
-  if (r <= 5) return early[r - 1];
-  return Math.floor(0.0842 * r * r + 0.1954 * r + 22.05);
+  let mult = Math.max(1, r / 5);
+  if (r >= 10) mult *= r * 0.15;
+  const max = 24 + Math.floor(0.5 * 6 * mult);
+  const early = [0.25, 0.3, 0.5, 0.7, 0.9];
+  return r <= 5 ? Math.floor(max * early[r - 1]) : max;
 }
 
 export function zombieHealth(r) {
@@ -109,18 +113,22 @@ export function zombieHealth(r) {
   return Math.floor(h);
 }
 
+// Spawn-Abstand: 2 s in Runde 1, jede Runde ×0,95, mindestens 0,08 s
 export function spawnDelay(r) {
-  return Math.max(0.12, 2.0 * Math.pow(0.95, r - 1));
+  return Math.max(0.08, 2.0 * Math.pow(0.95, r - 1));
 }
 
+// Lauftempo wie bei Treyarch: Grundwert = Runde × 4, jeder Zombie würfelt
+// zwischen Grundwert und Grundwert + 35; bis 35 gehen, bis 70 rennen, darüber sprinten.
+// → Runde 1 fast nur Geher, ab Runde 9 alle rennend, ab Runde 10 erste Sprinter, ab 18 alle.
 export function rollSpeedType(r) {
-  const pSprint = Math.min(0.55, Math.max(0, (r - 6) * 0.07));
-  const pRun = Math.min(0.9, Math.max(0, (r - 1) * 0.17));
-  const x = Math.random();
-  if (x < pSprint) return 'sprint';
-  if (x < pSprint + pRun * (1 - pSprint)) return 'run';
-  return 'walk';
+  const base = r * 4;
+  const x = base + Math.floor(Math.random() * 35);
+  return x <= 35 ? 'walk' : x <= 70 ? 'run' : 'sprint';
 }
 
-export const POINTS = { hit: 10, kill: 60, head: 100, knife: 130, board: 10, nuke: 400, carpenter: 200 };
-export const ZOMBIE_HIT_DAMAGE = 45;
+// Punkte: Treffer 10, Kill 60, Kopfschuss 100, Messer 130, Explosion/Wunderwaffe 50
+// Kill = 50 Grundpunkte + Trefferzonen-Bonus (Rumpf +10, Kopf +50, Messer +80)
+export const POINTS = { hit: 10, kill: 60, limb: 50, head: 100, knife: 130, blast: 50, board: 10, nuke: 400, carpenter: 200 };
+// Ein Zombie-Schlag: 50 → ohne Titan-Trank nach 2 Schlägen am Boden, mit (250) nach 5
+export const ZOMBIE_HIT_DAMAGE = 50;

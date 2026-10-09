@@ -24,6 +24,7 @@ Animationen und Sounds werden prozedural im Code erzeugt.
 - **Glutfelder** verbrennen Spieler; Zombies, die hindurchlaufen, fangen Feuer und zerplatzen beim Tod in einer Flammenwolke.
 - **Baupläne:** Bauteile finden (immer nur eines tragbar) und an der Werkbank einbauen – Turbine, Stromschalter, Äther-Schmiede und eine geheime Wunderwaffe.
 - **Altstadt:** Bank (Punkte über Partien hinweg sparen), Schließfach (eine Waffe für die nächste Partie aufbewahren), Jagdmesser.
+- **Der Funkenmann:** Ab Runde 4 zieht manchmal ein Gewitter auf – mit ihm kommt ein Wesen aus Elektrizität. Es springt als Blitzkugel umher und entlädt sich auf dich. Kugeln verpuffen in Funken, nur das Messer verletzt es. Fährst du Bus, setzt es sich aufs Dach und legt den Bus lahm.
 - **Geheimnisse:** eine mehrstufige Hauptquest und ein verstecktes Lied.
 
 ## Auf jedem Gerät spielbar
@@ -91,6 +92,20 @@ die Menüs.
 | Pause | Esc | Start / Options | Pause-Knopf |
 
 ## Was schon drin ist
+
+**Im Stil von Black Ops 2**
+- Zombies als verrottete Menschen: gebeugt, mit eingefallenem Schädel, leuchtenden Augen (mit Leuchtspur), offenem Mund, Krallenhänden und zerrissener, blutiger Kleidung; Varianten wie Koch, Büroangestellter, Bauarbeiter
+- Zerstückelung: Köpfe platzen, Unterarme lassen sich abschießen, Explosionen reißen Beine ab – die Zombies kriechen weiter („Kriecher“). Explosionen und der Bus schleudern Körper durch die Luft, der Gewitter-Werfer lässt sie unter Strom zucken
+- HUD wie im Original: Kreide-Strichliste und handgemalte rote Rundenzahlen, die beim Rundenende weiß-rot pulsieren; Intro mit Ort und Uhrzeit auf der Schreibmaschine; Perk-Kronkorken; Blut am Bildschirmrand; keine Trefferanzeige (in den Einstellungen zuschaltbar)
+- Last Stand: Am Boden schleppst du dich weiter, ein Ring zeigt die Wiederbelebung; nach dem Tod steigt die Kamera über den Körper auf
+- Atmosphäre: Feuertonnen mit Flammen, Asche und Glut rieseln im Freien, kontrastreiche Farbstimmung
+- Musik-Easter-Egg auf beiden Karten (Station Nachtfall: drei versteckte Teddys)
+- Spielregeln nach den öffentlich dokumentierten Formeln der Treyarch-Zombies nachgebaut:
+  - Zombies: 150 Lebenspunkte in Runde 1, +100 je Runde bis Runde 9, danach ×1,1; Anzahl 24 + Bonus (die ersten fünf Runden 25–90 %), höchstens 24 gleichzeitig; Spawn-Pause 2 s × 0,95 je Runde; Tempo-Würfel (Runde × 4 … +35) für Geher/Läufer/Sprinter
+  - Punkte: 10 je Treffer, Kill 50 + Zonenbonus (Rumpf 60, Kopf 100, Messer 130), Explosionen 50, Barrikaden höchstens 500 je Runde
+  - Power-Ups: Drop, sobald die verdienten Punkte eine Schwelle überschreiten (2000, dann jeweils ×1,14), dazu 3 % Zufall, höchstens 4 je Runde; gemischter Zyklus; 15 s ruhig, dann immer schneller blinkend, nach 26,5 s weg; neu: **Ausverkauf** (Kiste 30 s lang für 10 Punkte)
+  - Zufallskiste: Teddy frühestens bei der 4. Benutzung (15 %), am Startplatz spätestens bei der 8., nach dem ersten Umzug 30 % bzw. ab der 13. Benutzung 50 %; Punkte zurück
+  - Perks: höchstens vier; Phönix-Soda belebt solo nach 10 s wieder – nach dem dritten Mal zieht der Automat weiter; Blitz-Tonikum beschleunigt auch das Reparieren
 
 **Gameplay-Kern**
 - Endlose Runden mit BO-ähnlicher Skalierung (Anzahl, Lebenspunkte, Spawn-Tempo, Geher → Läufer → Sprinter)
@@ -165,6 +180,8 @@ Definition in `src/maps/` (registriert in `src/maps/index.js`): kleine Karten al
 - **Gewitter-Werfer:** Kondensator, Kupferspule, Griffstück und Blitzröhre – über die ganze Karte verteilt. Werkbank in der Hütte im Maisfeld.
 - **Das Signal:** Strom an, Turbine an den Mast → drei Tonbänder finden (jedes nennt eine Ziffer) → Frequenz am Funkempfänger im Busbahnhof einstellen → 25 Zombies in Mastnähe töten (Seelen) → Übertragung 60 Sekunden am Mast verteidigen. Belohnung: Nebel lichtet sich, alle Perks, Gewitter-Werfer, volle Munition und ein gespeicherter Erfolg.
 - **Lied „Nebelfahrt“:** drei Spieluhren aufziehen – im Tunnel, in der Scheune und im Tresorraum der Bank.
+- **Funkenmann:** Messer! Drei Treffer (mit dem Jagdmesser zwei). Sitzt er auf dem Busdach, vertreiben ihn etwa zwölf Treffer oder er springt nach 16 Sekunden ab. Belohnung: 500 Punkte und ein Power-Up.
+- **Station Nachtfall – Lied:** drei Teddys drücken – oben auf dem Kistenstapel in der Depot-Halle, auf der Diner-Theke und auf dem Generator in der Werkstatt.
 </details>
 
 Entwickler-Modus: `http://localhost:5173/#dev` → 50 000 Punkte, unverwundbar, `P` beendet die Runde.
@@ -185,7 +202,7 @@ damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Anima
 3. **Koop-Multiplayer (1–4 Spieler)** – das Herzstück der Kindheitserinnerungen: WebRTC/WebSocket
    mit autoritativem Server, Wiederbeleben von Mitspielern.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),
-   Höllenhund-Runden, Spezialzombies, Rangsystem und Statistiken.
+   Höllenhund-Runden, weitere Spezialgegner, Spielfiguren mit eigenen Sprüchen, Rangsystem und Statistiken.
 5. **Verbesserungen ggü. BO2:** Barrierefreiheit (Farbfilter, frei belegbare Tasten; Untertitel gibt es
    schon), Speichern zwischen Runden, Mod-Support über die Kartendefinitionen.
 6. **App-Stores & Konsolen:** Eine Android-App (APK) wird bereits automatisch gebaut (siehe oben);

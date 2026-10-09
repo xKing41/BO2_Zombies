@@ -224,7 +224,7 @@ export class Game {
     this.round = 0;
     this.roundActive = false;
     this.intermission = 2.5;
-    this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time };
+    this.stats = { kills: 0, headshots: 0, spent: 0, start: this.time, earned: 500 };
     this.hud.round(0); // der erste Kreidestrich erscheint erst mit Runde 1
     this.hud.showHits = !!this.settings.hitmarker;
     // Intro wie im Original: Ort und Zeit erscheinen Buchstabe für Buchstabe
@@ -299,6 +299,7 @@ export class Game {
   addPoints(n, raw = false) {
     if (!raw && this.powerups.double) n *= 2;
     this.points += n;
+    if (n > 0) this.stats.earned = (this.stats.earned || 500) + n; // für die Power-Up-Schwelle
     this.hud.points(this.points);
     this.hud.pointsPop(n);
   }

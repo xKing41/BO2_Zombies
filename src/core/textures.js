@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { ValueNoise, mulberry32 } from './noise.js';
 import { clamp, smoothstep } from './utils.js';
+import { PERKS } from '../config.js';
 
 let ANISO = 4;
 let SCALE = 1; // < 1 auf Mobilgeräten: kleinere Texturen, schnellerer Start, weniger Speicher
@@ -506,6 +507,25 @@ export function powerupIcon(type) {
     c.fillRect(-10, -20, 20, 120);
     c.beginPath(); c.roundRect(-55, -55, 110, 38, 8); c.fill();
     c.restore();
+  } else if (type === 'firesale') {
+    // Preisschild mit Loch, darüber eine Flamme, darauf „10“
+    c.save(); c.rotate(-0.25);
+    c.beginPath();
+    c.moveTo(-62, -18); c.lineTo(-30, -52); c.lineTo(66, -52); c.lineTo(66, 58); c.lineTo(-30, 58); c.lineTo(-62, 24);
+    c.closePath(); c.fill();
+    c.globalCompositeOperation = 'destination-out';
+    c.beginPath(); c.arc(-36, 3, 10, 0, 7); c.fill();
+    c.font = 'bold 74px Oswald, Impact, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('10', 20, 6);
+    c.restore();
+    c.globalCompositeOperation = 'source-over';
+    c.beginPath();
+    c.moveTo(-6, -64);
+    c.bezierCurveTo(-40, -82, -22, -110, -14, -124);
+    c.bezierCurveTo(-4, -104, 10, -110, 6, -128);
+    c.bezierCurveTo(34, -108, 38, -80, 14, -64);
+    c.closePath(); c.fill();
   }
   return toTexture(cv, { repeat: false });
 }
@@ -1053,3 +1073,47 @@ export function hardhatTex(seed = 68) {
   }
   return finish(p);
 }
+
+// Kronkorken-Symbol eines Perks (HUD und Automaten-Logo)
+export function perkIconCanvas(id, size = 128) {
+  const P = PERKS[id];
+  const cv = canvas(size);
+  const c = cv.getContext('2d');
+  c.scale(size / 128, size / 128);
+  c.translate(64, 64);
+  // gezackter Rand
+  c.beginPath();
+  for (let i = 0; i <= 42; i++) {
+    const a = (i / 42) * Math.PI * 2, r = i % 2 ? 58 : 62;
+    c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const rim = c.createRadialGradient(-18, -22, 6, 0, 0, 62);
+  rim.addColorStop(0, '#fff'); rim.addColorStop(0.35, P.color); rim.addColorStop(1, '#120606');
+  c.fillStyle = rim; c.fill();
+  c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke();
+  // Innenfläche
+  const g = c.createRadialGradient(-14, -18, 4, 0, 0, 50);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, P.color); g.addColorStop(1, '#1a0707');
+  c.beginPath(); c.arc(0, 0, 48, 0, Math.PI * 2); c.fillStyle = g; c.fill();
+  c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.55)'; c.stroke();
+  // Symbol
+  c.fillStyle = '#fff'; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.lineCap = 'round';
+  c.shadowColor = 'rgba(0,0,0,0.7)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
+  c.beginPath();
+  if (id === 'titan') { // Schild mit Kreuz
+    c.moveTo(0, -30); c.lineTo(24, -20); c.lineTo(20, 10); c.quadraticCurveTo(12, 26, 0, 32); c.quadraticCurveTo(-12, 26, -20, 10); c.lineTo(-24, -20); c.closePath(); c.fill();
+    c.fillStyle = P.color; c.shadowBlur = 0; c.fillRect(-4, -18, 8, 34); c.fillRect(-14, -6, 28, 8);
+  } else if (id === 'blitz') { // Blitz
+    c.moveTo(6, -32); c.lineTo(-18, 4); c.lineTo(-2, 4); c.lineTo(-8, 32); c.lineTo(18, -6); c.lineTo(2, -6); c.closePath(); c.fill();
+  } else if (id === 'doppel') { // zwei Patronen
+    for (const x of [-11, 11]) { c.beginPath(); c.moveTo(x - 7, 26); c.lineTo(x - 7, -8); c.quadraticCurveTo(x - 7, -30, x, -32); c.quadraticCurveTo(x + 7, -30, x + 7, -8); c.lineTo(x + 7, 26); c.closePath(); c.fill(); }
+    c.fillStyle = P.color; c.shadowBlur = 0; c.fillRect(-20, 8, 40, 4);
+  } else if (id === 'phoenix') { // aufsteigender Flügel
+    c.moveTo(-26, 22); c.quadraticCurveTo(-24, -10, 4, -30); c.quadraticCurveTo(-4, -12, 14, -20); c.quadraticCurveTo(6, -2, 26, -6); c.quadraticCurveTo(12, 14, -26, 22); c.fill();
+  } else if (id === 'sprint') { // Doppelpfeil
+    c.lineWidth = 9;
+    for (const x of [-12, 8]) { c.beginPath(); c.moveTo(x - 6, -22); c.lineTo(x + 12, 0); c.lineTo(x - 6, 22); c.stroke(); }
+  }
+  return cv;
+}
+

@@ -2,6 +2,7 @@
 // Perk-Kronkorken, Power-Ups, Intro-Schreibmaschine, Blut am Bildschirmrand
 import { PERKS } from '../config.js';
 import { mulberry32 } from '../core/noise.js';
+import { perkIconCanvas } from '../core/textures.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,49 +19,6 @@ const DIGITS = {
   8: ['M31,50 C10,45 10,9 31,8 C51,8 51,44 31,50 C8,56 7,94 31,95 C54,95 53,56 31,50'],
   9: ['M51,40 C47,57 22,59 12,43 C3,26 16,7 33,8 C51,9 55,31 53,53 C51,81 38,97 15,91'],
 };
-
-// Kronkorken-Symbole der Perks (Canvas → Bild-URL)
-function perkIcon(id) {
-  const P = PERKS[id];
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = 128;
-  const c = cv.getContext('2d');
-  c.translate(64, 64);
-  // gezackter Rand
-  c.beginPath();
-  for (let i = 0; i <= 42; i++) {
-    const a = (i / 42) * Math.PI * 2, r = i % 2 ? 58 : 62;
-    c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-  }
-  const rim = c.createRadialGradient(-18, -22, 6, 0, 0, 62);
-  rim.addColorStop(0, '#fff'); rim.addColorStop(0.35, P.color); rim.addColorStop(1, '#120606');
-  c.fillStyle = rim; c.fill();
-  c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke();
-  // Innenfläche
-  const g = c.createRadialGradient(-14, -18, 4, 0, 0, 50);
-  g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, P.color); g.addColorStop(1, '#1a0707');
-  c.beginPath(); c.arc(0, 0, 48, 0, Math.PI * 2); c.fillStyle = g; c.fill();
-  c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.55)'; c.stroke();
-  // Symbol
-  c.fillStyle = '#fff'; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.lineCap = 'round';
-  c.shadowColor = 'rgba(0,0,0,0.7)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
-  c.beginPath();
-  if (id === 'titan') { // Schild mit Kreuz
-    c.moveTo(0, -30); c.lineTo(24, -20); c.lineTo(20, 10); c.quadraticCurveTo(12, 26, 0, 32); c.quadraticCurveTo(-12, 26, -20, 10); c.lineTo(-24, -20); c.closePath(); c.fill();
-    c.fillStyle = P.color; c.shadowBlur = 0; c.fillRect(-4, -18, 8, 34); c.fillRect(-14, -6, 28, 8);
-  } else if (id === 'blitz') { // Blitz
-    c.moveTo(6, -32); c.lineTo(-18, 4); c.lineTo(-2, 4); c.lineTo(-8, 32); c.lineTo(18, -6); c.lineTo(2, -6); c.closePath(); c.fill();
-  } else if (id === 'doppel') { // zwei Patronen
-    for (const x of [-11, 11]) { c.beginPath(); c.moveTo(x - 7, 26); c.lineTo(x - 7, -8); c.quadraticCurveTo(x - 7, -30, x, -32); c.quadraticCurveTo(x + 7, -30, x + 7, -8); c.lineTo(x + 7, 26); c.closePath(); c.fill(); }
-    c.fillStyle = P.color; c.shadowBlur = 0; c.fillRect(-20, 8, 40, 4);
-  } else if (id === 'phoenix') { // aufsteigender Flügel
-    c.moveTo(-26, 22); c.quadraticCurveTo(-24, -10, 4, -30); c.quadraticCurveTo(-4, -12, 14, -20); c.quadraticCurveTo(6, -2, 26, -6); c.quadraticCurveTo(12, 14, -26, 22); c.fill();
-  } else if (id === 'sprint') { // Doppelpfeil
-    c.lineWidth = 9;
-    for (const x of [-12, 8]) { c.beginPath(); c.moveTo(x - 6, -22); c.lineTo(x + 12, 0); c.lineTo(x - 6, 22); c.stroke(); }
-  }
-  return cv.toDataURL();
-}
 
 // Blutspritzer am Bildschirmrand (Schaden), einmalig erzeugt:
 // dunkelroter Rand und unregelmäßige Spritzer in Ecken und an Kanten
@@ -239,7 +197,7 @@ export class HUD {
       const p = PERKS[id];
       const d = document.createElement('div');
       d.className = 'perk';
-      d.style.backgroundImage = `url(${this.perkUrls[id] || (this.perkUrls[id] = perkIcon(id))})`;
+      d.style.backgroundImage = `url(${this.perkUrls[id] || (this.perkUrls[id] = perkIconCanvas(id).toDataURL())})`;
       d.style.color = p.color;
       d.title = p.name;
       this.el.perks.appendChild(d);
