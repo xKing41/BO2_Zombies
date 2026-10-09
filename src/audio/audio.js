@@ -4,22 +4,31 @@
 //  3D-Positionierung über HRTF-Panner.
 // ─────────────────────────────────────────────────────────────
 import { rand, pick, clamp } from '../core/utils.js';
+import { jobList, renderJob } from './recipes.js';
+import { SCORES, buildScore, renderBuilt, playScoreLive } from './music.js';
+import BankWorker from './bankWorker.js?worker&inline';
 
 const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
+const VOX_CAP = 8; // gleichzeitige Zombie-Stimmen (Handy-tauglich)
 
 export class AudioEngine {
-  constructor() {
+  constructor({ bank = true } = {}) {
     this.ctx = null;
     this.volumes = { master: 0.8, music: 0.6, sfx: 1.0 };
     this.voices = 0;
     this.panningModel = 'HRTF'; // auf Mobilgeräten 'equalpower' (spart viel CPU)
+    this.bank = {}; this.scores = {}; this.vox = []; this.steps = []; this.gore = []; this.lastPick = {};
+    this.jingle = null;
+    // Klangbank schon während des Ladens im Hintergrund rendern
+    if (bank) this.startBank();
   }
 
-  init() {
+  // ctx: optional eigener Kontext (z. B. OfflineAudioContext für Tests)
+  init(ctx = null) {
     // iOS: Ton auch bei aktiviertem Stummschalter abspielen
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* */ }
     if (this.ctx) { this.ctx.resume(); return; }
-    const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    ctx = this.ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
     this.master = ctx.createGain();
     this.master.gain.value = this.volumes.master;
     this.lowpass = ctx.createBiquadFilter();
@@ -28,7 +37,13 @@ export class AudioEngine {
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 4;
     comp.attack.value = 0.003; comp.release.value = 0.25;
-    this.master.connect(this.lowpass).connect(comp).connect(ctx.destination);
+    // Begrenzer als Sicherheitsnetz gegen Übersteuern
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -4; lim.knee.value = 0; lim.ratio.value = 20;
+    lim.attack.value = 0.0005; lim.release.value = 0.1;
+    // Kompressoren heben automatisch an – feste Absenkung danach hält Spitzen unter −1 dBFS
+    const trim = ctx.createGain(); trim.gain.value = 0.82;
+    this.master.connect(this.lowpass).connect(comp).connect(lim).connect(trim).connect(ctx.destination);
 
     this.sfx = ctx.createGain(); this.sfx.gain.value = this.volumes.sfx; this.sfx.connect(this.master);
     this.music = ctx.createGain(); this.music.gain.value = this.volumes.music; this.music.connect(this.master);
@@ -41,6 +56,8 @@ export class AudioEngine {
     this.noiseBuf = this.makeNoise(2);
     this.brownBuf = this.makeNoise(4, true);
     this.distCurve = this.makeDistortion(40);
+    // Ambiente auf eigenem Bus (wird bei Stingern abgesenkt)
+    this.amb = ctx.createGain(); this.amb.connect(this.music);
     this.startAmbience();
   }
 
@@ -288,7 +305,65 @@ export class AudioEngine {
   }
 
   // ── Zombies ─────────────────────────────────────────────────
+  // Stimmen aus der vorab gerenderten Bank (je 6–8 Varianten), zufällig
+  // in Tonhöhe und Klangfarbe variiert; bis die Bank fertig ist: Live-Synthese
   zombieVoice(pos, kind = 'groan') {
+    if (!this.ctx) return;
+    const P = { groan: [0.65, 1, 0.3], scream: [0.6, 2, 0.35], attack: [0.75, 3, 0.25] }[kind] || [0.65, 1, 0.3];
+    if (!this.has(kind)) return this.voiceLive(pos, kind);
+    this.voicePlay(kind in { groan: 1, scream: 1, attack: 1 } ? kind : 'groan', pos, { vol: P[0], prio: P[1], rev: P[2] });
+  }
+
+  zombieDeath(pos) {
+    if (!this.ctx) return;
+    if (!this.has('death')) return this.deathLive(pos);
+    this.voicePlay('death', pos, { vol: 0.65, prio: 3, rev: 0.25, rate: [0.88, 1.08] });
+  }
+
+  // Beinloser Kriecher: tiefes, nasses Fauchen
+  crawlerVoice(pos) {
+    if (!this.ctx) return;
+    if (!this.has('crawler')) return this.voiceLive(pos, 'groan');
+    this.voicePlay('crawler', pos, { vol: 0.6, prio: 1, rev: 0.25, rate: [0.85, 1.1] });
+  }
+
+  zombieSwipe(pos) {
+    if (!this.ctx) return;
+    const b = this.buf('swipe');
+    if (!b) return this.swipeLive(pos);
+    this.playBuf(b, { pos, vol: 0.55, rate: rand(0.9, 1.15), rev: 0.1 });
+  }
+
+  // Schritt eines Zombies (schlurfend oder rennend): billig, ohne HRTF, gedeckelt
+  zombieStep(pos, run = false) {
+    if (!this.ctx) return;
+    const b = this.buf(run ? 'stepRun' : 'stepWalk');
+    if (!b) return;
+    const now = this.now;
+    this.steps = this.steps.filter((x) => x > now);
+    if (this.steps.length >= 6) return;
+    const c = this.cheapPos(pos, 2, 1.4);
+    if (c.d > 25 || c.gain < 0.04) return;
+    this.steps.push(now + b.duration);
+    this.playBuf(b, { vol: (run ? 0.42 : 0.34) * c.gain, rate: rand(0.85, 1.15), rev: 0, pan: c.pan });
+  }
+
+  // Platzender Schädel beim Kopfschuss-Kill
+  zombieHeadPop(pos) { this.goreFx('headPop', pos, 1.3); }
+  // Abgerissenes Glied
+  gib(pos) { this.goreFx('gib', pos, 0.75); }
+  goreFx(name, pos, vol) {
+    if (!this.ctx) return;
+    const b = this.buf(name), now = this.now;
+    if (!b) return;
+    this.gore = this.gore.filter((x) => x > now);
+    if (this.gore.length >= 4) return;
+    this.gore.push(now + b.duration);
+    this.playBuf(b, { pos, vol, rate: rand(0.88, 1.12), rev: 0.15 });
+  }
+
+  // Alte Live-Synthese (nur bis die Klangbank bereit ist)
+  voiceLive(pos, kind = 'groan') {
     if (!this.ctx || this.voices > 7) return;
     const ctx = this.ctx, t = this.now;
     const dur = kind === 'scream' ? rand(0.6, 1.1) : kind === 'attack' ? rand(0.35, 0.6) : rand(0.9, 1.8);
@@ -331,13 +406,12 @@ export class AudioEngine {
     [src, vib, am].forEach((o) => { o.start(t); o.stop(t + dur + 0.1); });
   }
 
-  zombieSwipe(pos) {
-    if (!this.ctx) return;
+  swipeLive(pos) {
     const out = this.out(pos, 0.6, 0.1);
     this.noise(out, this.now, 0.22, { type: 'bandpass', f: 400, f2: 2200, q: 1.2, peak: 0.5 });
   }
 
-  zombieDeath(pos) {
+  deathLive(pos) {
     if (!this.ctx || this.voices > 9) return;
     const ctx = this.ctx, t = this.now;
     const out = this.out(pos, 0.7, 0.25);
@@ -416,15 +490,21 @@ export class AudioEngine {
   }
 
   // ── Kaufen & Interaktion ────────────────────────────────────
+  // Kasse „Ka-Tsching“ (Hebel, Schublade, Glocke, Münzen)
   purchase() {
     if (!this.ctx) return;
+    const b = this.buf('purchase');
+    if (b) return void this.playBuf(b, { vol: 0.5, rev: 0.12, rate: rand(0.97, 1.03) });
     const out = this.out(null, 0.5, 0.2), t = this.now;
     [2093, 2637, 3136].forEach((f, i) => this.tone(out, t + i * 0.05, 0.5, { type: 'triangle', f, peak: 0.18 }));
     this.noise(out, t, 0.25, { type: 'highpass', f: 6000, peak: 0.15 });
   }
 
+  // Ablehnen: zwei dumpfe Summer-Stöße
   deny() {
     if (!this.ctx) return;
+    const b = this.buf('deny');
+    if (b) return void this.playBuf(b, { vol: 0.45, rev: 0.05 });
     const out = this.out(null, 0.4, 0.05), t = this.now;
     this.tone(out, t, 0.18, { type: 'square', f: 140, peak: 0.12 });
     this.tone(out, t + 0.2, 0.25, { type: 'square', f: 110, peak: 0.12 });
@@ -439,8 +519,11 @@ export class AudioEngine {
     this.noise(out, t + 1.5, 0.3, { type: 'bandpass', f: 2500, q: 2, peak: 0.4 });
   }
 
+  // Strom an: Schütz-Schlag, Generator läuft an, Lichtbänke flackern auf und brummen
   powerOn() {
     if (!this.ctx) return;
+    const b = this.buf('powerOn');
+    if (b) { this.playBuf(b, { vol: 0.8, rev: 0.5 }); this.duckAmb(5); this.announce('Der Strom ist an.'); return; }
     const out = this.out(null, 1.0, 0.6), t = this.now;
     this.tone(out, t, 1.2, { f: 60, f2: 30, peak: 1.0 });
     this.noise(out, t, 1.5, { type: 'lowpass', f: 600, f2: 60, peak: 0.8, brown: true });
@@ -457,7 +540,8 @@ export class AudioEngine {
   }
 
   // ── Musik / Jingles ─────────────────────────────────────────
-  melody(notes, { type = 'triangle', bpm = 140, vol = 0.18, octave = 0, bell = false, start = 0 } = {}) {
+  // box: Spieluhr-Klang (Zunge + Biegemode), bell: unharmonische Glocken-Teiltöne
+  melody(notes, { type = 'triangle', bpm = 140, vol = 0.18, octave = 0, bell = false, box = false, start = 0 } = {}) {
     if (!this.ctx) return;
     const out = this.ctx.createGain(); out.gain.value = vol; out.connect(this.music);
     const rv = this.ctx.createGain(); rv.gain.value = 0.35; out.connect(rv).connect(this.reverbIn);
@@ -466,8 +550,15 @@ export class AudioEngine {
     for (const [n, len] of notes) {
       if (n !== null) {
         const f = NOTE(n + octave * 12);
-        this.tone(out, t, len * beat * 0.95, { type, f, peak: 0.9, a: 0.008 });
-        if (bell) this.tone(out, t, len * beat * 1.8, { type: 'sine', f: f * 2.01, peak: 0.25, a: 0.002 });
+        if (box) {
+          this.tone(out, t, Math.min(1.8, len * beat * 3), { type: 'sine', f, peak: 0.9, a: 0.002 });
+          this.tone(out, t, 0.15, { type: 'sine', f: f * 6.27, peak: 0.1, a: 0.001 });
+        } else this.tone(out, t, len * beat * 0.95, { type, f, peak: 0.9, a: 0.008 });
+        if (bell) {
+          this.tone(out, t, len * beat * 1.8, { type: 'sine', f: f * 2.01, peak: 0.25, a: 0.002 });
+          this.tone(out, t, len * beat * 0.7, { type: 'sine', f: f * 2.76, peak: 0.1, a: 0.002 });
+          this.tone(out, t, len * beat * 0.3, { type: 'sine', f: f * 5.4, peak: 0.05, a: 0.001 });
+        }
       }
       t += len * beat;
     }
@@ -497,46 +588,54 @@ export class AudioEngine {
     const rv = this.ctx.createGain(); rv.gain.value = 0.7; out.connect(rv).connect(this.reverbIn);
     this.tone(out, this.now + t0, 0.8, { f: f * 2, f2: f * 0.5, peak: 1 });
     this.noise(out, this.now + t0, 0.4, { type: 'lowpass', f: 400, f2: 80, peak: 0.6, brown: true });
+    this.noise(out, this.now + t0, 0.02, { type: 'highpass', f: 2500, peak: 0.25 }); // Anschlag
+    this.tone(out, this.now + t0, 1.6, { f: f * 0.5, peak: 0.35, a: 0.02 }); // Sub
   }
 
+  // Rundenstart: Einschlag, Totenglocke, Chor, Glockenmotiv, Metall-Schwall, Schlussschlag
+  // (jede 5. Runde größer mit Bläsern und Pauken)
   roundStart(round) {
     if (!this.ctx) return;
-    this.drum(0, 55); this.drum(0.55, 52); this.drum(1.1, 48, 1.0);
-    this.pad([38, 45, 50, 53], 5.5, { vol: 0.09, cutoff: 1100, start: 0.1 });
-    this.melody([[62, 1], [61, 1], [58, 1.5], [57, 3]], { type: 'sine', bpm: 80, vol: 0.12, bell: true, start: 1.4 });
-    // gespenstischer Chor
-    this.pad([74, 77, 81], 5, { vol: 0.03, cutoff: 3000, type: 'sine', start: 1.0 });
-    if (round > 1 && round % 5 === 0) this.announce(`Runde ${round}`);
+    const big = round > 1 && round % 5 === 0;
+    this.playScore(big ? 'roundStartBig' : 'roundStart', { vol: 0.8, rev: 0.12 });
+    this.duckAmb(6);
+    if (big) this.announce(`Runde ${round}`);
   }
 
+  // Rundenende: wehmütiges Walzer-Klagelied
   roundEnd() {
     if (!this.ctx) return;
-    this.melody([[57, 1], [60, 1], [64, 1], [63, 1.5], [62, 0.5], [57, 3]], { type: 'triangle', bpm: 96, vol: 0.14, bell: true });
-    this.pad([33, 40, 45, 48], 7, { vol: 0.08, cutoff: 800 });
-    this.drum(0, 45, 0.6); this.drum(3.8, 40, 0.8);
+    this.playScore('roundEnd', { vol: 0.75, rev: 0.12 });
+    this.duckAmb(8);
   }
 
   gameOver() {
     if (!this.ctx) return;
-    this.pad([33, 40, 44, 48, 52], 9, { vol: 0.12, cutoff: 1400 });
-    this.melody([[69, 2], [67, 1], [65, 1], [64, 2], [62, 2], [57, 4]], { type: 'sine', bpm: 60, vol: 0.15, bell: true, start: 0.5 });
-    this.drum(0, 40, 1);
+    this.playScore('gameOver', { vol: 0.85, rev: 0.15 });
+    this.duckAmb(11);
   }
 
-  perkJingle(id) {
-    const J = {
-      titan: [[[55, 0.5], [55, 0.5], [58, 0.5], [62, 1], [60, 0.5], [58, 0.5], [55, 2]], 'square'],
-      blitz: [[[72, 0.25], [74, 0.25], [76, 0.25], [79, 0.5], [76, 0.25], [79, 0.25], [84, 1]], 'triangle'],
-      doppel: [[[60, 0.5], [60, 0.5], [67, 0.5], [67, 0.5], [65, 0.5], [64, 0.5], [60, 1.5]], 'sawtooth'],
-      phoenix: [[[67, 0.5], [71, 0.5], [74, 0.5], [79, 1], [78, 0.5], [74, 1.5]], 'triangle'],
-      sprint: [[[64, 0.33], [66, 0.33], [68, 0.33], [69, 0.5], [71, 0.5], [73, 0.5], [76, 1.5]], 'square'],
-    }[id];
-    if (!J || !this.ctx) return;
-    this.melody(J[0], { type: J[1], bpm: 150, vol: 0.09, bell: true });
+  // Perk-Jingle. Ohne pos: Kauf (nicht positional, blendet Automaten-Jingle aus).
+  // Mit pos: aus dem Automaten, nur wenn gerade kein anderer läuft. true = spielt.
+  perkJingle(id, pos = null) {
+    const name = 'perk_' + id;
+    if (!this.ctx || !SCORES[name]) return false;
+    const now = this.now, j = this.jingle;
+    if (pos && (this.jingleBusy || now < (this.jingleQuiet || 0))) return false;
+    if (!pos && j && j.end > now && j.g) { j.g.gain.setTargetAtTime(0, now, 0.08); try { j.src.stop(now + 0.6); } catch { /* */ } }
+    const b = this.scores[name];
+    if (b) this.jingle = this.playBuf(b, pos ? { pos, vol: 0.5, rev: 0.2, ref: 3.5, roll: 1.1 } : { vol: 0.45, rev: 0.1, bus: this.music });
+    else this.jingle = { end: now + playScoreLive(this.ctx, pos ? this.out(pos, 0.8, 0.2) : this.music, name, 0.5) };
+    this.jingleQuiet = this.jingle.end + 20; // danach mindestens 20 s Ruhe für Automaten-Jingles
+    return true;
   }
+  get jingleBusy() { return !!(this.ctx && this.jingle && this.jingle.end > this.now); }
 
+  // Perk trinken (2,4-s-Animation): Kronkorken, Glas, Schlucke, Flasche splittert, „Aah“/Rülpser
   drink() {
     if (!this.ctx) return;
+    const b = this.buf('drink');
+    if (b) return void this.playBuf(b, { vol: 0.75, rev: 0.08 });
     const out = this.out(null, 0.5, 0.05), t = this.now;
     this.tone(out, t, 0.08, { type: 'triangle', f: 2600, peak: 0.2 }); // Kronkorken
     for (let i = 0; i < 4; i++) this.noise(out, t + 0.5 + i * 0.28, 0.14, { type: 'lowpass', f: 380, peak: 0.9 });
@@ -544,21 +643,32 @@ export class AudioEngine {
     this.tone(out, t + 1.9, 0.2, { type: 'triangle', f: 1400, f2: 1200, peak: 0.1 }); // Flasche weg
   }
 
-  boxJingle() {
-    // Original-Spieluhr-Melodie (Mystery-Kiste)
-    return this.melody([
-      [76, 0.5], [79, 0.5], [83, 0.5], [82, 0.5], [79, 0.5], [76, 0.5], [74, 1],
-      [76, 0.5], [79, 0.5], [83, 0.5], [86, 0.5], [84, 1], [83, 1.5],
-    ], { type: 'sine', bpm: 190, vol: 0.2, bell: true });
+  // Mystery-Kiste: Deckel knarrt auf, Spieluhr-Walzer (≈ 4,3 s Drehzeit). pos optional
+  boxJingle(pos = null) {
+    if (!this.ctx) return 4.3;
+    this.boxOpen(pos);
+    this.playScore('box', { vol: 0.6, rev: 0.25, pos });
+    return 4.3;
   }
-
-  teddyLaugh() {
+  boxOpen(pos = null) {
+    const b = this.ctx && this.buf('boxOpen');
+    if (b) this.playBuf(b, { pos, vol: 0.55, rev: 0.2, ref: 3 });
+  }
+  // Kiste dreht sich davon: Wind mit Dreh-Tremolo, Zauberton, Puff (≈ 3,2 s)
+  boxWhoosh(pos = null, when = 0) {
+    const b = this.ctx && this.buf('boxWhoosh');
+    if (b) this.playBuf(b, { pos, vol: 0.8, rev: 0.45, ref: 4, when });
+  }
+  // Teddy: Spielzeug-Lachen, das ausleiert; 2,2 s später fliegt die Kiste davon
+  teddyLaugh(pos = null) {
     if (!this.ctx) return;
-    const out = this.out(null, 0.8, 0.5), t = this.now;
-    for (let i = 0; i < 5; i++) {
-      this.tone(out, t + i * 0.18, 0.15, { type: 'sawtooth', f: 260 - i * 25, f2: 180 - i * 20, peak: 0.25 });
+    const b = this.buf('teddy');
+    if (b) this.playBuf(b, { pos, vol: 0.7, rev: 0.35, ref: 3 });
+    else {
+      const out = this.out(null, 0.8, 0.5), t = this.now;
+      for (let i = 0; i < 5; i++) this.tone(out, t + i * 0.18, 0.15, { type: 'sawtooth', f: 260 - i * 25, f2: 180 - i * 20, peak: 0.25 });
     }
-    this.announce('Bye bye!', 0.4);
+    this.boxWhoosh(pos, 2.2);
   }
 
   papMachine() {
@@ -575,23 +685,43 @@ export class AudioEngine {
 
   powerupSpawn(pos) {
     if (!this.ctx) return;
+    const b = this.buf('spawn');
+    if (b) return void this.playBuf(b, { pos, vol: 0.75, rev: 0.4, ref: 3 });
     const out = this.out(pos, 0.7, 0.4), t = this.now;
     this.tone(out, t, 0.6, { type: 'sine', f: 880, f2: 1760, peak: 0.25 });
     this.tone(out, t, 0.6, { type: 'sine', f: 1320, f2: 2640, peak: 0.15 });
   }
 
+  // Schwebendes Summen eines liegenden Power-Ups (Schleife); liefert { stop(), set(v) }
+  powerupLoop(pos) {
+    return this.loopAt('puHum', pos, 0.3, 1.5, 1.6, 40);
+  }
+
+  // Einsammeln: helles, flirrendes Glas-Arpeggio + Ansager
   powerupGrab(type) {
     if (!this.ctx) return;
-    const out = this.out(null, 0.6, 0.4), t = this.now;
-    [72, 76, 79, 84].forEach((n, i) => this.tone(out, t + i * 0.06, 0.6, { type: 'triangle', f: NOTE(n), peak: 0.2 }));
+    const b = this.buf('grab');
+    if (b) this.playBuf(b, { vol: 0.45, rev: 0.4 });
+    else {
+      const out = this.out(null, 0.6, 0.4), t = this.now;
+      [72, 76, 79, 84].forEach((n, i) => this.tone(out, t + i * 0.06, 0.6, { type: 'triangle', f: NOTE(n), peak: 0.2 }));
+    }
     const names = { maxammo: 'Volle Munition!', instakill: 'Sofort-Kill!', double: 'Doppelte Punkte!', nuke: 'Atombombe!', carpenter: 'Zimmermann!' };
     this.announce(names[type]);
+  }
+
+  // Wucht unter der Ansager-Stimme: Rückwärts-Hall, Sub-Einschlag, dämonisches Brummen.
+  // Die Sprachausgabe läuft außerhalb von Web Audio; der Einschlag liegt bei ≈ 0,3 s.
+  announcerFx() {
+    const b = this.ctx && this.buf('announcer');
+    if (b) this.playBuf(b, { vol: 0.65, rev: 0.6 });
   }
 
   // Ansager per Sprachsynthese (tief, dunkel)
   announce(text, rate = 0.85) {
     try {
       if (this.volumes.master < 0.01) return;
+      this.announcerFx();
       // Android-App: Die WebView kennt keine Web-Sprachausgabe → Android-Stimme
       const app = window.NachtfallApp;
       if (app) { app.speak(text, 0.5, rate, this.volumes.master, true); return; }
@@ -898,7 +1028,7 @@ export class AudioEngine {
       [[70, 0.5], [74, 0.5], [77, 1], [76, 1]],
       [[69, 0.5], [73, 0.5], [76, 1], [74, 2]],
     ];
-    this.melody(motifs[i % 3], { type: 'sine', bpm: 120, vol: 0.2, bell: true, octave: 1 });
+    this.melody(motifs[i % 3], { bpm: 120, vol: 0.22, box: true, octave: 1 });
   }
 
   // Geheimes Lied "Nebelfahrt" – kleiner Sequenzer mit Vorausplanung
@@ -997,45 +1127,64 @@ export class AudioEngine {
 
   // ── Atmosphäre ──────────────────────────────────────────────
   startAmbience() {
-    const ctx = this.ctx, t = this.now;
-    // Wind
-    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+    const ctx = this.ctx, t = this.now, amb = this.amb;
+    const loop = (buf, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate; return s; };
+    const lfo = (f, depth, param) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; g.gain.value = depth; o.connect(g).connect(param); return o; };
+    // Wind: breites Rauschen mit wanderndem Filter
+    const src = loop(this.noiseBuf);
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 400; bp.Q.value = 0.8;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07;
-    const lfoG = ctx.createGain(); lfoG.gain.value = 250; lfo.connect(lfoG).connect(bp.frequency);
-    const g = ctx.createGain(); g.gain.value = 0.05;
-    const lfo2 = ctx.createOscillator(); lfo2.frequency.value = 0.11;
-    const lfo2G = ctx.createGain(); lfo2G.gain.value = 0.03; lfo2.connect(lfo2G).connect(g.gain);
-    src.connect(bp).connect(g).connect(this.music);
+    const g = ctx.createGain(); g.gain.value = 0.045;
+    src.connect(bp).connect(g).connect(amb);
+    // Böen: schmalbandiges Pfeifen, das langsam an- und abschwillt
+    const w2 = loop(this.noiseBuf, 0.7);
+    const wf = ctx.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 950; wf.Q.value = 5;
+    const wg = ctx.createGain(); wg.gain.value = 0.012;
+    w2.connect(wf).connect(wg).connect(amb);
+    // Tiefes Grollen der Stadt
+    const rb = loop(this.brownBuf);
+    const rf = ctx.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 150;
+    const rg = ctx.createGain(); rg.gain.value = 0.05;
+    rb.connect(rf).connect(rg).connect(amb);
     // Drone (schwebende Sinustöne)
-    const dg = ctx.createGain(); dg.gain.value = 0.045; dg.connect(this.music);
+    const dg = ctx.createGain(); dg.gain.value = 0.04; dg.connect(amb);
     for (const f of [41.2, 41.6, 61.7, 82.6]) {
       const o = ctx.createOscillator(); o.frequency.value = f; o.connect(dg); o.start(t);
     }
-    [src, lfo, lfo2].forEach((x) => x.start(t));
-    this.ambientTimer = setInterval(() => this.randomAmbient(), 7000);
+    [src, w2, rb, lfo(0.07, 250, bp.frequency), lfo(0.11, 0.03, g.gain), lfo(0.043, 500, wf.frequency), lfo(0.067, 0.012, wg.gain)].forEach((x) => x.start(t));
+    const tick = () => { this.randomAmbient(); this.ambientTimer = setTimeout(tick, rand(5000, 10000)); };
+    this.ambientTimer = setTimeout(tick, 6000);
   }
 
+  // Zufällige Ereignisse in der Ferne: Stöhnen/Schreie, Donner, Knarren, Flüstern, Sirene, Glocke
   randomAmbient() {
     if (!this.ctx || this.ctx.state !== 'running' || !this.enabledAmbient) return;
-    const r = Math.random();
-    const far = { x: this.listener.x + rand(-40, 40), y: 2, z: this.listener.z + rand(-40, 40) };
-    if (r < 0.3) {
-      const out = this.out(far, 0.5, 0.9);
-      this.noise(out, this.now, 3, { type: 'lowpass', f: 200, f2: 50, a: 0.4, peak: 0.6, brown: true }); // Donner
-    } else if (r < 0.55) {
-      this.zombieVoice(far, 'scream');
-    } else if (r < 0.7) {
-      const out = this.out(far, 0.3, 0.9);
+    const r = Math.random(), L = this.listener;
+    const at = (d0, d1) => { const a = Math.random() * Math.PI * 2, d = rand(d0, d1); return { x: L.x + Math.cos(a) * d, y: rand(1, 4), z: L.z + Math.sin(a) * d }; };
+    const play = (name, pos, o) => { const b = this.buf(name); if (b) this.playBuf(b, { pos, rate: rand(0.85, 1.08), ...o }); return !!b; };
+    if (r < 0.24) {
+      this.voicePlay(Math.random() < 0.6 ? 'groan' : 'scream', at(22, 40), { vol: 0.7, prio: 0, rev: 0.9, rate: [0.72, 0.95], lpf: 1600 });
+    } else if (r < 0.38) {
+      if (!play('thunder', at(40, 60), { vol: 0.8, rev: 0.6, ref: 30, roll: 1 })) {
+        const out = this.out(at(30, 40), 0.5, 0.9);
+        this.noise(out, this.now, 3, { type: 'lowpass', f: 200, f2: 50, a: 0.4, peak: 0.6, brown: true });
+      }
+    } else if (r < 0.5) {
+      play('creakWood', at(5, 14), { vol: 0.35, rev: 0.6 });
+    } else if (r < 0.58) {
+      play('creakMetal', at(10, 25), { vol: 0.3, rev: 0.7, ref: 6 });
+    } else if (r < 0.67) {
+      play('whisper', at(3, 7), { vol: 0.16, rev: 0.8 });
+    } else if (r < 0.74) {
+      const out = this.out(at(25, 40), 0.3, 0.9);
       this.tone(out, this.now, 2.5, { type: 'sine', f: rand(300, 500), f2: rand(150, 250), a: 0.6, peak: 0.1 }); // ferne Sirene
     } else if (r < 0.8) {
-      // Metallisches Knarzen
-      const out = this.out(far, 0.25, 0.8);
-      this.tone(out, this.now, 1.2, { type: 'sawtooth', f: rand(80, 140), f2: rand(60, 90), a: 0.2, peak: 0.08 });
+      // ferne Totenglocke
+      const out = this.out(at(30, 45), 0.4, 1), f = rand(98, 131);
+      for (const [k, a, d] of [[1, 0.2, 4], [2, 0.1, 2.5], [2.76, 0.06, 1.2], [0.5, 0.08, 5]]) this.tone(out, this.now, d, { f: f * k, peak: a, a: 0.003 });
     }
   }
 
-  listener = { x: 0, z: 0 };
+  listener = { x: 0, z: 0, fx: 0, fz: -1 };
   enabledAmbient = false;
 
   updateListener(cam) {
@@ -1044,6 +1193,15 @@ export class AudioEngine {
     const p = cam.position;
     const f = cam.getWorldDirection(this._fwd || (this._fwd = cam.position.clone()));
     this.listener.x = p.x; this.listener.z = p.z;
+    const fl = Math.hypot(f.x, f.z) || 1;
+    this.listener.fx = f.x / fl; this.listener.fz = f.z / fl;
+    // Verweise auf verklungene Stimmen freigeben (sonst hält die Liste Knoten am Leben)
+    const n = this.ctx.currentTime;
+    if (n > (this._prune || 0)) {
+      this._prune = n + 0.5;
+      if (this.vox.length) this.vox = this.vox.filter((v) => v.end > n);
+      if (this.jingle && this.jingle.end < n) this.jingle = null;
+    }
     if (l.positionX) {
       const t = this.now;
       l.positionX.setTargetAtTime(p.x, t, 0.02); l.positionY.setTargetAtTime(p.y, t, 0.02); l.positionZ.setTargetAtTime(p.z, t, 0.02);
@@ -1061,4 +1219,204 @@ export class AudioEngine {
     try { if (window.NachtfallApp) window.NachtfallApp.stopSpeaking(); } catch { /* */ }
   }
   resume() { if (this.ctx) this.ctx.resume(); }
+
+  // ── Klangbank & Wiedergabe ──────────────────────────────────
+  // Zombie-Stimmen und Geräusche rendert ein Web Worker in reinem JS (recipes.js),
+  // Musik und Jingles der OfflineAudioContext (music.js) – beides abseits des
+  // Hauptthreads. Bis etwas fertig ist, greift die alte Live-Synthese bzw. Stille.
+  startBank() {
+    this.bankStats = { t0: performance.now(), worker: false, done: false, mainMs: 0 };
+    const jobs = jobList(), got = new Set();
+    const add = (r) => { got.add(r.name + '|' + r.i); (this.bank[r.name] || (this.bank[r.name] = [])).push(this.toBuffer(r)); };
+    const fallback = () => this.bankMain(jobs.filter(([n, i]) => !got.has(n + '|' + i)), add);
+    try {
+      const w = new BankWorker();
+      w.onmessage = (e) => {
+        if (e.data.done) { this.bankStats.done = true; this.bankStats.ms = performance.now() - this.bankStats.t0; w.terminate(); return; }
+        add(e.data);
+      };
+      w.onerror = (e) => { if (e && e.preventDefault) e.preventDefault(); w.terminate(); fallback(); };
+      w.postMessage('los');
+      this.bankStats.worker = true;
+    } catch { fallback(); }
+    this.renderScores();
+  }
+
+  // Ersatz ohne Worker: kleine Häppchen (≈ 6 ms) in Leerlaufzeiten des Hauptthreads
+  bankMain(jobs, add) {
+    let k = 0;
+    const later = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 150 }) : setTimeout(fn, 16));
+    const run = () => {
+      const t0 = performance.now();
+      while (k < jobs.length && performance.now() - t0 < 6) { try { add(renderJob(...jobs[k])); } catch { /* Variante fehlt dann */ } k++; }
+      this.bankStats.mainMs += performance.now() - t0;
+      if (k < jobs.length) later(run);
+      else { this.bankStats.done = true; this.bankStats.ms = performance.now() - this.bankStats.t0; }
+    };
+    later(run);
+  }
+
+  // Musik offline rendern: alle Graphen gleich beim Laden aufbauen (je eine kleine
+  // Aufgabe), gerendert wird zu zweit nebeneinander in eigenen Audio-Threads
+  renderScores() {
+    if (!(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+    const order = ['roundStart', 'perk_phoenix', 'box', 'roundEnd', 'perk_titan', 'perk_blitz', 'perk_doppel', 'perk_sprint', 'roundStartBig', 'gameOver'];
+    const built = [];
+    let k = 0, running = 0, left = order.length;
+    const pump = () => {
+      while (running < 2 && built.length) {
+        const [name, off] = built.shift();
+        running++;
+        renderBuilt(off).then((b) => { this.scores[name] = b; }, () => { /* bleibt live */ }).then(() => {
+          running--;
+          if (--left === 0) this.bankStats.scoresMs = performance.now() - this.bankStats.t0;
+          pump();
+        });
+      }
+    };
+    const build = () => {
+      const name = order[k++];
+      try { built.push([name, buildScore(name)]); } catch { left--; }
+      pump();
+      if (k < order.length) setTimeout(build, 0);
+    };
+    setTimeout(build, 0);
+  }
+
+  toBuffer(r) {
+    try {
+      const b = new AudioBuffer({ length: r.data.length, sampleRate: r.sr, numberOfChannels: 1 });
+      b.copyToChannel(r.data, 0);
+      return b;
+    } catch { return r; } // ältere Browser: später mit createBuffer
+  }
+  has(name) { const l = this.bank[name]; return !!(l && l.length); }
+  // Zufällige Variante (ohne direkte Wiederholung) oder Variante i
+  buf(name, i = -1) {
+    const list = this.bank[name];
+    if (!list || !list.length) return null;
+    let k = i >= 0 ? i % list.length : Math.floor(Math.random() * list.length);
+    if (i < 0 && list.length > 1 && k === this.lastPick[name]) k = (k + 1) % list.length;
+    this.lastPick[name] = k;
+    let b = list[k];
+    if (b.data && this.ctx) { const ab = this.ctx.createBuffer(1, b.data.length, b.sr); ab.getChannelData(0).set(b.data); b = list[k] = ab; }
+    return b.data ? null : b;
+  }
+
+  panner(pos, ref = 2.5, roll = 1.3) {
+    const p = this.ctx.createPanner();
+    p.panningModel = this.panningModel; p.distanceModel = 'inverse';
+    p.refDistance = ref; p.maxDistance = 80; p.rolloffFactor = roll;
+    p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
+    return p;
+  }
+
+  // Puffer abspielen: mit pos über den 3D-Panner, sonst direkt (optional Stereo-pan).
+  // Alle Knoten werden am Ende getrennt.
+  playBuf(buf, { pos = null, vol = 1, rate = 1, rev = 0.2, bus = null, lp = 0, when = 0, ref = 2.5, roll = 1.3, pan = null } = {}) {
+    const ctx = this.ctx, t = this.now + when;
+    const src = ctx.createBufferSource(), g = ctx.createGain(), nodes = [src, g];
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol;
+    let node = src;
+    if (lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; node.connect(f); node = f; nodes.push(f); }
+    node.connect(g); node = g;
+    if (pos) { const p = this.panner(pos, ref, roll); g.connect(p); node = p; nodes.push(p); }
+    else if (pan !== null && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); node = p; nodes.push(p); }
+    node.connect(bus || this.sfx);
+    if (rev > 0) { const r = ctx.createGain(); r.gain.value = rev; node.connect(r).connect(this.reverbIn); nodes.push(r); }
+    src.onended = () => { for (const n of nodes) n.disconnect(); };
+    src.start(t);
+    return { src, g, end: t + buf.duration / rate };
+  }
+
+  // Richtung/Entfernung ohne HRTF-Panner (für viele kurze Geräusche)
+  cheapPos(pos, ref = 2, roll = 1.3) {
+    const L = this.listener, dx = pos.x - L.x, dz = pos.z - L.z, d = Math.hypot(dx, dz);
+    return { d, gain: ref / (ref + roll * Math.max(0, d - ref)), pan: d > 0.01 ? clamp((dz * L.fx - dx * L.fz) / d, -1, 1) * 0.85 : 0 };
+  }
+
+  // Zombie-Stimme mit Deckel: höchstens VOX_CAP gleichzeitig; wichtigere (prio) bzw.
+  // nähere Stimmen verdrängen die schwächste. Variation über Tempo und Tiefpass.
+  voicePlay(name, pos, { vol = 0.8, prio = 1, rev = 0.3, rate = [0.9, 1.1], lpf = 0 } = {}) {
+    if (!this.ctx) return false;
+    const L = this.listener, d = pos ? Math.hypot(pos.x - L.x, pos.z - L.z) : 0;
+    const b = d < 70 && this.buf(name);
+    if (!b) return false;
+    const now = this.now;
+    this.vox = this.vox.filter((v) => v.end > now);
+    if (this.vox.length >= VOX_CAP) {
+      let w = null;
+      for (const v of this.vox) if (!w || v.prio < w.prio || (v.prio === w.prio && v.d > w.d)) w = v;
+      if (w.prio > prio || (w.prio === prio && w.d <= d)) return false;
+      w.g.gain.setTargetAtTime(0, now, 0.03);
+      try { w.src.stop(now + 0.15); } catch { /* */ }
+      this.vox.splice(this.vox.indexOf(w), 1);
+    }
+    const v = this.playBuf(b, { pos, vol, rate: rand(rate[0], rate[1]), rev, lp: lpf || rand(2600, 9000) });
+    v.prio = prio; v.d = d;
+    this.vox.push(v);
+    return true;
+  }
+
+  // Vorgerenderte Musik (oder live als Notlösung); pos = Quelle im Raum
+  playScore(name, { vol = 0.6, rev = 0.2, pos = null } = {}) {
+    const b = this.scores[name];
+    if (b) return this.playBuf(b, { pos, vol, rev, bus: pos ? null : this.music, ref: 4, roll: 1.2 });
+    playScoreLive(this.ctx, pos ? this.out(pos, 1, rev) : this.music, name, vol);
+    return null;
+  }
+
+  // Positionale Schleife aus der Bank; stoppt nach maxSec Audiozeit von selbst
+  // (keep() verlängert). Liefert { stop(), set(v), keep(), alive }.
+  loopAt(name, pos, vol, ref, roll, maxSec = 40) {
+    const b = this.ctx && this.buf(name, 0);
+    if (!b) return { stop() {}, set() {}, keep() {}, alive: false };
+    const ctx = this.ctx, t = this.now, src = ctx.createBufferSource(), g = ctx.createGain(), p = this.panner(pos, ref, roll);
+    src.buffer = b; src.loop = true;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.4);
+    src.connect(g).connect(p).connect(this.sfx);
+    src.start(t, Math.random() * b.duration);
+    let end = t + maxSec;
+    src.stop(end);
+    const ctl = {
+      alive: true,
+      stop() {
+        if (!ctl.alive) return;
+        ctl.alive = false;
+        const n = ctx.currentTime;
+        g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(g.gain.value, n); g.gain.linearRampToValueAtTime(0, n + 0.2);
+        try { src.stop(n + 0.25); } catch { /* */ }
+      },
+      set(v) { if (ctl.alive) g.gain.setTargetAtTime(vol * v, ctx.currentTime, 0.08); },
+      keep(sec = 3) {
+        const n = ctx.currentTime;
+        if (ctl.alive && n + sec > end + 0.5) { end = n + sec; try { src.stop(end); } catch { /* */ } }
+      },
+    };
+    src.onended = () => { ctl.alive = false; src.disconnect(); g.disconnect(); p.disconnect(); };
+    return ctl;
+  }
+
+  // Elektrisches Brummen eines Perk-Automaten (Besitzer ruft keep() regelmäßig)
+  machineHum(pos) { return this.loopAt('mHum', pos, 0.1, 1.2, 2.2, 3); }
+
+  // Ambiente kurz absenken (Stinger, Strom)
+  duckAmb(sec) {
+    if (!this.amb) return;
+    const g = this.amb.gain, t = this.now;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(0.35, t + 0.3); g.setValueAtTime(0.35, t + sec); g.linearRampToValueAtTime(1, t + sec + 2);
+  }
+
+  // Schreibmaschine für den Intro-Text: sehr billig und leise (kind: 'key' | 'space' | 'return')
+  typeClick(kind = 'key') {
+    if (!this.ctx) return;
+    const b = this.buf(kind === 'space' ? 'typeSpace' : kind === 'return' ? 'typeReturn' : 'typeKey');
+    if (!b) return;
+    const s = this.ctx.createBufferSource(), g = this.ctx.createGain();
+    s.buffer = b; s.playbackRate.value = rand(0.94, 1.06); g.gain.value = kind === 'return' ? 0.22 : 0.1;
+    s.connect(g).connect(this.sfx);
+    s.onended = () => { s.disconnect(); g.disconnect(); };
+    s.start();
+  }
 }
