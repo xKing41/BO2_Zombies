@@ -109,7 +109,7 @@ die Menüs.
   - Perks: höchstens vier; Phönix-Soda belebt solo nach 10 s wieder – nach dem dritten Mal zieht der Automat weiter; Blitz-Tonikum beschleunigt auch das Reparieren
   - Wandwaffen sind Kreidezeichnungen – nach dem ersten Kauf wird daraus in einer Kreidestaubwolke die echte Waffe an der Wand
   - Ab Runde 4 sprintet der letzte Zombie einer Runde – außer er hat keine Beine mehr (Kriecher)
-  - Hechtsprung aus dem Sprint (Ducken drücken): flach nach vorn, kurz liegen bleiben
+  - Hechtsprung aus dem Sprint (Ducken drücken): flach nach vorn, kurz liegen bleiben – wer vor einem Perk-Automaten landet, findet einmalig 100 Punkte
 
 **Gameplay-Kern**
 - Endlose Runden mit BO-ähnlicher Skalierung (Anzahl, Lebenspunkte, Spawn-Tempo, Geher → Läufer → Sprinter)

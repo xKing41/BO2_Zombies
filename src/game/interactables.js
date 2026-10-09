@@ -250,6 +250,13 @@ class PerkMachine extends Interactable {
       }
     }
     const on = this.powered && !gone;
+    // Alter Trick aus den Originalen: Wer sich vor einen Automaten legt, findet 100 Punkte (einmal je Automat)
+    const p = this.g.player;
+    if (!this.proneBonus && !gone && p.proneT > 0 && Math.hypot(p.pos.x - this.pos.x, p.pos.z - this.pos.z) < 1.6) {
+      this.proneBonus = true;
+      this.g.addPoints(100, true);
+      this.g.audio.purchase();
+    }
     const k = on ? 1.6 + Math.sin(time * 3 + this.id.length) * 0.15 : 0.25;
     this.signMat.color.setScalar(k);
     this.logoMat.color.setScalar(on ? k * 1.15 : 0.2);
@@ -269,6 +276,7 @@ class PerkMachine extends Interactable {
     this.jingleT = d < 12 && a.perkJingle(this.id, this.spk) ? rand(45, 120) : rand(4, 9);
   }
   reset() {
+    this.proneBonus = false;
     this.jingleT = rand(15, 45);
     if (this.hum) { this.hum.stop(); this.hum = null; }
     this.group.visible = true;
