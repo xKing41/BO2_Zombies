@@ -29,6 +29,7 @@ export class Player {
     this.eye = 1.65;
     this.snap = null; this.wasAds = false;
     this.stepY = 0; this.speedMul = 1;
+    this.diving = false; this.proneT = 0; this.diveTilt = 0;
   }
 
   get walkSpeed() { return 4.4 * (this.perks.has('sprint') ? 1.07 : 1); }
@@ -140,7 +141,8 @@ export class Player {
     const flen = Math.hypot(fx, fz);
     if (flen > 0.001) { fx /= flen; fz /= flen; }
 
-    this.crouching = active && input.held('crouch');
+    const wasSprinting = this.sprinting;
+    this.crouching = active && (input.held('crouch') || this.diving || this.proneT > 0);
     this.sprintLock -= dt;
     const wantSprint = active && input.held('sprint') && fz < -0.3 && !this.crouching && this.sprintLock <= 0 && g.weapons.ads < 0.3;
     const sprintDur = this.perks.has('sprint') ? 9 : 4.5;
@@ -155,12 +157,23 @@ export class Player {
     if (this.crouching) speed *= 0.5;
     speed *= lerp(1, 0.6, g.weapons.ads);
     if (this.downed) speed = 0.55 * mag;
+    if (this.proneT > 0) { this.proneT -= dt; speed = 0; }
 
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     const wx = fx * cy + fz * sy, wz = -fx * sy + fz * cy;
-    const accel = this.onGround ? 11 : 2.5;
-    this.vel.x = damp(this.vel.x, wx * speed, accel, dt);
-    this.vel.z = damp(this.vel.z, wz * speed, accel, dt);
+    // Hechtsprung wie in Black Ops: aus dem Sprint ducken → flach nach vorn
+    if (active && wasSprinting && input.hit('crouch') && this.onGround && this.proneT <= 0) {
+      const v = Math.max(6.4, this.hSpeed * 1.12);
+      this.vel.x = -sy * v; this.vel.z = -cy * v; this.vel.y = 3.1;
+      this.onGround = false; this.diving = true;
+      this.sprinting = false; this.sprintLock = 0.8; this.stamina = Math.max(0, this.stamina - 0.12);
+      g.audio.footstep('stone', true);
+    }
+    if (!this.diving) {
+      const accel = this.onGround ? 11 : 2.5;
+      this.vel.x = damp(this.vel.x, wx * speed, accel, dt);
+      this.vel.z = damp(this.vel.z, wz * speed, accel, dt);
+    }
 
     if (active && input.hit('jump') && this.onGround && !this.crouching) {
       this.vel.y = 4.9; this.onGround = false;
@@ -169,7 +182,13 @@ export class Player {
     this.pos.addScaledVector(this.vel, dt);
     const floor = g.floorAt(this.pos);
     if (this.pos.y <= floor) {
-      if (!this.onGround && this.vel.y < -3) { g.audio.jumpLand(); this.landT = 1; }
+      if (this.diving) {
+        // Bauchlandung: kurz liegen bleiben, dann (geduckt) weiter
+        this.diving = false; this.proneT = 0.55;
+        this.vel.x *= 0.25; this.vel.z *= 0.25;
+        this.shake = Math.max(this.shake, 0.3); this.landT = 1;
+        g.audio.jumpLand();
+      } else if (!this.onGround && this.vel.y < -3) { g.audio.jumpLand(); this.landT = 1; }
       const step = floor - this.pos.y;
       if (step > 0.1 && step < 0.8) this.stepY -= step; // Stufe hinauf: Kamera folgt weich
       this.pos.y = floor; this.vel.y = 0; this.onGround = true;
@@ -202,7 +221,9 @@ export class Player {
         g.audio.footstep(surf, this.sprinting);
       }
     }
-    this.crouch = damp(this.crouch, this.crouching ? 1 : this.downed ? 1.6 : 0, 10, dt);
+    const lying = this.diving ? 1.1 : this.proneT > 0 ? 1.55 : 0;
+    this.crouch = damp(this.crouch, lying || (this.crouching ? 1 : this.downed ? 1.6 : 0), lying ? 14 : 10, dt);
+    this.diveTilt = damp(this.diveTilt, this.diving ? -0.16 : this.proneT > 0 ? 0.05 : 0, 9, dt);
     this.landT = Math.max(0, this.landT - dt * 4);
     this.stepY = damp(this.stepY, 0, 9, dt);
     this.shake = Math.max(0, this.shake - dt * 1.5);
@@ -217,7 +238,7 @@ export class Player {
     const t = this.time;
     const roll = (this.downed ? 0.25 : 0) + Math.sin(this.bobPhase) * 0.006 * Math.min(1, this.hSpeed / 4) - fx * 0.012;
     cam.rotation.set(
-      this.pitch + this.recoilP + Math.sin(t * 37) * sh * 0.05,
+      this.pitch + this.recoilP + this.diveTilt + Math.sin(t * 37) * sh * 0.05,
       this.yaw + this.recoilY + Math.sin(t * 29) * sh * 0.05,
       roll + Math.sin(t * 23) * sh * 0.03,
       'YXZ',

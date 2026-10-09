@@ -85,6 +85,7 @@ die Menüs.
 | Zielen | Rechte Maustaste | LT / L2 | Zielfernrohr-Knopf (an/aus) |
 | Sprinten | Shift | Linken Stick drücken | Joystick ganz nach vorne |
 | Springen / Ducken | Leertaste / C | A ✕ / B ○ | Knöpfe |
+| Hechtsprung | im Sprint C | im Sprint B ○ | im Sprint „Ducken“ |
 | Nachladen | R | X ▢ | Knopf |
 | Kaufen / Benutzen | F (halten: reparieren) | X ▢ (wenn etwas in Reichweite ist) | „Benutzen“-Knopf erscheint automatisch |
 | Messer / Granate | V / G | R3 oder LB / RB | Knöpfe |
@@ -106,6 +107,8 @@ die Menüs.
   - Power-Ups: Drop, sobald die verdienten Punkte eine Schwelle überschreiten (2000, dann jeweils ×1,14), dazu 3 % Zufall, höchstens 4 je Runde; gemischter Zyklus; 15 s ruhig, dann immer schneller blinkend, nach 26,5 s weg; neu: **Ausverkauf** (Kiste 30 s lang für 10 Punkte)
   - Zufallskiste: Teddy frühestens bei der 4. Benutzung (15 %), am Startplatz spätestens bei der 8., nach dem ersten Umzug 30 % bzw. ab der 13. Benutzung 50 %; Punkte zurück
   - Perks: höchstens vier; Phönix-Soda belebt solo nach 10 s wieder – nach dem dritten Mal zieht der Automat weiter; Blitz-Tonikum beschleunigt auch das Reparieren
+  - Ab Runde 4 sprintet der letzte Zombie einer Runde – außer er hat keine Beine mehr (Kriecher)
+  - Hechtsprung aus dem Sprint (Ducken drücken): flach nach vorn, kurz liegen bleiben
 
 **Gameplay-Kern**
 - Endlose Runden mit BO-ähnlicher Skalierung (Anzahl, Lebenspunkte, Spawn-Tempo, Geher → Läufer → Sprinter)

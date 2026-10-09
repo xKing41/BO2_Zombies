@@ -182,6 +182,15 @@ export class ZombieManager {
         if (this.spawnOne()) this.spawnT = spawnDelay(this.round) * rand(0.7, 1.3);
       }
     }
+    // Wie bei Treyarch ab Runde 4: Der letzte Zombie der Runde sprintet –
+    // außer er hat keine Beine mehr (darum lässt man sich Kriecher übrig)
+    this.lastT = (this.lastT || 0) - dt;
+    if (this.round >= 4 && this.toSpawn === 0 && this.lastT <= 0) {
+      this.lastT = 0.5;
+      let last = null, n = 0;
+      for (const z of this.pool) if (z.alive) { last = z; n++; }
+      if (n === 1 && !last.crawler && last.speedType !== 'sprint') { last.speedType = 'sprint'; last.speed = rand(4.2, 4.7); }
+    }
     this.stepBudget = Math.min(2, this.stepBudget + dt * 7);
     for (const z of this.pool) if (z.active) z.update(dt, this.game);
     this.renderer.update(this.pool);

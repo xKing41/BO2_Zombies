@@ -706,7 +706,7 @@ export class AudioEngine {
       const out = this.out(null, 0.6, 0.4), t = this.now;
       [72, 76, 79, 84].forEach((n, i) => this.tone(out, t + i * 0.06, 0.6, { type: 'triangle', f: NOTE(n), peak: 0.2 }));
     }
-    const names = { maxammo: 'Volle Munition!', instakill: 'Sofort-Kill!', double: 'Doppelte Punkte!', nuke: 'Atombombe!', carpenter: 'Zimmermann!' };
+    const names = { maxammo: 'Volle Munition!', instakill: 'Sofort-Kill!', double: 'Doppelte Punkte!', nuke: 'Atombombe!', carpenter: 'Zimmermann!', firesale: 'Ausverkauf!' };
     this.announce(names[type]);
   }
 
