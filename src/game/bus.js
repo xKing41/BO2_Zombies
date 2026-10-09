@@ -36,6 +36,7 @@ const LINES = {
   soon: ['Abfahrt in fünf Sekunden.', 'Letzter Aufruf. Fünf Sekunden.', 'Ich zähle bis fünf. Dann bin ich weg.'],
   zombie: ['Fahrgast ohne Fahrschein entdeckt.', 'Bitte nicht die anderen Fahrgäste essen.', 'Untote fahren hier nicht umsonst!'],
   blocked: ['Aus dem Weg, Fleischsack!', 'Ich bremse für Menschen. Noch.', 'Bitte von der Fahrbahn treten.'],
+  boss: ['Da sitzt etwas auf meinem Dach. Es kribbelt.', 'Stromausfall! So kann ich nicht fahren.', 'Bitte entfernen Sie das leuchtende Ding von meinem Dach!', 'Fahrgast ohne Fahrschein auf dem Dach. Und er brennt.'],
   shot: ['Au. Das kommt in meinen Bericht.', 'Ich bin nur der Busfahrer!', 'Schäden am Fahrer kosten extra.', 'Schießen Sie lieber auf die da draußen.', 'Noch einmal und ich fahre ohne Sie.'],
   called: ['Ich komme ja schon.', 'Bin unterwegs. Keine Panik. Doch, ein bisschen Panik.', 'Taxi bin ich keins. Aber gut.'],
   idle: [
@@ -251,7 +252,7 @@ export class Bus {
       case 'wait':
         this.door = Math.min(1, this.door + dt * 1.5);
         if (this.t < 5 && !this.warned) { this.warned = true; if (this.playerOn || this.g.player.pos.distanceTo(this.pos) < 20) this.say('soon', {}, true); }
-        if (this.t <= 0) this.depart();
+        if (this.t <= 0 && !this.boss) this.depart();
         break;
       case 'closing':
         this.door = Math.max(0, this.door - dt / 1.1);
@@ -266,6 +267,7 @@ export class Bus {
         let dh = Math.abs(((h1 - h0 + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
         vt = Math.min(vt, Math.sqrt(2.6 / Math.max(dh / 14, 1e-4)));
         vt = Math.min(vt, Math.sqrt(2 * BRAKE * Math.max(0, dist - 0.2)) + 0.3);
+        if (this.boss) vt = 0; // Funkenmann auf dem Dach: Motor ist tot
         // Spieler auf der Fahrbahn vor dem Bus → bremsen und hupen
         const lp = this.toLocal(this.g.player.pos, _l);
         const ahead = this.g.state === 'playing' && !this.playerOn && lp.z > HALF_L - 0.5 && lp.z < HALF_L + 3 + this.v * 0.6 && Math.abs(lp.x) < HALF_W + 0.5 && this.g.player.pos.y < 1;
