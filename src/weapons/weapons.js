@@ -39,6 +39,14 @@ const SPRINT = {
   rifle: [-0.01, 0.03, -0.03, -0.25, 0.6, 0.55],
   heavy: [-0.01, 0.015, -0.02, -0.3, 0.7, 0.55],
 };
+// Feste Listen (keine Allokationen pro Frame)
+const BUSY = ['drink', 'knife', 'throw'];
+const LIGHT = ['pistol', 'ray'];
+const HEAVY = ['lmg', 'sniper'];
+const REST = [[0, 'rest', 'G']];
+const PIN_Q = Q([0.8, 0.2, -0.55], [-0.2, 0.95, 0.2]);
+// Auswurfrichtungen der Hülsen (Waffenraum, m/s)
+const EJ = { shell: V(1.6, 1.3, 0.2), down: V(0.3, -0.8, 0.3), pistol: V(1.3, 1.9, 0.5), rifle: V(1.9, 1.2, 0.2) };
 const DRAW = { p45: 'pistol', ar: 'handle', vmp: 'handle', k14: 'handle', sniper: 'handle', lmg: 'handle', pump: 'pump', dlf: 'break', ray: 'energy', tesla: 'energy' };
 
 // ── Nachlade-Zeitachsen (k = 0…1) ─────────────────────────────
@@ -328,7 +336,7 @@ export class Weapons {
 
   setState(s, dur = 0) { this.state = s; this.stateT = 0; this.stateDur = dur; this.prevK = 0; }
 
-  get busy() { return ['drink', 'knife', 'throw'].includes(this.state); }
+  get busy() { return BUSY.includes(this.state); }
 
   // ── Aktionen ────────────────────────────────────────────────
   reload() {
@@ -508,7 +516,7 @@ export class Weapons {
     _v.x *= kf; _v.y *= kf;
     _v.applyMatrix4(cam.matrixWorld);
     // Richtung im Waffenraum → Kamera → Welt
-    _w.copy(vel || (kind === 'shell' ? V(1.6, 1.3, 0.2) : info.id === 'lmg' ? V(0.3, -0.8, 0.3) : kind === 'pistol' ? V(1.3, 1.9, 0.5) : V(1.9, 1.2, 0.2)));
+    _w.copy(vel || (kind === 'shell' ? EJ.shell : info.id === 'lmg' ? EJ.down : kind === 'pistol' ? EJ.pistol : EJ.rifle));
     _w.x *= rand(0.8, 1.2); _w.y *= rand(0.8, 1.2); _w.z += rand(-0.3, 0.3);
     const spd = _w.length();
     _qq.setFromEuler(this.root.rotation);
@@ -945,7 +953,7 @@ export class Weapons {
 
     // Sprint
     if (sp > 0.001) {
-      const S = SPRINT[w && ['pistol', 'ray'].includes(w.stats.cls) ? 'light' : w && ['lmg', 'sniper'].includes(w.stats.cls) ? 'heavy' : 'rifle'];
+      const S = SPRINT[w && LIGHT.includes(w.stats.cls) ? 'light' : w && HEAVY.includes(w.stats.cls) ? 'heavy' : 'rifle'];
       pos.x += S[0] * sp; pos.y += S[1] * sp; pos.z += S[2] * sp;
       rx += S[3] * sp; ry += S[4] * sp; rz += S[5] * sp;
     }
@@ -985,7 +993,7 @@ export class Weapons {
     if (info) this.animParts(dt, k);
     this.root.updateMatrixWorld(true);
     this.animHands(dt, k);
-    this.arms.root.visible = this.root.visible || ['knife', 'throw', 'drink'].includes(st);
+    this.arms.root.visible = this.root.visible || BUSY.includes(st);
     if (this.arms.root.visible) this.arms.update();
 
     // Lose Teile (Kronkorken, Flasche, Ring)
@@ -1166,15 +1174,15 @@ export class Weapons {
     else if (st === 'throw') {
       // Linke Hand zieht den Sicherungsring
       const kk = k;
-      if (kk < 0.12 || kk > 0.9) this.handTrack(1, [[0, 'rest', 'G']], 0, poseL);
+      if (kk < 0.12 || kk > 0.9) this.handTrack(1, REST, 0, poseL);
       else {
         _pb.copy(A.side[0].target);
         const pull = sseg(kk, 0.27, 0.38), away = sseg(kk, 0.4, 0.62);
         _pa.copy(_pb).add(_v.set(-0.07 - pull * 0.1, 0.06 - pull * 0.04 - away * 0.4, -0.01 + pull * 0.06));
-        _qa.copy(Q([0.8, 0.2, -0.55], [-0.2, 0.95, 0.2]));
+        _qa.copy(PIN_Q);
         A.setTarget(1, _pa, _qa); A.setPose(1, POSES.pinch);
       }
-    } else this.handTrack(1, [[0, 'rest', 'G']], 0, poseL);
+    } else this.handTrack(1, REST, 0, poseL);
   }
 
   // Pumpgun: Patronen einzeln durch die Ladeöffnung

@@ -173,6 +173,8 @@ function caseGeo(kind) {
   return g;
 }
 
+function setCount(m, n) { m.count = n; m.visible = n > 0; if (n) m.instanceMatrix.needsUpdate = true; }
+
 export class Casings {
   constructor(scene, M) {
     const brass = new THREE.MeshStandardMaterial({ color: 0xc8963c, roughness: 0.3, metalness: 0.9, envMapIntensity: 1.6 });
@@ -220,7 +222,6 @@ export class Casings {
   update(dt, g) {
     this.tinkT -= dt;
     const map = g.map;
-    const counts = { pistol: 0, rifle: 0, shell: 0 };
     for (let i = this.list.length - 1; i >= 0; i--) {
       const c = this.list[i];
       c.life += dt;
@@ -258,10 +259,10 @@ export class Casings {
           }
         }
       }
-      counts[c.kind === 'big' ? 'rifle' : c.kind]++;
     }
     // Instanzen schreiben
-    const idx = { pistol: 0, rifle: 0, shell: 0 };
+    const idx = this.idx || (this.idx = { pistol: 0, rifle: 0, shell: 0 });
+    idx.pistol = idx.rifle = idx.shell = 0;
     const M = this.meshes;
     for (const c of this.list) {
       const fade = c.life > 2.8 ? Math.max(0.001, 1 - (c.life - 2.8) / 0.4) : 1;
@@ -272,8 +273,7 @@ export class Casings {
       else if (c.kind === 'pistol') M.pistol.setMatrixAt(idx.pistol++, _m);
       else M.rifle.setMatrixAt(idx.rifle++, _m);
     }
-    const set = (m, n) => { m.count = n; m.visible = n > 0; if (n) m.instanceMatrix.needsUpdate = true; };
-    set(M.pistol, idx.pistol); set(M.rifle, idx.rifle); set(M.shellBase, idx.shell); set(M.shellHull, idx.shell);
+    setCount(M.pistol, idx.pistol); setCount(M.rifle, idx.rifle); setCount(M.shellBase, idx.shell); setCount(M.shellHull, idx.shell);
   }
 
   clear() { while (this.list.length) this.pool.push(this.list.pop()); for (const m of Object.values(this.meshes)) { m.count = 0; m.visible = false; } }
