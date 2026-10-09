@@ -147,49 +147,100 @@ export class AudioEngine {
   }
 
   // ── Waffen ──────────────────────────────────────────────────
+  // Schuss: Knall (Transiente), Körper (gefiltertes Rauschen, angezerrt), Tiefdruck (Sinus-Sweep),
+  // Mechanik (Verschluss), Raum (Hall + Echo), Zufallsvariation, PaP-Schicht
   gunshot(kind, pap = false) {
     if (!this.ctx) return;
-    const t = this.now;
-    const P = {
-      pistol: { crack: 0.09, body: 0.18, thump: 150, tf: 3200, vol: 0.8, tail: 0.35 },
-      rifle: { crack: 0.12, body: 0.3, thump: 110, tf: 2600, vol: 1.0, tail: 0.5 },
-      smg: { crack: 0.06, body: 0.14, thump: 140, tf: 3600, vol: 0.65, tail: 0.25 },
-      ar: { crack: 0.08, body: 0.22, thump: 120, tf: 2800, vol: 0.8, tail: 0.35 },
-      lmg: { crack: 0.1, body: 0.26, thump: 95, tf: 2200, vol: 0.9, tail: 0.4 },
-      shotgun: { crack: 0.14, body: 0.5, thump: 70, tf: 1800, vol: 1.2, tail: 0.6 },
-      sniper: { crack: 0.2, body: 0.8, thump: 55, tf: 2000, vol: 1.4, tail: 0.9 },
-    }[kind];
     if (kind === 'ray') return this.rayShot(pap);
-    if (kind === 'tesla') return this.teslaShot(pap);
-    const out = this.out(null, P.vol, P.tail);
-    const v = rand(0.9, 1.1);
-    this.noise(out, t, P.crack, { type: 'highpass', f: P.tf * v, peak: 0.9 });
-    this.noise(out, t, P.body, { type: 'lowpass', f: 1800 * v, f2: 300, peak: 1.0 });
-    this.tone(out, t, P.body * 0.8, { f: P.thump * 1.6, f2: P.thump * 0.4, peak: 1.0 });
-    this.noise(out, t + 0.01, P.body * 1.6, { type: 'bandpass', f: 600, f2: 120, q: 0.6, peak: 0.25, brown: true });
+    if (kind === 'tesla') return this.teslaBlast(pap);
+    const P = {
+      pistol: { vol: 0.9, crack: 0.016, cf: 4300, body: 0.11, bf: 2700, thump: 140, td: 0.1, tail: 0.32, drive: 2.2, mech: 'slide', echo: 0.16 },
+      rifle: { vol: 1.05, crack: 0.024, cf: 3400, body: 0.2, bf: 2200, thump: 108, td: 0.16, tail: 0.5, drive: 2.8, mech: 'oprod', echo: 0.26 },
+      smg: { vol: 0.72, crack: 0.011, cf: 4900, body: 0.07, bf: 3100, thump: 155, td: 0.07, tail: 0.24, drive: 2.0, mech: 'tick', echo: 0.12 },
+      ar: { vol: 0.86, crack: 0.015, cf: 3900, body: 0.12, bf: 2450, thump: 122, td: 0.11, tail: 0.34, drive: 2.4, mech: 'bolt', echo: 0.18 },
+      lmg: { vol: 0.95, crack: 0.019, cf: 3300, body: 0.15, bf: 2050, thump: 96, td: 0.13, tail: 0.4, drive: 2.6, mech: 'belt', echo: 0.22 },
+      shotgun: { vol: 1.25, crack: 0.03, cf: 2600, body: 0.32, bf: 1750, thump: 74, td: 0.24, tail: 0.6, drive: 3.2, mech: null, echo: 0.34 },
+      sniper: { vol: 1.45, crack: 0.04, cf: 2900, body: 0.45, bf: 1800, thump: 54, td: 0.36, tail: 0.9, drive: 3.4, mech: 'heavy', echo: 0.5 },
+    }[kind] || null;
+    if (!P) return;
+    const ctx = this.ctx, t = this.now, v = rand(0.92, 1.08);
+    const rapid = t - (this.wLastShot || 0) < 0.11;
+    this.wLastShot = t;
+    const out = this.out(null, P.vol * rand(0.94, 1.04), rapid ? P.tail * 0.6 : P.tail);
+    // Angezerrter Körper für Biss
+    const drive = ctx.createGain(); drive.gain.value = P.drive;
+    const ws = ctx.createWaveShaper(); ws.curve = this.distCurve;
+    const make = ctx.createGain(); make.gain.value = 2.1;
+    drive.connect(ws).connect(make).connect(out);
+    setTimeout(() => { try { drive.disconnect(); make.disconnect(); } catch { /* */ } }, (P.body + 0.4) * 1000);
+    // Transiente
+    this.noise(out, t, P.crack, { type: 'highpass', f: P.cf * v, peak: 1.0, a: 0.0006 });
+    this.tone(out, t, 0.014, { type: 'square', f: P.cf * 0.32 * v, f2: 260, peak: 0.22, a: 0.0005 });
+    // Körper
+    this.noise(drive, t, P.body, { type: 'lowpass', f: P.bf * v, f2: 220, peak: 1.0, a: 0.001 });
+    this.noise(out, t + 0.002, P.body * 0.7, { type: 'bandpass', f: P.bf * 0.45 * v, f2: 170, q: 0.9, peak: 0.55 });
+    // Tiefdruck
+    this.tone(out, t, P.td, { f: P.thump * 1.9 * v, f2: P.thump * 0.35, peak: 1.0, a: 0.002 });
+    // Raum: Nachhall und Echo von den Wänden
+    this.noise(out, t + 0.01, P.body * 2.4, { type: 'bandpass', f: 520, f2: 110, q: 0.5, peak: 0.22, brown: true });
+    if (!rapid) this.noise(out, t + P.echo * rand(0.85, 1.12), P.body * 1.8, { type: 'lowpass', f: 950, f2: 150, peak: 0.15, a: 0.012, brown: true });
+    this.wMech(out, t, P.mech, v);
     if (pap) {
-      this.tone(out, t, 0.25, { type: 'sawtooth', f: 1800, f2: 400, peak: 0.08 });
-      this.tone(out, t, 0.35, { type: 'sine', f: 3200, f2: 900, peak: 0.12 });
+      this.tone(out, t, 0.22, { type: 'sawtooth', f: 2400 * v, f2: 260, peak: 0.07 });
+      this.tone(out, t, 0.3, { type: 'sine', f: 3400 * v, f2: 800, peak: 0.1 });
+      this.tone(out, t + 0.01, 0.25, { type: 'sine', f: 95, f2: 40, peak: 0.45 });
+      this.noise(out, t, 0.18, { type: 'bandpass', f: 5200, f2: 1800, q: 3, peak: 0.12 });
     }
-    // Mechanik
-    this.noise(out, t + 0.04, 0.02, { type: 'bandpass', f: 5000, q: 3, peak: 0.15 });
+  }
+
+  // Verschluss-Mechanik nach dem Schuss
+  wMech(out, t, type, v = 1) {
+    const c = (dt, f, p, d = 0.018, q = 4) => this.noise(out, t + dt, d, { type: 'bandpass', f: f * v, q, peak: p, a: 0.0005 });
+    switch (type) {
+      case 'slide': c(0.028, 2600, 0.35); c(0.062, 1700, 0.28, 0.022); break;
+      case 'bolt': c(0.03, 2100, 0.22); this.tone(out, t + 0.034, 0.05, { type: 'triangle', f: 3600 * v, peak: 0.03 }); break;
+      case 'tick': c(0.022, 2900, 0.18, 0.012); break;
+      case 'belt': c(0.025, 1900, 0.2); c(0.048, 3100, 0.12, 0.01); break;
+      case 'oprod': c(0.035, 1800, 0.3, 0.025); c(0.075, 2400, 0.22); break;
+      case 'heavy': c(0.05, 1300, 0.35, 0.035, 3); c(0.11, 2000, 0.25, 0.025); break;
+    }
+  }
+
+  // Kurzes metallisches Klicken (Baustein der Nachlade-Geräusche)
+  wClick(out, t, f, peak = 0.5, dur = 0.018, q = 4) {
+    this.noise(out, t, dur, { type: 'bandpass', f, q, peak, a: 0.0006 });
+    this.tone(out, t, dur * 1.6, { type: 'square', f: f / 3, f2: f / 6, peak: peak * 0.08 });
   }
 
   rayShot(pap) {
-    const t = this.now;
-    const out = this.out(null, 0.7, 0.4);
-    const base = pap ? 900 : 1300;
-    this.tone(out, t, 0.28, { type: 'sawtooth', f: base * 2, f2: base * 0.2, peak: 0.25 });
-    this.tone(out, t, 0.3, { type: 'square', f: base, f2: base * 0.15, peak: 0.12, detune: 15 });
-    this.tone(out, t, 0.2, { type: 'sine', f: 220, f2: 60, peak: 0.6 });
-    this.noise(out, t, 0.15, { type: 'bandpass', f: 3000, f2: 600, q: 2, peak: 0.25 });
+    if (!this.ctx) return;
+    const t = this.now, out = this.out(null, 0.75, 0.45), b = (pap ? 820 : 1250) * rand(0.97, 1.03);
+    this.tone(out, t, 0.3, { type: 'sawtooth', f: b * 2, f2: b * 0.18, peak: 0.2 });
+    this.tone(out, t, 0.3, { type: 'sawtooth', f: b * 2.02, f2: b * 0.19, peak: 0.14, detune: 25 });
+    this.tone(out, t, 0.32, { type: 'square', f: b, f2: b * 0.14, peak: 0.08, detune: -12 });
+    this.tone(out, t, 0.22, { type: 'sine', f: 260, f2: 55, peak: 0.7 });
+    this.noise(out, t, 0.12, { type: 'bandpass', f: 3200, f2: 700, q: 2, peak: 0.28 });
+    this.tone(out, t + 0.05, 0.4, { type: 'sine', f: b * 3.1, f2: b * 1.2, peak: 0.05 });
+  }
+
+  // Gewitter-Werfer: Entladung, Knistern, Donner
+  teslaBlast(pap) {
+    if (!this.ctx) return;
+    const t = this.now, out = this.out(null, 1.0, 0.55);
+    this.noise(out, t, 0.06, { type: 'highpass', f: 3000, peak: 1.0, a: 0.001 });
+    this.noise(out, t, 0.45, { type: 'highpass', f: 2200, f2: 5000, a: 0.004, peak: 0.45 });
+    for (let i = 0; i < 12; i++) this.noise(out, t + rand(0, 0.4), 0.025, { type: 'bandpass', f: rand(2000, 7000), q: 3, peak: rand(0.3, 0.75) });
+    this.tone(out, t, 0.5, { type: 'sawtooth', f: pap ? 85 : 115, f2: 38, peak: 0.45 });
+    this.tone(out, t, 0.18, { type: 'square', f: pap ? 240 : 320, f2: 60, peak: 0.12 });
+    this.noise(out, t + 0.04, 1.5, { type: 'lowpass', f: 320, f2: 50, a: 0.03, peak: 1.0, brown: true });
   }
 
   emptyClick() {
     if (!this.ctx) return;
-    const out = this.out(null, 0.5, 0.05);
-    this.noise(out, this.now, 0.015, { type: 'bandpass', f: 4000, q: 4, peak: 0.6 });
-    this.tone(out, this.now, 0.03, { type: 'square', f: 1800, f2: 900, peak: 0.08 });
+    const out = this.out(null, 0.55, 0.04), t = this.now;
+    this.noise(out, t, 0.008, { type: 'bandpass', f: 3800, q: 6, peak: 0.9, a: 0.0004 });
+    this.noise(out, t + 0.012, 0.012, { type: 'bandpass', f: 2200, q: 5, peak: 0.4 });
+    this.tone(out, t, 0.03, { type: 'square', f: 1700, f2: 900, peak: 0.05 });
   }
 
   // Nachladen: Magazin raus, rein, Verschluss
@@ -226,17 +277,159 @@ export class AudioEngine {
     this.noise(out, t + 0.12, 0.05, { type: 'bandpass', f: 1800, q: 2, peak: 0.5 });
   }
 
+  // ── Animations-synchrone Waffengeräusche ──
+  magOut(cls = 'ar') {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.55, 0.08), t = this.now, v = rand(0.94, 1.06);
+    if (cls === 'ray' || cls === 'tesla') {
+      this.tone(out, t, 0.14, { type: 'sawtooth', f: 900 * v, f2: 90, peak: 0.12 });
+      this.noise(out, t, 0.18, { type: 'highpass', f: 4000, f2: 1500, peak: 0.12 });
+      this.wClick(out, t + 0.02, 2600, 0.4);
+      return;
+    }
+    const heavy = cls === 'lmg' || cls === 'sniper';
+    this.wClick(out, t, (heavy ? 1800 : 2600) * v, 0.55, 0.014, 5);
+    this.noise(out, t + 0.012, heavy ? 0.12 : 0.07, { type: 'bandpass', f: (heavy ? 900 : 1300) * v, f2: (heavy ? 600 : 900) * v, q: 2, peak: 0.28 });
+    this.tone(out, t + 0.01, 0.06, { type: 'triangle', f: (heavy ? 420 : 700) * v, f2: 300, peak: 0.06 });
+  }
+
+  magIn(cls = 'ar') {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.6, 0.1), t = this.now, v = rand(0.94, 1.06);
+    if (cls === 'ray' || cls === 'tesla') {
+      this.wClick(out, t, 2400 * v, 0.5);
+      this.tone(out, t + 0.04, 0.55, { type: 'sine', f: 220, f2: cls === 'ray' ? 2600 : 1800, peak: 0.12 });
+      this.tone(out, t + 0.04, 0.55, { type: 'square', f: 110, f2: cls === 'ray' ? 1300 : 900, peak: 0.025 });
+      if (cls === 'tesla') for (let i = 0; i < 5; i++) this.noise(out, t + 0.1 + rand(0, 0.4), 0.02, { type: 'bandpass', f: rand(3000, 6500), q: 3, peak: 0.3 });
+      return;
+    }
+    const heavy = cls === 'lmg' || cls === 'sniper';
+    this.noise(out, t, 0.05, { type: 'bandpass', f: 900 * v, f2: 1600 * v, q: 2, peak: 0.22 });
+    this.wClick(out, t + 0.045, (heavy ? 1700 : 2300) * v, 0.75, 0.02, 4);
+    this.tone(out, t + 0.045, 0.07, { f: heavy ? 150 : 210, f2: 70, peak: 0.35 });
+    this.tone(out, t + 0.05, 0.08, { type: 'triangle', f: 2600 * v, f2: 2200, peak: 0.03 });
+  }
+
+  boltBack(cls = 'ar') {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.55, 0.08), t = this.now, v = rand(0.95, 1.05);
+    if (cls === 'lmgCover') { this.noise(out, t, 0.12, { type: 'bandpass', f: 700, f2: 1100, q: 3, peak: 0.25 }); this.wClick(out, t + 0.1, 1900, 0.4); return; }
+    const f = cls === 'pistol' ? 2000 : cls === 'sniper' || cls === 'lmg' ? 1200 : 1600;
+    this.noise(out, t, 0.07, { type: 'bandpass', f: f * v, f2: f * 1.5 * v, q: 3, peak: 0.35 });
+    this.wClick(out, t + 0.065, f * 1.3 * v, 0.45);
+    this.tone(out, t + 0.06, 0.05, { type: 'triangle', f: 3200 * v, f2: 2600, peak: 0.035 });
+  }
+
+  boltForward(cls = 'ar') {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.7, 0.12), t = this.now, v = rand(0.95, 1.05);
+    if (cls === 'lmgCover') { this.wClick(out, t, 1500 * v, 0.8, 0.03, 3); this.tone(out, t, 0.09, { f: 170, f2: 70, peak: 0.45 }); return; }
+    const f = cls === 'pistol' ? 2400 : cls === 'sniper' || cls === 'lmg' ? 1300 : 1800;
+    this.noise(out, t, 0.03, { type: 'bandpass', f: f * 0.8 * v, f2: f * 1.2 * v, q: 2, peak: 0.25 });
+    this.wClick(out, t + 0.025, f * v, 0.9, 0.025, 3.5);
+    this.tone(out, t + 0.025, 0.08, { f: cls === 'pistol' ? 240 : 170, f2: 70, peak: 0.45 });
+    this.tone(out, t + 0.03, 0.12, { type: 'triangle', f: 3000 * v, f2: 2400, peak: 0.04 });
+  }
+
+  pumpBack() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.62, 0.1), t = this.now, v = rand(0.95, 1.05);
+    this.noise(out, t, 0.075, { type: 'bandpass', f: 1000 * v, f2: 1500 * v, q: 2.5, peak: 0.5 });
+    this.wClick(out, t + 0.07, 1700 * v, 0.6, 0.02, 3);
+    this.tone(out, t + 0.07, 0.06, { f: 190, f2: 80, peak: 0.3 });
+  }
+
+  pumpForward() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.65, 0.1), t = this.now, v = rand(0.95, 1.05);
+    this.noise(out, t, 0.06, { type: 'bandpass', f: 1400 * v, f2: 1000 * v, q: 2.5, peak: 0.45 });
+    this.wClick(out, t + 0.055, 2100 * v, 0.75, 0.02, 3.5);
+    this.tone(out, t + 0.055, 0.07, { f: 220, f2: 90, peak: 0.35 });
+  }
+
+  shellInsert() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.5, 0.06), t = this.now, v = rand(0.92, 1.08);
+    this.noise(out, t, 0.04, { type: 'bandpass', f: 1300 * v, f2: 1900 * v, q: 2, peak: 0.25 });
+    this.wClick(out, t + 0.035, 2000 * v, 0.5, 0.016, 4);
+    this.tone(out, t + 0.035, 0.05, { type: 'triangle', f: 900 * v, f2: 600, peak: 0.06 });
+  }
+
+  breakOpen() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.6, 0.1), t = this.now;
+    this.wClick(out, t, 1500, 0.55, 0.02, 3);
+    this.noise(out, t + 0.02, 0.12, { type: 'bandpass', f: 700, f2: 450, q: 2.5, peak: 0.3 });
+    this.tone(out, t + 0.1, 0.07, { f: 260, f2: 120, peak: 0.25 });
+    this.wClick(out, t + 0.12, 2400, 0.35);
+  }
+
+  breakClose() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.8, 0.14), t = this.now;
+    this.noise(out, t, 0.03, { type: 'bandpass', f: 900, f2: 1500, q: 2, peak: 0.25 });
+    this.wClick(out, t + 0.025, 1700, 1.0, 0.03, 3);
+    this.tone(out, t + 0.025, 0.1, { f: 200, f2: 75, peak: 0.55 });
+    this.tone(out, t + 0.03, 0.14, { type: 'triangle', f: 2700, f2: 2300, peak: 0.04 });
+  }
+
+  // Hülse springt auf dem Boden (Messing klingelt, Schrothülse klackt)
+  shellTink(pos, kind = 'rifle') {
+    if (!this.ctx) return;
+    const out = this.out(pos, kind === 'big' ? 0.4 : 0.28, 0.12), t = this.now;
+    if (kind === 'shell') {
+      this.tone(out, t, 0.05, { type: 'triangle', f: rand(700, 1000), f2: 500, peak: 0.25 });
+      this.noise(out, t, 0.03, { type: 'bandpass', f: rand(1500, 2200), q: 3, peak: 0.25 });
+      return;
+    }
+    const f = kind === 'big' ? rand(2200, 2800) : kind === 'pistol' ? rand(4600, 5600) : rand(3800, 4800);
+    this.tone(out, t, rand(0.08, 0.16), { type: 'sine', f, f2: f * 0.98, peak: 0.16, a: 0.001 });
+    this.tone(out, t, 0.06, { type: 'sine', f: f * 2.7, f2: f * 2.6, peak: 0.06, a: 0.001 });
+    this.noise(out, t, 0.01, { type: 'highpass', f: 6000, peak: 0.2, a: 0.0005 });
+  }
+
   weaponSwitch() {
     if (!this.ctx) return;
-    const out = this.out(null, 0.35, 0.05);
-    this.noise(out, this.now, 0.12, { type: 'bandpass', f: 900, q: 1, peak: 0.3 });
-    this.noise(out, this.now + 0.2, 0.03, { type: 'bandpass', f: 2500, q: 3, peak: 0.4 });
+    const out = this.out(null, 0.38, 0.05), t = this.now;
+    this.noise(out, t, 0.14, { type: 'bandpass', f: 800, f2: 1300, q: 0.9, peak: 0.25, a: 0.02 });
+    this.noise(out, t + 0.16, 0.02, { type: 'bandpass', f: 2600, q: 4, peak: 0.35 });
+    this.tone(out, t + 0.16, 0.05, { type: 'triangle', f: 1900, f2: 1500, peak: 0.04 });
+  }
+
+  // Erstes Ziehen einer Waffe: Stoff, Klappern
+  weaponDraw(cls = 'ar') {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.45, 0.06), t = this.now;
+    this.noise(out, t, 0.22, { type: 'bandpass', f: 700, f2: 1500, q: 0.8, peak: 0.25, a: 0.04 });
+    const f = cls === 'pistol' ? 2600 : cls === 'ray' || cls === 'tesla' ? 3200 : 1900;
+    this.wClick(out, t + 0.12, f, 0.25, 0.015, 4);
+    this.wClick(out, t + 0.2, f * 0.8, 0.2, 0.012, 4);
   }
 
   knife() {
     if (!this.ctx) return;
-    const out = this.out(null, 0.6, 0.1);
-    this.noise(out, this.now, 0.18, { type: 'bandpass', f: 600, f2: 3500, q: 1.5, peak: 0.6 });
+    const out = this.out(null, 0.65, 0.08), t = this.now;
+    this.noise(out, t + 0.04, 0.16, { type: 'bandpass', f: 500, f2: 4200, q: 1.6, peak: 0.55, a: 0.03 });
+    this.noise(out, t + 0.06, 0.12, { type: 'highpass', f: 5000, f2: 2500, peak: 0.12, a: 0.02 });
+    this.noise(out, t, 0.06, { type: 'bandpass', f: 900, q: 1, peak: 0.12 });
+  }
+
+  // Messer trifft: dumpfer, feuchter Stich
+  knifeHit(pos) {
+    if (!this.ctx) return;
+    const out = this.out(pos, 0.9, 0.06), t = this.now;
+    this.noise(out, t, 0.09, { type: 'lowpass', f: 1100, f2: 180, peak: 0.9, a: 0.002 });
+    this.noise(out, t + 0.01, 0.16, { type: 'bandpass', f: 600, f2: 260, q: 3, peak: 0.45 });
+    this.tone(out, t, 0.09, { f: 140, f2: 55, peak: 0.6 });
+    this.noise(out, t, 0.012, { type: 'highpass', f: 4000, peak: 0.25 });
+  }
+
+  // Granate geworfen: Luftzug, Bügel springt ab
+  nadeThrow() {
+    if (!this.ctx) return;
+    const out = this.out(null, 0.5, 0.08), t = this.now;
+    this.noise(out, t, 0.25, { type: 'bandpass', f: 380, f2: 1600, q: 1.2, peak: 0.4, a: 0.05 });
+    this.wClick(out, t + 0.02, 2800, 0.2);
   }
 
   // ── Treffer ─────────────────────────────────────────────────
