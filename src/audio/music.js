@@ -387,9 +387,9 @@ function seq(t0, beat, list, fn) {
 // Alter Musikautomat: Bandbegrenzung, leichte Sättigung, Federhall, Knistern
 function jukebox(K, dest, dur) {
   const ctx = K.ctx;
-  const hp = K.filt('highpass', 140, 0.7), pk = K.filt('peaking', 2400, 0.8, null, 3), lp = K.filt('lowpass', 6500, 0.7);
+  const hp = K.filt('highpass', 150, 0.7), hp2 = K.filt('highpass', 150, 0.7), pk = K.filt('peaking', 2400, 0.8, null, 3), lp = K.filt('lowpass', 6500, 0.7);
   const sh = K.shaper(1.8, null), out = K.gain(1, dest);
-  hp.connect(pk).connect(lp).connect(sh).connect(out);
+  hp.connect(hp2).connect(pk).connect(lp).connect(sh).connect(out);
   const sp = K.verb(1.3, 3.2, 0.22, out, 1);
   sh.connect(sp);
   // Knistern der Schallplatte
@@ -625,14 +625,18 @@ export const SCORES = {
   perk_sprint: [5.6, 1, perkSprint],
 };
 
-// Eine Partitur im OfflineAudioContext rendern → Promise<AudioBuffer> (auf Spitze 0,9 normiert)
-export function renderScore(name) {
+// Graph einer Partitur im OfflineAudioContext aufbauen (Hauptthread, einige ms)
+export function buildScore(name) {
   const [dur, ch, fn] = SCORES[name];
   const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const off = new OAC(ch, Math.ceil(dur * SRM), SRM);
   const out = off.createGain();
   out.connect(off.destination);
   fn(new Kit(off, out, name.length * 31 + 7), 0.02);
+  return off;
+}
+// Aufgebauten Graph rendern (eigener Audio-Thread) → Promise<AudioBuffer>, auf Spitze 0,9 normiert
+export function renderBuilt(off) {
   return new Promise((resolve, reject) => {
     off.oncomplete = (e) => resolve(e.renderedBuffer);
     const p = off.startRendering();

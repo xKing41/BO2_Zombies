@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 import { rand, pick, clamp } from '../core/utils.js';
 import { jobList, renderJob } from './recipes.js';
-import { SCORES, renderScore, playScoreLive } from './music.js';
+import { SCORES, buildScore, renderBuilt, playScoreLive } from './music.js';
 import BankWorker from './bankWorker.js?worker&inline';
 
 const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
@@ -39,9 +39,11 @@ export class AudioEngine {
     comp.attack.value = 0.003; comp.release.value = 0.25;
     // Begrenzer als Sicherheitsnetz gegen Übersteuern
     const lim = ctx.createDynamicsCompressor();
-    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20;
-    lim.attack.value = 0.001; lim.release.value = 0.12;
-    this.master.connect(this.lowpass).connect(comp).connect(lim).connect(ctx.destination);
+    lim.threshold.value = -4; lim.knee.value = 0; lim.ratio.value = 20;
+    lim.attack.value = 0.0005; lim.release.value = 0.1;
+    // Kompressoren heben automatisch an – feste Absenkung danach hält Spitzen unter −1 dBFS
+    const trim = ctx.createGain(); trim.gain.value = 0.82;
+    this.master.connect(this.lowpass).connect(comp).connect(lim).connect(trim).connect(ctx.destination);
 
     this.sfx = ctx.createGain(); this.sfx.gain.value = this.volumes.sfx; this.sfx.connect(this.master);
     this.music = ctx.createGain(); this.music.gain.value = this.volumes.music; this.music.connect(this.master);
@@ -307,7 +309,7 @@ export class AudioEngine {
   // in Tonhöhe und Klangfarbe variiert; bis die Bank fertig ist: Live-Synthese
   zombieVoice(pos, kind = 'groan') {
     if (!this.ctx) return;
-    const P = { groan: [0.8, 1, 0.3], scream: [0.75, 2, 0.35], attack: [0.95, 3, 0.25] }[kind] || [0.8, 1, 0.3];
+    const P = { groan: [0.65, 1, 0.3], scream: [0.6, 2, 0.35], attack: [0.75, 3, 0.25] }[kind] || [0.65, 1, 0.3];
     if (!this.has(kind)) return this.voiceLive(pos, kind);
     this.voicePlay(kind in { groan: 1, scream: 1, attack: 1 } ? kind : 'groan', pos, { vol: P[0], prio: P[1], rev: P[2] });
   }
@@ -315,14 +317,14 @@ export class AudioEngine {
   zombieDeath(pos) {
     if (!this.ctx) return;
     if (!this.has('death')) return this.deathLive(pos);
-    this.voicePlay('death', pos, { vol: 0.8, prio: 3, rev: 0.25, rate: [0.88, 1.08] });
+    this.voicePlay('death', pos, { vol: 0.65, prio: 3, rev: 0.25, rate: [0.88, 1.08] });
   }
 
   // Beinloser Kriecher: tiefes, nasses Fauchen
   crawlerVoice(pos) {
     if (!this.ctx) return;
     if (!this.has('crawler')) return this.voiceLive(pos, 'groan');
-    this.voicePlay('crawler', pos, { vol: 0.75, prio: 1, rev: 0.25, rate: [0.85, 1.1] });
+    this.voicePlay('crawler', pos, { vol: 0.6, prio: 1, rev: 0.25, rate: [0.85, 1.1] });
   }
 
   zombieSwipe(pos) {
@@ -343,13 +345,13 @@ export class AudioEngine {
     const c = this.cheapPos(pos, 2, 1.4);
     if (c.d > 25 || c.gain < 0.04) return;
     this.steps.push(now + b.duration);
-    this.playBuf(b, { vol: (run ? 0.32 : 0.24) * c.gain, rate: rand(0.85, 1.15), rev: 0, pan: c.pan });
+    this.playBuf(b, { vol: (run ? 0.42 : 0.34) * c.gain, rate: rand(0.85, 1.15), rev: 0, pan: c.pan });
   }
 
   // Platzender Schädel beim Kopfschuss-Kill
-  zombieHeadPop(pos) { this.goreFx('headPop', pos, 0.95); }
+  zombieHeadPop(pos) { this.goreFx('headPop', pos, 1.3); }
   // Abgerissenes Glied
-  gib(pos) { this.goreFx('gib', pos, 0.8); }
+  gib(pos) { this.goreFx('gib', pos, 0.75); }
   goreFx(name, pos, vol) {
     if (!this.ctx) return;
     const b = this.buf(name), now = this.now;
@@ -521,7 +523,7 @@ export class AudioEngine {
   powerOn() {
     if (!this.ctx) return;
     const b = this.buf('powerOn');
-    if (b) { this.playBuf(b, { vol: 1.0, rev: 0.5 }); this.duckAmb(5); this.announce('Der Strom ist an.'); return; }
+    if (b) { this.playBuf(b, { vol: 0.8, rev: 0.5 }); this.duckAmb(5); this.announce('Der Strom ist an.'); return; }
     const out = this.out(null, 1.0, 0.6), t = this.now;
     this.tone(out, t, 1.2, { f: 60, f2: 30, peak: 1.0 });
     this.noise(out, t, 1.5, { type: 'lowpass', f: 600, f2: 60, peak: 0.8, brown: true });
@@ -619,11 +621,12 @@ export class AudioEngine {
     const name = 'perk_' + id;
     if (!this.ctx || !SCORES[name]) return false;
     const now = this.now, j = this.jingle;
-    if (pos && this.jingleBusy) return false;
+    if (pos && (this.jingleBusy || now < (this.jingleQuiet || 0))) return false;
     if (!pos && j && j.end > now && j.g) { j.g.gain.setTargetAtTime(0, now, 0.08); try { j.src.stop(now + 0.6); } catch { /* */ } }
     const b = this.scores[name];
-    if (b) this.jingle = this.playBuf(b, pos ? { pos, vol: 0.85, rev: 0.2, ref: 3.5, roll: 1.1 } : { vol: 0.45, rev: 0.1, bus: this.music });
+    if (b) this.jingle = this.playBuf(b, pos ? { pos, vol: 0.5, rev: 0.2, ref: 3.5, roll: 1.1 } : { vol: 0.45, rev: 0.1, bus: this.music });
     else this.jingle = { end: now + playScoreLive(this.ctx, pos ? this.out(pos, 0.8, 0.2) : this.music, name, 0.5) };
+    this.jingleQuiet = this.jingle.end + 20; // danach mindestens 20 s Ruhe für Automaten-Jingles
     return true;
   }
   get jingleBusy() { return !!(this.ctx && this.jingle && this.jingle.end > this.now); }
@@ -660,7 +663,7 @@ export class AudioEngine {
   teddyLaugh(pos = null) {
     if (!this.ctx) return;
     const b = this.buf('teddy');
-    if (b) this.playBuf(b, { pos, vol: 0.9, rev: 0.35, ref: 3 });
+    if (b) this.playBuf(b, { pos, vol: 0.7, rev: 0.35, ref: 3 });
     else {
       const out = this.out(null, 0.8, 0.5), t = this.now;
       for (let i = 0; i < 5; i++) this.tone(out, t + i * 0.18, 0.15, { type: 'sawtooth', f: 260 - i * 25, f2: 180 - i * 20, peak: 0.25 });
@@ -698,7 +701,7 @@ export class AudioEngine {
   powerupGrab(type) {
     if (!this.ctx) return;
     const b = this.buf('grab');
-    if (b) this.playBuf(b, { vol: 0.6, rev: 0.4 });
+    if (b) this.playBuf(b, { vol: 0.45, rev: 0.4 });
     else {
       const out = this.out(null, 0.6, 0.4), t = this.now;
       [72, 76, 79, 84].forEach((n, i) => this.tone(out, t + i * 0.06, 0.6, { type: 'triangle', f: NOTE(n), peak: 0.2 }));
@@ -711,7 +714,7 @@ export class AudioEngine {
   // Die Sprachausgabe läuft außerhalb von Web Audio; der Einschlag liegt bei ≈ 0,3 s.
   announcerFx() {
     const b = this.ctx && this.buf('announcer');
-    if (b) this.playBuf(b, { vol: 0.85, rev: 0.6 });
+    if (b) this.playBuf(b, { vol: 0.65, rev: 0.6 });
   }
 
   // Ansager per Sprachsynthese (tief, dunkel)
@@ -1192,6 +1195,13 @@ export class AudioEngine {
     this.listener.x = p.x; this.listener.z = p.z;
     const fl = Math.hypot(f.x, f.z) || 1;
     this.listener.fx = f.x / fl; this.listener.fz = f.z / fl;
+    // Verweise auf verklungene Stimmen freigeben (sonst hält die Liste Knoten am Leben)
+    const n = this.ctx.currentTime;
+    if (n > (this._prune || 0)) {
+      this._prune = n + 0.5;
+      if (this.vox.length) this.vox = this.vox.filter((v) => v.end > n);
+      if (this.jingle && this.jingle.end < n) this.jingle = null;
+    }
     if (l.positionX) {
       const t = this.now;
       l.positionX.setTargetAtTime(p.x, t, 0.02); l.positionY.setTargetAtTime(p.y, t, 0.02); l.positionZ.setTargetAtTime(p.z, t, 0.02);
@@ -1246,19 +1256,31 @@ export class AudioEngine {
     later(run);
   }
 
-  // Musik nacheinander offline rendern (Grapherstellung verteilt auf mehrere Takte)
+  // Musik offline rendern: alle Graphen gleich beim Laden aufbauen (je eine kleine
+  // Aufgabe), gerendert wird zu zweit nebeneinander in eigenen Audio-Threads
   renderScores() {
     if (!(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
     const order = ['roundStart', 'perk_phoenix', 'box', 'roundEnd', 'perk_titan', 'perk_blitz', 'perk_doppel', 'perk_sprint', 'roundStartBig', 'gameOver'];
-    let k = 0;
-    const next = () => {
-      if (k >= order.length) { this.bankStats.scoresMs = performance.now() - this.bankStats.t0; return; }
-      const name = order[k++];
-      let p;
-      try { p = renderScore(name); } catch (e) { p = Promise.reject(e); }
-      p.then((b) => { this.scores[name] = b; }, () => { /* bleibt live */ }).then(() => setTimeout(next, 30));
+    const built = [];
+    let k = 0, running = 0, left = order.length;
+    const pump = () => {
+      while (running < 2 && built.length) {
+        const [name, off] = built.shift();
+        running++;
+        renderBuilt(off).then((b) => { this.scores[name] = b; }, () => { /* bleibt live */ }).then(() => {
+          running--;
+          if (--left === 0) this.bankStats.scoresMs = performance.now() - this.bankStats.t0;
+          pump();
+        });
+      }
     };
-    setTimeout(next, 100);
+    const build = () => {
+      const name = order[k++];
+      try { built.push([name, buildScore(name)]); } catch { left--; }
+      pump();
+      if (k < order.length) setTimeout(build, 0);
+    };
+    setTimeout(build, 0);
   }
 
   toBuffer(r) {
@@ -1392,7 +1414,7 @@ export class AudioEngine {
     const b = this.buf(kind === 'space' ? 'typeSpace' : kind === 'return' ? 'typeReturn' : 'typeKey');
     if (!b) return;
     const s = this.ctx.createBufferSource(), g = this.ctx.createGain();
-    s.buffer = b; s.playbackRate.value = rand(0.94, 1.06); g.gain.value = kind === 'return' ? 0.3 : 0.16;
+    s.buffer = b; s.playbackRate.value = rand(0.94, 1.06); g.gain.value = kind === 'return' ? 0.22 : 0.1;
     s.connect(g).connect(this.sfx);
     s.onended = () => { s.disconnect(); g.disconnect(); };
     s.start();

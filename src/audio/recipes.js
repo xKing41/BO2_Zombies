@@ -173,15 +173,15 @@ function headPop(R, i, sr) {
     const at = k * R.range(0.003, 0.011);
     const c = noise(R, sr, 0.006, (t) => (1 - t) ** 3);
     hp(c, 1800, sr);
-    mix(b, c, at * sr, R.range(0.6, 1));
-    modes(sr, 0.15, [{ f: R.range(1500, 3200), a: 0.35, d: 0.01 }, { f: R.range(700, 1300), a: 0.4, d: 0.018 }, { f: R.range(3800, 6000), a: 0.2, d: 0.005 }], b, at);
+    mix(b, c, at * sr, R.range(0.35, 0.5));
+    modes(sr, 0.15, [{ f: R.range(1500, 3200), a: 0.25, d: 0.01 }, { f: R.range(700, 1300), a: 0.3, d: 0.018 }, { f: R.range(3800, 6000), a: 0.12, d: 0.005 }], b, at);
   }
   const sp = grains(R, sr, 0.4, [[0, 2500], [0.25, 900], [1, 60]], { gmin: 0.002, gmax: 0.012 });
   for (let j = 0; j < sp.length; j++) sp[j] *= Math.exp(-j / (0.09 * sr));
   lp(sp, R.range(1800, 3000), sr);
   peq(sp, R.range(500, 800), sr, 1, 6);
-  mix(b, sp, 0.004 * sr, 1.6);
-  modes(sr, 0.25, [{ f: R.range(120, 170), f2: 50, a: 0.9, d: 0.045 }], b, 0.002);
+  mix(b, sp, 0.004 * sr, 2.2);
+  modes(sr, 0.25, [{ f: R.range(120, 170), f2: 50, a: 1.3, d: 0.06 }], b, 0.002);
   mix(b, bubbles(R, sr, b.length, [[0, 0], [0.1, 45], [0.45, 12], [1, 0]], { fmin: 600, fmax: 2600, amp: 0.4, dmin: 0.002, dmax: 0.008 }), 0, 0.6);
   return finish(b, sr, { drv: 1.4, hpf: 45, lpf: 11000, fout: 0.15 });
 }
