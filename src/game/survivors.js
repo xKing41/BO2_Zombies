@@ -64,8 +64,7 @@ export class RemoteSurvivor {
     this.left = false;
     this.onBus = false; // setzt der Bus beim Host
     this.seen = 0;
-    this.avatar = makeAvatar(game, this.char, this.name);
-    this.avatar.setTag(this.name, this.color);
+    this.avatar = makeAvatar(game, this.char, this.name, this.color);
     game.scene.add(this.avatar.group);
   }
 

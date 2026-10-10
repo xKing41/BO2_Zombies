@@ -6,6 +6,7 @@ import { MAPS, MAP_ORDER } from './maps/index.js';
 import { Lobby } from './net/lobby.js';
 import { openRoom, makeCode, PROTOCOL } from './net/transport.js';
 import { SplitScreen } from './ui/splitscreen.js';
+import { makeAvatar } from './game/avatarFactory.js';
 
 const $ = (id) => document.getElementById(id);
 const screens = ['loading', 'menu', 'mapselect', 'coop', 'lobby', 'split', 'pause', 'settings', 'controls', 'gameover'];
@@ -227,6 +228,7 @@ const split = new SplitScreen(game, settings, HUD_TEMPLATE, {
   },
 });
 window.__split = split;
+window.__nf = { makeAvatar }; // für automatische Tests (Figuren-Vorschau)
 
 // Laufendes Spiel verlassen (Pause → „Spiel beenden“, Game Over → „Hauptmenü“)
 function quitToMenu() {

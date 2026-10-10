@@ -28,9 +28,12 @@ export class NetSession {
     this.isHost = !!s.isHost;
     this.hostId = s.hostId;
     this.selfId = s.selfId ?? s.room.selfId;
-    this.slot = s.slot ?? 0;
     this.code = s.code || '';
-    this.players = (s.players || []).slice().sort((a, b) => a.slot - b.slot);
+    // Die Lobby zählt Plätze ab 1, das Spiel ab 0 (Farben, Startpunkte, Figuren)
+    const list = (s.players || []).slice().sort((a, b) => a.slot - b.slot);
+    const base = list.length ? Math.min(1, list[0].slot) : 0;
+    this.players = list.map((p) => ({ ...p, slot: p.slot - base }));
+    this.slot = (s.slot ?? base) - base;
     this.out = [];
     this.credits = new Map();
     this.stateT = 0; this.snapT = 0; this.tick = 0;

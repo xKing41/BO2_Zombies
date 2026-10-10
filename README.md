@@ -39,6 +39,13 @@ Tastatur & Maus spielt immer Spieler 1, Start legt los. Zu zweit wird das Bild w
 zu dritt oder viert in Viertel. Jeder hat sein eigenes HUD und hört die Welt aus seiner Position; die Grafikstufe
 „Automatisch“ wird dabei eine Stufe sparsamer. Pause hält hier – anders als online – alle an.
 
+**Vier eigene Überlebende:** Willi (Bergmann a. D. mit Schiebermütze und Bart), Dr. Albers (Landtierarzt im
+fleckigen Kittel), Hanne (Kfz-Mechanikerin mit Schweißerbrille) und Kai (Funkamateur mit Bomberjacke und
+Kopfhörern). Modelle und Texturen sind prozedural, die Bewegungen auch: Gehen und Rennen in alle Richtungen, Ducken,
+Springen, Hechtsprung, Liegen, am Boden mit Pistole, Nachladen, Messer, Granate, Trinken und Wiederbeleben.
+In den Händen liegt immer die echte Waffe des Spielers, gegriffen per IK. Name und Wiederbelebungs-Symbol
+stehen in fester Größe über der Figur, das Armband zeigt die Spielerfarbe.
+
 **Regeln wie in BO2:**
 - Wer zu Boden geht, verliert 5 % seiner Punkte und alle Perks und blutet nach 45 Sekunden aus. Mitspieler beleben mit gehaltener Benutzen-Taste in 3 Sekunden wieder (mit Phönix-Soda in 1,5 Sekunden).
 - Ausgeblutet heißt zuschauen bis zur nächsten Runde, dann geht es mit der Startpistole weiter. Vorbei ist die Partie erst, wenn alle gleichzeitig am Boden liegen oder ausgeblutet sind.
@@ -51,8 +58,7 @@ verteilt den Stand an alle (Zombie-Momentaufnahmen 15-mal pro Sekunde über eine
 Jedes Gerät steuert seinen eigenen Spieler, zeigt Treffer sofort an und meldet sie dem Host. Splitscreen nutzt
 genau diese Koop-Logik: Jeder Bildausschnitt ist eine eigene Spielinstanz, verbunden über einen Raum im Speicher.
 
-**Noch offen:** Mitspieler sind vorerst einfache Platzhalter-Figuren; Projektile der Wunderwaffen anderer Spieler
-sind noch nicht sichtbar; man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
+**Noch offen:** Projektile der Wunderwaffen anderer Spieler sind noch nicht sichtbar; man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
 im Hintergrund-Tab, steht die Partie. Hinter sehr strengen Firewalls kann die Direktverbindung scheitern – dafür
 lässt sich ein eigener TURN-Server angeben (`#turn=turn:host:3478|nutzer|passwort`, siehe `src/net/transport.js`).
 
@@ -193,7 +199,7 @@ src/
   world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten
   zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
-  player/              Bewegung, Kamera, Gesundheit, Perks
+  player/              Bewegung, Kamera, Gesundheit, Perks; Spielfiguren der Mitspieler (Modell, Atlas, Animation)
   game/                Spiel-Loop, Runden, Interaktionen, Power-Ups, Überlebende (Koop); Linie 13: Bus, Baupläne, Gefahren, Quest, Bank
   net/                 Koop: Verbindung (WebRTC über Trystero, BroadcastChannel, Speicher), Lobby, Sitzung mit Host-Autorität
   audio/               Prozedurales Sound-Design
@@ -236,8 +242,8 @@ damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Anima
    Three.js mit WebGPU + echten Assets ausbauen.
 2. **Echte Assets:** gescannte/handmodellierte Zombies mit Skinning und Motion-Capture-Animationen
    (z. B. glTF-Import), PBR-Texturen aus Substance, aufgenommene Foley-Sounds und komponierte Musik.
-3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes: richtige
-   Spielfiguren mit Animationen, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
+3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes:
+   Gesichtsanimation und eigene Sprüche der Figuren, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),
    Höllenhund-Runden, weitere Spezialgegner, Spielfiguren mit eigenen Sprüchen, Rangsystem und Statistiken.
 5. **Verbesserungen ggü. BO2:** Barrierefreiheit (Farbfilter, frei belegbare Tasten; Untertitel gibt es

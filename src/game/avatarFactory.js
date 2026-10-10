@@ -1,6 +1,7 @@
-// Figuren der Mitspieler. Solange die richtigen Überlebenden-Modelle fehlen,
-// steht hier ein einfacher Platzhalter mit derselben Schnittstelle.
+// Figuren der Mitspieler: die Überlebenden aus src/player/avatar.js,
+// als Rückfall ein einfacher Platzhalter mit derselben Schnittstelle.
 import * as THREE from 'three';
+import { makeSurvivorAvatar } from '../player/avatar.js';
 
 function tagTexture(text, color) {
   const cv = document.createElement('canvas');
@@ -73,6 +74,10 @@ class PlaceholderAvatar {
   }
 }
 
-export function makeAvatar(game, char, name) {
-  return new PlaceholderAvatar(game, char, name);
+// Richtige Überlebenden-Figur (src/player/avatar.js); bei Problemen der einfache Platzhalter
+export function makeAvatar(game, char, name, color = '#ffffff') {
+  try { return makeSurvivorAvatar(game, char, name, color); } catch (err) { console.warn('[Figur] Platzhalter:', err); }
+  const a = new PlaceholderAvatar(game, char, name);
+  a.setTag(name || 'Mitspieler', color);
+  return a;
 }
