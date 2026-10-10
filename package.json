@@ -10,7 +10,8 @@
     "build:single": "vite build && node scripts/single-file.mjs"
   },
   "dependencies": {
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "trystero": "^0.26.0"
   },
   "devDependencies": {
     "vite": "^8.3.3"

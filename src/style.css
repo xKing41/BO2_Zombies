@@ -85,6 +85,67 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
 .mc-desc { font-family: 'Special Elite', monospace; font-size: 14px; line-height: 1.45; color: var(--dim); }
 .mc-best { display: block; margin-top: 8px; font-size: 13px; letter-spacing: 1px; color: #9fe8a8; }
 
+/* Koop & Lobby */
+button:disabled { cursor: default; }
+.field { font-size: 14px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: #e6b48a; text-shadow: 1px 1px 0 #000; }
+.txt { width: 100%; min-height: 48px; padding: 8px 14px; font: 600 22px Oswald, 'Arial Narrow', sans-serif; letter-spacing: 1px; color: var(--ink);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(24, 5, 4, 0.55)); border: 1px solid rgba(255, 255, 255, 0.1); border-left: 3px solid #c3170f;
+  border-radius: 0; outline: none; user-select: text; -webkit-user-select: text; transition: border-color 0.15s, box-shadow 0.15s; }
+.txt::placeholder { color: rgba(233, 227, 214, 0.28); }
+.txt:focus, .txt:focus-visible { outline: none; border-color: rgba(255, 120, 80, 0.55); border-left-color: #ffb36a; box-shadow: 0 0 16px rgba(255, 40, 20, 0.28); }
+.coop-panel { display: flex; flex-direction: column; gap: 10px; width: min(440px, 100%); }
+.coop-panel .buttons { width: 100%; }
+.coop-panel .field + .txt, .coop-panel .field + .join-row { margin-top: -4px; }
+.coop-panel .buttons + .field { margin-top: 8px; }
+.join-row { display: flex; gap: 10px; }
+.join-row .txt { flex: 1; min-width: 0; }
+.join-row button { flex: none; }
+.txt.code { font-family: 'Black Ops One', Impact, sans-serif; font-weight: 400; font-size: 28px; letter-spacing: 0.3em; text-transform: uppercase; text-align: center; padding-left: calc(14px + 0.3em); }
+.coop-msg { font-family: 'Special Elite', monospace; font-size: 15px; color: #ff8a6a; border-left: 3px solid #ff2a1a; padding: 4px 10px; background: rgba(0, 0, 0, 0.4); }
+.coop-msg:empty { display: none; }
+.lobby-grid { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr); gap: 18px 44px; width: min(1000px, 100%); align-items: start; }
+.lobby-side, .lobby-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lobby-side .buttons { width: 100%; }
+.lobby-main .field ~ .field { margin-top: 8px; }
+.lobby-code { font-family: 'Black Ops One', Impact, sans-serif; font-size: clamp(52px, 7vw, 80px); line-height: 1; letter-spacing: 0.16em; color: #e8321c;
+  text-shadow: 0 0 18px rgba(255, 40, 20, 0.45), 0 0 60px rgba(150, 0, 0, 0.35), 3px 3px 0 #000; user-select: text; -webkit-user-select: text; white-space: nowrap; }
+.code-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.code-btns button { font-size: 16px; letter-spacing: 2px; padding: 9px 16px; min-height: 44px; }
+.lobby-status { font-family: 'Special Elite', monospace; font-size: 16px; line-height: 1.35; color: var(--ink); padding: 6px 12px; border-left: 3px solid #c3170f; background: rgba(0, 0, 0, 0.42); }
+.lobby-status.wait { animation: statusPulse 1.6s ease-in-out infinite; }
+.lobby-status.ok { border-left-color: #6ee06a; }
+.lobby-status.note { border-left-color: #ffd84a; color: #ffe9a8; }
+.lobby-status.err { border-left-color: #ff2a1a; color: #ff8a6a; }
+@keyframes statusPulse { 50% { border-left-color: #ffb36a; color: #fff; } }
+.lobby-players { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.lp { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 6px 14px 6px 10px; border-left: 3px solid var(--pc);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.2)); }
+.lp.me { background: linear-gradient(90deg, rgba(110, 18, 10, 0.6), rgba(0, 0, 0, 0.2)); }
+.lp-slot { flex: none; width: 22px; text-align: center; font-family: 'Black Ops One', Impact, sans-serif; font-size: 20px; color: var(--pc); text-shadow: 2px 2px 0 #000; }
+.lp-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 9px var(--pc), 0 0 0 2px rgba(0, 0, 0, 0.6); }
+.lp-name { flex: 1; min-width: 0; font-size: 21px; font-weight: 600; letter-spacing: 1px; color: #f2ede0; text-shadow: 1px 1px 0 #000;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lp-tag { flex: none; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #ffb36a; border: 1px solid rgba(255, 179, 106, 0.6); padding: 1px 7px; }
+.lp-ping { flex: none; min-width: 58px; text-align: right; font: 14px 'Special Elite', monospace; color: var(--dim); font-variant-numeric: tabular-nums; }
+.lp-ping.good { color: #9fe8a8; }
+.lp-ping.mid { color: #ffd84a; }
+.lp-ping.bad { color: #ff6a4a; }
+.lp-ping.you { color: var(--pc); letter-spacing: 2px; text-transform: uppercase; font: 600 13px Oswald, sans-serif; }
+.lp.empty { border-left-color: rgba(255, 255, 255, 0.12); background: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.1)); }
+.lp.empty .lp-slot { color: rgba(255, 255, 255, 0.25); }
+.lp.empty .lp-dot { background: transparent; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2); }
+.lp.empty .lp-name { font: 15px 'Special Elite', monospace; color: rgba(143, 135, 122, 0.75); letter-spacing: 1px; text-shadow: none; }
+.lobby-maps { display: flex; flex-wrap: wrap; gap: 8px; }
+.lobby-maps button { flex: 1 1 0; min-width: 150px; min-height: 46px; font-size: 17px; letter-spacing: 2px; text-align: center; padding: 9px 14px; }
+.lobby-maps button.current { color: #fff; background: linear-gradient(90deg, rgba(200, 40, 18, 0.8), rgba(120, 12, 6, 0.35)); border-left-color: #ffb36a; }
+.lobby-maps button:disabled:not(.current) { opacity: 0.45; }
+.lobby-maps button:disabled:hover { transform: none; background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.15)); border-left-color: rgba(255, 255, 255, 0.12); color: #ece6d8; }
+.lobby-maps button.current:disabled:hover { background: linear-gradient(90deg, rgba(200, 40, 18, 0.8), rgba(120, 12, 6, 0.35)); border-left-color: #ffb36a; color: #fff; }
+.lobby-hint { font-family: 'Special Elite', monospace; font-size: 14px; color: var(--dim); min-height: 1.2em; }
+@media (max-width: 680px) {
+  .lobby-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Kleine Bildschirme (z. B. Handy im Querformat) */
 @media (max-height: 540px) {
   .screen { gap: 12px; }
@@ -100,6 +161,22 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
   .mapcard { min-height: 0; padding: 12px 14px; }
   .mc-name { font-size: 26px; }
   .mc-desc { font-size: 12px; }
+  .coop-panel, .lobby-side, .lobby-main { gap: 7px; }
+  .coop-panel .buttons + .field { margin-top: 2px; }
+  .lobby-main .field ~ .field { margin-top: 2px; }
+  .field { font-size: 12px; letter-spacing: 3px; }
+  .txt { min-height: 42px; padding: 5px 12px; font-size: 18px; }
+  .txt.code { font-size: 22px; }
+  .lobby-grid { gap: 10px 28px; }
+  .lobby-code { font-size: 46px; }
+  .code-btns button { font-size: 14px; padding: 7px 12px; min-height: 40px; }
+  .lobby-status { font-size: 14px; padding: 4px 10px; }
+  .lobby-players { gap: 4px; }
+  .lp { min-height: 38px; padding: 3px 12px 3px 8px; gap: 10px; }
+  .lp-name { font-size: 17px; }
+  .lp-slot { font-size: 17px; }
+  .lobby-maps button { min-height: 40px; font-size: 15px; padding: 7px 10px; min-width: 120px; }
+  .lobby-hint { font-size: 12px; }
 }
 
 /* ── HUD ─────────────────────────────────────── */
@@ -258,6 +335,6 @@ body.touch.portrait #rotate { display: flex; }
 @keyframes rotateHint { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .title, .logo-main, #clickToPlay, #rotate svg, .tb-use, .pu.blink, #round.ending #tally path { animation: none; }
+  .title, .logo-main, #clickToPlay, #rotate svg, .tb-use, .pu.blink, #round.ending #tally path, .lobby-status.wait { animation: none; }
   button, button:hover { transition: none; transform: none; }
 }

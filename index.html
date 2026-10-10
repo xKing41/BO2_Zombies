@@ -76,6 +76,7 @@
     <div class="subtitle">Station Nachtfall</div>
     <div class="buttons">
       <button id="btnPlay">Spielen</button>
+      <button id="btnCoop">Koop</button>
       <button id="btnSettings">Einstellungen</button>
       <button id="btnControls">Steuerung</button>
       <button id="btnInstall" class="hidden">Als App installieren</button>
@@ -89,6 +90,51 @@
     <h2>Karte wählen</h2>
     <div id="mapCards" class="mapcards"></div>
     <div class="buttons"><button id="btnMapBack">Zurück</button></div>
+  </div>
+
+  <!-- Koop: Name, Spiel erstellen oder mit Code beitreten -->
+  <div id="coop" class="screen hidden">
+    <h2>Koop</h2>
+    <div class="coop-panel">
+      <label class="field" for="coopName">Dein Name</label>
+      <input id="coopName" class="txt" type="text" maxlength="16" autocomplete="nickname" autocorrect="off" spellcheck="false" enterkeyhint="done" />
+      <div class="buttons"><button id="btnCreate">Spiel erstellen</button></div>
+      <div class="field">oder mit Code beitreten</div>
+      <div class="join-row">
+        <input id="coopCode" class="txt code" type="text" maxlength="5" placeholder="Code" aria-label="Spielcode" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" />
+        <button id="btnJoin">Beitreten</button>
+      </div>
+      <div id="coopMsg" class="coop-msg" role="status" aria-live="polite"></div>
+      <div class="buttons"><button id="btnCoopBack">Zurück</button></div>
+    </div>
+    <div class="hint">Bis zu vier Spieler, direkt von Gerät zu Gerät. Einer erstellt ein Spiel und schickt den Code – die anderen treten damit bei.</div>
+  </div>
+
+  <!-- Koop-Lobby -->
+  <div id="lobby" class="screen hidden">
+    <h2>Lobby</h2>
+    <div class="lobby-grid">
+      <section class="lobby-side">
+        <div class="field">Spielcode</div>
+        <div id="lobbyCode" class="lobby-code">·····</div>
+        <div class="code-btns">
+          <button id="btnCopyCode">Code kopieren</button>
+          <button id="btnShareCode">Teilen</button>
+        </div>
+        <div id="lobbyStatus" class="lobby-status wait" role="status" aria-live="polite">Verbinde …</div>
+        <div class="buttons">
+          <button id="btnStartNet" class="hidden">Spiel starten</button>
+          <button id="btnLeaveLobby">Verlassen</button>
+        </div>
+      </section>
+      <section class="lobby-main">
+        <div class="field">Spieler</div>
+        <ol id="lobbyPlayers" class="lobby-players"></ol>
+        <div class="field">Karte</div>
+        <div id="lobbyMaps" class="lobby-maps"></div>
+        <div id="lobbyMapHint" class="lobby-hint"></div>
+      </section>
+    </div>
   </div>
 
   <!-- Pause -->
