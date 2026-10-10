@@ -450,11 +450,11 @@ export class Weapons {
     const pellet = st.pellets > 1;
 
     let anyHit = false, headHit = false;
-    if (st.lightning) this.fireLightning(st, muzzle);
+    if (st.lightning) { const ch = this.fireLightning(st, muzzle); if (net) net.ch = ch; }
     else for (let i = 0; i < st.pellets; i++) {
       const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * spread;
       const dir = _p.copy(_d).addScaledVector(_right, Math.cos(a) * r).addScaledVector(_up, Math.sin(a) * r).normalize();
-      if (st.projectile) { this.spawnProjectile(muzzle, dir.clone(), st, dmgMul); continue; }
+      if (st.projectile) { this.spawnProjectile(muzzle, dir.clone(), st, dmgMul); if (net) (net.pj || (net.pj = [])).push(dir.clone()); continue; }
       const wall = g.rayBlock(_o, dir, g.map.rayCast(_o, dir, 150));
       if (i === 0) for (const f of g.features) if (f.onShot) f.onShot(_o, dir, wall.dist, g.me);
       if (net && i === 0) net.dist = wall.dist;
@@ -504,7 +504,11 @@ export class Weapons {
     g.audio.gunshot(st.sound, w.pap);
     if (net) {
       const r3 = (v) => [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)];
-      g.net.shot({ k: st.sound, pap: !!w.pap, c: flashColor, e: net.ends.map(r3), im: net.im.map((x) => [r3(x[0]), r3(x[1]), x[2]]), o: r3(_o), d: r3(_d), dist: +net.dist.toFixed(2) });
+      const info = { k: st.sound, pap: !!w.pap, c: flashColor, e: net.ends.map(r3), im: net.im.map((x) => [r3(x[0]), r3(x[1]), x[2]]), o: r3(_o), d: r3(_d), dist: +net.dist.toFixed(2) };
+      // Wunderwaffen: Geschossflug bzw. Blitzkette bei den Mitspielern nachzeichnen
+      if (net.pj) { info.pj = net.pj.map((v) => [+v.x.toFixed(3), +v.y.toFixed(3), +v.z.toFixed(3)]); info.ps = st.projectile.speed; }
+      if (net.ch) info.ch = net.ch;
+      g.net.shot(info);
     }
     this.heat = Math.min(8, this.heat + c.heat);
     this.sinceShot = 0;
@@ -557,7 +561,7 @@ export class Weapons {
       const end = o.clone().addScaledVector(d, Math.min(wall.dist, L.reach));
       g.effects.lightning(muzzle.clone(), end, L.color, 0.22, 0.05);
       if (wall.dist < L.reach) g.effects.impact(end, wall.normal, 'metal');
-      return;
+      return { end: [+end.x.toFixed(2), +end.y.toFixed(2), +end.z.toFixed(2)], lc: L.color };
     }
     const hit = [first];
     let cur = first;
@@ -577,6 +581,22 @@ export class Weapons {
       this.chainQ.push({ t: i * 0.08, from: from.clone(), to, z, color: L.color });
       from = to;
     });
+    return { u: hit.map((z) => z.uid), lc: L.color };
+  }
+
+  // Blitzkette eines Mitspielers: nur Bild und Klang (Schaden meldet dessen Gerät)
+  ghostChain(from, ch) {
+    const color = ch.lc || [0.7, 1.7, 4];
+    if (Array.isArray(ch.u) && ch.u.length) {
+      let f = from.clone(), k = 0;
+      for (const uid of ch.u) {
+        const z = this.g.zombies.byUid(uid);
+        if (!z) continue;
+        const to = z.pos.clone(); to.y += 1.1;
+        this.chainQ.push({ t: k++ * 0.08, from: f.clone(), to, z, color, ghost: true });
+        f = to;
+      }
+    } else if (Array.isArray(ch.end)) this.g.effects.lightning(from, new THREE.Vector3(...ch.end), color, 0.22, 0.05);
   }
 
   updateChain(dt) {
@@ -589,7 +609,7 @@ export class Weapons {
       if (c.z.alive) c.to.set(c.z.pos.x, c.z.pos.y + 1.1, c.z.pos.z);
       g.effects.lightning(c.from, c.to, c.color);
       g.audio.teslaZap(c.to);
-      if (c.z.alive) {
+      if (c.z.alive && !c.ghost) {
         g.zombies.damage(c.z, 1e9, 'torso', { dir: c.to.clone().sub(c.from).normalize(), point: c.to.clone(), shock: true });
         g.hud.hitmarker(false);
         g.effects.energy(c.to, c.color, 10, 0.4);
@@ -619,11 +639,24 @@ export class Weapons {
     const p = this.projectiles.find((x) => !x.active);
     if (!p) return;
     const ps = st.projectile;
-    p.active = true; p.life = 3;
+    p.active = true; p.life = 3; p.ghost = false;
     p.pos.copy(from);
     p.vel.copy(dir).multiplyScalar(ps.speed);
     p.damage = st.damage * dmgMul; p.splash = ps.splash * dmgMul; p.radius = ps.radius;
     p.color = new THREE.Color(ps.color);
+    p.mesh.material.color.copy(p.color).multiplyScalar(3);
+    p.halo.material.color.copy(p.color);
+    p.mesh.visible = true;
+  }
+
+  // Geschoss eines Mitspielers: fliegt sichtbar; Treffer und Explosion kommen über das Netz
+  ghostProjectile(from, dir, speed, color) {
+    const p = this.projectiles.find((x) => !x.active);
+    if (!p) return;
+    p.active = true; p.ghost = true; p.life = 3;
+    p.pos.copy(from);
+    p.vel.copy(dir).normalize().multiplyScalar(speed || 38);
+    p.color = new THREE.Color(color ?? 0x55ff66);
     p.mesh.material.color.copy(p.color).multiplyScalar(3);
     p.halo.material.color.copy(p.color);
     p.mesh.visible = true;
@@ -637,8 +670,16 @@ export class Weapons {
       p.life -= dt;
       const step = p.vel.length() * dt;
       _d.copy(p.vel).normalize();
-      const wall = g.rayBlock(p.pos, _d, g.map.rayCast(p.pos, _d, step + 0.05));
+      // Weiter vorausschauen als der Schritt: ohne Treffer liefert rayCast genau die Suchweite zurück
+      const wall = g.rayBlock(p.pos, _d, g.map.rayCast(p.pos, _d, step + 1));
       const hits = g.zombies.raycast(p.pos, _d, Math.min(step + 0.1, wall.dist));
+      if (p.ghost) {
+        if (hits.length || wall.dist <= step + 0.05 || p.life <= 0) { p.active = false; p.mesh.visible = false; continue; }
+        p.pos.addScaledVector(p.vel, dt);
+        g.effects.energy(p.pos, [p.color.r * 3, p.color.g * 3, p.color.b * 3], 2, 0.05);
+        lightP = p;
+        continue;
+      }
       let boom = null;
       if (hits.length) {
         const h = hits[0];

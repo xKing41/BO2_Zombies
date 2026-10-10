@@ -319,6 +319,8 @@ export class NetSession {
     g.effects.muzzle(m, d.c ?? 0xffb060, 0.8);
     if (!g.split) g.audio.gunshot(d.k, !!d.pap, m.clone()); // Splitscreen: den Knall spielt schon die Instanz des Schützen
     for (const e of d.e || []) if (Math.random() < 0.5) g.effects.tracer(m.clone(), V(e));
+    if (d.pj && g.weapons.ghostProjectile) for (const v of d.pj) g.weapons.ghostProjectile(m.clone(), V(v), d.ps, d.c);
+    if (d.ch && g.weapons.ghostChain) g.weapons.ghostChain(m.clone(), d.ch);
     for (const im of d.im || []) g.effects.impact(V(im[0]), V(im[1]), im[2]);
     if (this.isHost && d.o && d.d) {
       const o = V(d.o), dir = V(d.d).normalize();
