@@ -1,10 +1,15 @@
-# Baut das Spiel und veröffentlicht es auf GitHub Pages.
-# Einmalig aktivieren: Repository → Settings → Pages → Source: "GitHub Actions"
+# Baut das Spiel und veröffentlicht es auf GitHub Pages – eine feste Adresse
+# für PC, Handy und Tablet (im Browser oder als installierte App):
+#   https://xking41.github.io/BO2_Zombies/
+# Einmalig einschalten: Repository → Settings → Pages → Build and deployment →
+# Source: "GitHub Actions". Solange Pages aus ist, überspringt der Lauf das
+# Veröffentlichen (bleibt grün und zeigt einen Hinweis).
 name: Deploy to GitHub Pages
 
 on:
+  # Bei jeder Änderung – wie die APK, damit Web und App dieselbe Version haben
   push:
-    branches: [main]
+    branches: [main, master, 'claude/**', 'ccr-**']
   workflow_dispatch:
 
 permissions:
@@ -19,20 +24,40 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
     steps:
+      - name: Ist GitHub Pages eingeschaltet?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/pages" > /dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=GitHub Pages ist noch aus::Einmalig einschalten: Settings → Pages → Source: GitHub Actions. Danach diesen Workflow erneut starten (Run workflow)."
+          fi
       - uses: actions/checkout@v4
+        if: steps.check.outputs.enabled == 'true'
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.enabled == 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.check.outputs.enabled == 'true'
       - run: npm run build
+        if: steps.check.outputs.enabled == 'true'
       - uses: actions/configure-pages@v5
+        if: steps.check.outputs.enabled == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: steps.check.outputs.enabled == 'true'
         with:
           path: dist
   deploy:
     needs: build
+    if: needs.build.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

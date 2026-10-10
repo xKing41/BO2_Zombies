@@ -64,6 +64,12 @@ lässt sich ein eigener TURN-Server angeben (`#turn=turn:host:3478|nutzer|passwo
 
 ## Auf jedem Gerät spielbar
 
+**Eine Adresse für alles:** https://xking41.github.io/BO2_Zombies/ (GitHub Pages, siehe „Starten“). Am PC im
+Browser öffnen oder über „Als App installieren“ als eigenes Programm-Fenster einrichten; am Handy genauso
+oder als APK. Koop funktioniert geräteübergreifend: PC, Android (Browser oder APK) und iPhone können
+gemeinsam spielen, solange alle dieselbe Spielversion haben (Web und APK werden bei jedem Push gemeinsam
+neu gebaut). Nur die Vorschau auf claude.ai erlaubt keine Direktverbindungen und damit kein Online-Koop.
+
 | Plattform | Steuerung | Hinweise |
 |---|---|---|
 | Windows, macOS, Linux (Chrome, Edge, Firefox, Safari) | Maus & Tastatur oder Controller | Grafik „Hoch“, Maus-Fang per Klick |
@@ -90,7 +96,10 @@ Die Einzeldatei `dist/nachtfall.html` läuft ohne Server – zum Weitergeben, Ho
 oder direkt Öffnen im Browser.
 
 **Online spielen (GitHub Pages):** Der Workflow `.github/workflows/deploy.yml` baut das Spiel bei jedem
-Push auf `main` und veröffentlicht es. Einmalig unter *Settings → Pages → Source* „GitHub Actions“ wählen.
+Push (wie die APK) und veröffentlicht es unter **https://xking41.github.io/BO2_Zombies/**. Einmalig unter
+*Settings → Pages → Build and deployment → Source* „GitHub Actions“ wählen und den Workflow einmal von Hand
+starten (*Actions → Deploy to GitHub Pages → Run workflow*); solange Pages aus ist, überspringt er das
+Veröffentlichen mit einem Hinweis.
 
 ## Android-App (APK)
 
