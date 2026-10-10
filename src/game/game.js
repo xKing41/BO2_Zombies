@@ -2,7 +2,8 @@
 //  Spiel: verbindet alle Systeme, Rundenlogik, Punkte, Hauptschleife.
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { nightEnvironment } from '../world/atmosphere.js';
+import { useGridLight, gridLitScene, GRID } from '../world/gridlight.js';
 import { RenderSystem, QUALITY, resolveQuality } from '../core/renderer.js';
 import { setAnisotropy, setTextureScale } from '../core/textures.js';
 import { buildMaterials } from '../core/materials.js';
@@ -118,8 +119,8 @@ export class Game {
     this.vmScene = new THREE.Scene();
     this.rs.setup(this.scene, this.camera, this.vmScene, this.vmCamera);
     this.rs.onResize = () => this.effects && this.effects.setScale(this.rs.height * this.rs.renderer.getPixelRatio(), this.camera.fov);
-    const pmrem = new THREE.PMREMGenerator(this.rs.renderer);
-    this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    // Eigene Nacht-Umgebung für Spiegelungen (Metall, nasse Böden)
+    this.envMap = nightEnvironment(this.rs.renderer);
 
     // Schriften für Canvas-Texturen abwarten (max. 1.5 s)
     await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
@@ -154,7 +155,7 @@ export class Game {
       if (typeof o === 'object') for (const k in o) walk(o[k], depth + 1);
     };
     walk(this.M);
-    for (const m of this.sharedMats) for (const k of ['map', 'bumpMap', 'emissiveMap']) if (m[k]) this.sharedTex.add(m[k]);
+    for (const m of this.sharedMats) for (const k of ['map', 'bumpMap', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap']) if (m[k]) this.sharedTex.add(m[k]);
   }
 
   // ── Karten ──────────────────────────────────────────────────
@@ -169,10 +170,10 @@ export class Game {
     this.scene = new THREE.Scene();
     this.scene.add(this.camera);
     this.scene.environment = this.envMap;
-    this.scene.environmentIntensity = 0.12;
+    this.scene.environmentIntensity = def.env?.envIntensity ?? 0.9;
     this.vmScene = new THREE.Scene();
     this.vmScene.environment = this.envMap;
-    this.vmScene.environmentIntensity = 0.15;
+    this.vmScene.environmentIntensity = 1.4;
     this.rs.setScenes(this.scene, this.camera, this.vmScene, this.vmCamera);
     await step(10, `${def.name}: Gelände …`);
     this.map = new GameMap(def);
@@ -189,6 +190,10 @@ export class Game {
     this.hud.iconUrls = Object.fromEntries(Object.entries(this.powerups.icons).map(([k, t]) => [k, t.image.toDataURL()]));
     await step(80, 'Optimieren …');
     this.batchInfo = batchStatic(this.scene, def.chunkCells ? def.chunkCells * CELL : 0);
+    // Raster-Licht (Ecken, Kontaktschatten, Rücklicht) an alle beleuchteten Materialien
+    useGridLight(this.map, this.map.gridBaked, this.rs.quality.gridLight !== false);
+    gridLitScene(this.scene);
+    this.grid = GRID;
     // Nebel-Culling: verschmolzene Kacheln, die der Nebel ganz verschluckt, gar nicht erst zeichnen
     this.cullList = [];
     if (def.env && def.env.fogCull) this.scene.traverse((o) => {
@@ -216,6 +221,7 @@ export class Game {
     this.features = [];
     if (!this.map) return;
     this.zombies.clear();
+    if (this.map.skyDome) this.map.skyDome.dispose();
     const freed = new Set();
     const free = (scene) => scene.traverse((o) => {
       if (o.isInstancedMesh) o.dispose();
@@ -224,7 +230,7 @@ export class Game {
       if (o.material) for (const m of [].concat(o.material)) {
         if (this.sharedMats.has(m) || freed.has(m)) continue;
         freed.add(m);
-        for (const k of ['map', 'bumpMap', 'emissiveMap', 'alphaMap']) if (m[k] && !this.sharedTex.has(m[k]) && !freed.has(m[k])) { freed.add(m[k]); m[k].dispose(); }
+        for (const k of ['map', 'bumpMap', 'emissiveMap', 'alphaMap', 'normalMap', 'roughnessMap', 'metalnessMap']) if (m[k] && !this.sharedTex.has(m[k]) && !freed.has(m[k])) { freed.add(m[k]); m[k].dispose(); }
         m.dispose();
       }
     });
@@ -727,6 +733,9 @@ export class Game {
     u.uDesat.value = damp(u.uDesat.value, this.state === 'gameover' ? 0.85 : p.downed ? 0.75 : low * 0.4, 3, dt);
     u.uFlash.value = this.flash;
     u.uPap.value = damp(u.uPap.value, w.weapon && w.weapon.pap && w.ads > 0.5 ? 0.6 : 0, 5, dt);
+    if (this.map) this.map.applyAtmosphere(this.time);
+    // Im Hauptmenü keine Arme vor der Kamerafahrt
+    this.vmScene.visible = this.state !== 'menu';
     this.rs.render();
   }
 

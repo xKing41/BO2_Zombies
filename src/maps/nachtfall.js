@@ -79,7 +79,7 @@ export default {
   ],
   powerSwitch: { cx: 3, cy: 11, wall: 'N' },
   papSpot: { cx: 17, cy: 14 },
-  env: { fogDensity: 0.032, ash: 1 },
+  env: { fogDensity: 0.03, fogColor: 0x1a2130, background: 0x1a2130, ash: 1 },
   // Drei versteckte Teddys starten das geheime Lied (Kistenstapel, Theke, Generator)
   setup: (game) => [new Teddies(game, [
     { x: 23.25, y: 2.0, z: 18.85, yaw: -2.25 },

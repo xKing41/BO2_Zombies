@@ -197,11 +197,16 @@ die Menüs.
 - Musik-Geheimnis mit eigenem, live synthetisiertem Lied
 
 **Grafik**
-- PBR-Materialien mit prozeduralen Textur- und Bump-Maps (Putz über Ziegel, Diner-Fliesen, Kopfsteinpflaster …)
+- Licht wie in einer echten Halle: vorberechnetes **Raster-Licht** – dunkle Ecken und Kontaktschatten an Wänden, Kisten und Automaten, dazu Lampenlicht, das vom Boden an Decke und Wände zurückstrahlt (auf beiden Karten, für alle Lampen, kostet pro Bild fast nichts)
+- **Lichtkegel** im Staub unter jeder Lampe und Lichthöfe im Nebel – flackern und gehen mit dem Strom an und aus
+- **Bodennebel** mit treibenden Schwaden, Mondschein im Dunst, Himmel mit ziehenden Wolken, Mond, Sternen und dunkler Baumlinie am Horizont; drinnen dunkler Staub statt blauem Nebel
+- Weiche Kontaktschatten unter den Zombies, eigene Nacht-Umgebung für Spiegelungen (Metall, nasse Böden)
+- Prozedurale PBR-Texturen mit Normal- und Rauheits-Karten: abblätternder Putz über Ziegeln mit Ölsockel, Schalungsbeton-Decke, Beton mit Sägefugen, Ölflecken und Pfützen, alte Diner-Fliesen, Kopfsteinpflaster mit Moos, Ziegelmauern mit Ausblühungen, Stülpschalung aus Holz, Asphalt mit Spurrinnen
 - Echtzeit-Schatten (Mond + Hängelampen), flackernde Lichter, Feuer, Neon
-- HDR-Pipeline: MSAA, Bloom, ACES-Tonemapping, Color-Grading, chromatische Aberration, Filmkorn, Vignette
+- HDR-Pipeline: MSAA, Bloom, ACES-Tonemapping, Color-Grading, dezente chromatische Aberration, Filmkorn, Vignette
 - Leuchtende Zombie-Augen, Blut-Partikel und -Decals, Einschusslöcher, Funken, Rauch, Mündungsfeuer, Tracer
 - Eigene Viewmodel-Pipeline (Waffe clippt nie in Wände)
+- Qualitätsstufen: Handys behalten ihre Bildrate (Schwaden nur ab „mittel“, auf „minimal“ ohne Lichtkegel und Raster-Licht)
 
 **Animation**
 - Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung
@@ -220,7 +225,8 @@ src/
   config.js            Waffen, Perks, Balancing – alles an einem Ort
   maps/                Kartendefinitionen (Nachtfall, Linie 13 inkl. Daten und Deko)
   core/                Renderer + Post-FX, Input, Noise, prozedurale Texturen, Materialien
-  world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten
+  world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten;
+                       Atmosphäre (Himmel, Bodennebel), Raster-Licht, Lichtkegel
   zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
   player/              Bewegung, Kamera, Gesundheit, Perks; Spielfiguren der Mitspieler (Modell, Atlas, Animation)

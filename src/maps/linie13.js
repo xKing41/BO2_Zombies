@@ -74,7 +74,7 @@ export default {
   powerSwitch: { cx: 142, cy: 39, wall: 'N', build: true },
   papSpot: { cx: 150, cy: 44, build: true },
   env: {
-    background: 0x06080d, fogColor: 0x0c1016, fogDensity: 0.03, hemi: 0.62, moon: 0.95,
+    background: 0x1b2331, fogColor: 0x1b2331, fogDensity: 0.03, hemi: 0.62, moon: 0.95,
     moonFollow: true, shadowBox: 42, far: 190, fogCull: 2.6, minCull: 60, ash: 2,
   },
   lightPool: (q) => ({
@@ -84,7 +84,10 @@ export default {
   }),
 
   materials(M) {
-    const mk = (tex, opts = {}) => new THREE.MeshStandardMaterial({ map: tex.map, bumpMap: tex.bump, bumpScale: 1.5, roughness: 0.9, ...opts });
+    const mk = (tex, opts = {}) => new THREE.MeshStandardMaterial({
+      map: tex.map, normalMap: tex.normal, normalScale: new THREE.Vector2(1, 1), roughness: 0.9,
+      ...(tex.rough ? { roughnessMap: tex.rough, roughness: 1 } : {}), ...opts,
+    });
     const mats = {
       depot: mk(T.brick(90, [0.5, 0.46, 0.4])),
       diner: mk(T.siding(81, [0.78, 0.76, 0.7], 10)),

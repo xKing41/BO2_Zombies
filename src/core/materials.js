@@ -8,41 +8,51 @@ export function buildMaterials(onProgress = () => {}) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
 
   step('Wände');
+  // Weltmaterialien: Normal-Map (Tiefe) statt Bump, Rauheit aus der Textur (nasse Stellen glänzen)
+  const surf = (t, o = {}) => {
+    const m = { map: t.map, ...o };
+    if (t.normal) { m.normalMap = t.normal; m.normalScale = new THREE.Vector2(o.ns ?? 1, o.ns ?? 1); }
+    else { m.bumpMap = t.bump; m.bumpScale = o.bs ?? 1.5; }
+    if (t.rough) { m.roughnessMap = t.rough; m.roughness = o.rough ?? 1; }
+    if (t.rough && o.metalMap) m.metalnessMap = t.rough; // Blau-Kanal: blankes Metall 1, Rost 0
+    delete m.ns; delete m.bs; delete m.rough; delete m.metalMap;
+    return std(m);
+  };
   const wall = T.plasterWall(3);
-  M.wall = std({ map: wall.map, bumpMap: wall.bump, bumpScale: 2.0, roughness: 0.92 });
+  M.wall = surf(wall, { roughness: 0.92 });
 
   step('Böden');
   const con = T.concrete(1, [1.0, 0.98, 0.94]);
-  M.floorConcrete = std({ map: con.map, bumpMap: con.bump, bumpScale: 1.2, roughness: 0.85 });
+  M.floorConcrete = surf(con, { roughness: 0.85 });
   const dirty = T.concrete(2, [0.95, 0.92, 0.85], 1);
-  M.floorDirty = std({ map: dirty.map, bumpMap: dirty.bump, bumpScale: 1.2, roughness: 0.7 });
+  M.floorDirty = surf(dirty, { roughness: 0.7 });
   const tiles = T.checkerTiles(11);
-  M.floorTiles = std({ map: tiles.map, bumpMap: tiles.bump, bumpScale: 1.0, roughness: 0.35, metalness: 0.0 });
+  M.floorTiles = surf(tiles, { roughness: 0.35, metalness: 0.0 });
   const cob = T.cobble(13);
-  M.floorCobble = std({ map: cob.map, bumpMap: cob.bump, bumpScale: 3.0, roughness: 0.8 });
+  M.floorCobble = surf(cob, { roughness: 0.8 });
   const dt = T.dirt(17);
-  dt.map.repeat.set(50, 50); dt.bump.repeat.set(50, 50);
-  M.ground = std({ map: dt.map, bumpMap: dt.bump, bumpScale: 2.0, roughness: 0.95 });
+  for (const t of [dt.map, dt.normal, dt.rough]) if (t) t.repeat.set(50, 50);
+  M.ground = surf(dt, { roughness: 0.95 });
 
   step('Decken & Holz');
   const ce = T.ceiling(5);
-  M.ceiling = std({ map: ce.map, bumpMap: ce.bump, bumpScale: 1.0, roughness: 0.95 });
+  M.ceiling = surf(ce, { roughness: 0.95 });
   const pl = T.planks(7);
-  M.wood = std({ map: pl.map, bumpMap: pl.bump, bumpScale: 1.5, roughness: 0.8 });
+  M.wood = surf(pl, { roughness: 0.8 });
   const pl2 = T.planks(8, [0.75, 0.8, 0.85], 6);
-  M.woodDark = std({ map: pl2.map, bumpMap: pl2.bump, bumpScale: 1.5, roughness: 0.85 });
+  M.woodDark = surf(pl2, { roughness: 0.85 });
   const board = T.planks(9, [1.1, 1.0, 0.9], 1);
-  M.board = std({ map: board.map, bumpMap: board.bump, bumpScale: 1.5, roughness: 0.85 });
+  M.board = surf(board, { roughness: 0.85 });
 
   step('Metall');
   const mt = T.metal(19, 0.5);
-  M.metal = std({ map: mt.map, bumpMap: mt.bump, bumpScale: 1.0, roughness: 0.55, metalness: 0.75 });
+  M.metal = surf(mt, { roughness: 0.55, metalness: 0.75, metalMap: true });
   const rust = T.metal(20, 1.2);
-  M.rust = std({ map: rust.map, bumpMap: rust.bump, bumpScale: 2.0, roughness: 0.8, metalness: 0.45 });
+  M.rust = surf(rust, { roughness: 0.8, metalness: 0.45, metalMap: true });
   const sh = T.shutter(23);
-  M.shutter = std({ map: sh.map, bumpMap: sh.bump, bumpScale: 3.0, roughness: 0.6, metalness: 0.6 });
+  M.shutter = surf(sh, { roughness: 0.6, metalness: 0.6, metalMap: true });
   const gm = T.metal(21, 0.05, [0.12, 0.12, 0.13]);
-  M.gunMetal = std({ map: gm.map, bumpMap: gm.bump, bumpScale: 0.5, roughness: 0.35, metalness: 0.9 });
+  M.gunMetal = surf(gm, { roughness: 0.35, metalness: 0.9, ns: 0.5, metalMap: true });
   M.gunPolymer = std({ color: 0x1b1c1e, roughness: 0.7, metalness: 0.1 });
   M.gunWood = std({ map: pl.map, color: 0xb07a4f, roughness: 0.55 });
   M.paintRed = std({ color: 0x6d1410, roughness: 0.6, metalness: 0.3 });

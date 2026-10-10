@@ -68,7 +68,7 @@ function signMat(tex, emissive = 0) {
 function decorMaterials(M) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const grass = T.grass(51);
-  grass.map.repeat.set(76, 62); grass.bump.repeat.set(76, 62);
+  for (const t of [grass.map, grass.normal]) t.repeat.set(76, 62);
   const asph = T.asphalt(53);
   const dirt = T.dirt(91);
   const lot = T.concrete(92, [0.55, 0.55, 0.58], 1);
@@ -78,14 +78,14 @@ function decorMaterials(M) {
   const lava = T.lava(61);
   lava.channel = 1;
   const mats = {
-    grass: std({ map: grass.map, bumpMap: grass.bump, bumpScale: 1.5, roughness: 0.97 }),
-    road: std({ map: asph.map, bumpMap: asph.bump, bumpScale: 1, roughness: 0.82, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
-    dirt: std({ map: dirt.map, bumpMap: dirt.bump, bumpScale: 2, roughness: 0.95 }),
-    lot: std({ map: lot.map, bumpMap: lot.bump, bumpScale: 1, roughness: 0.85 }),
-    roofRed: std({ map: roofR.map, bumpMap: roofR.bump, bumpScale: 2, roughness: 0.85, side: THREE.DoubleSide }),
-    roofSlate: std({ map: roofS.map, bumpMap: roofS.bump, bumpScale: 2, roughness: 0.8, side: THREE.DoubleSide }),
-    corr: std({ map: corr.map, bumpMap: corr.bump, bumpScale: 2, roughness: 0.6, metalness: 0.45, side: THREE.DoubleSide }),
-    roofFlat: std({ map: lot.map, color: 0x4a4744, roughness: 0.95 }),
+    grass: std({ map: grass.map, normalMap: grass.normal, roughness: 0.97 }),
+    road: std({ map: asph.map, normalMap: asph.normal, ...(asph.rough ? { roughnessMap: asph.rough, roughness: 1 } : { roughness: 0.82 }), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+    dirt: std({ map: dirt.map, normalMap: dirt.normal, ...(dirt.rough ? { roughnessMap: dirt.rough, roughness: 1 } : { roughness: 0.95 }) }),
+    lot: std({ map: lot.map, normalMap: lot.normal, ...(lot.rough ? { roughnessMap: lot.rough, roughness: 1 } : { roughness: 0.85 }) }),
+    roofRed: std({ map: roofR.map, normalMap: roofR.normal, roughness: 0.85, side: THREE.DoubleSide }),
+    roofSlate: std({ map: roofS.map, normalMap: roofS.normal, roughness: 0.8, side: THREE.DoubleSide }),
+    corr: std({ map: corr.map, normalMap: corr.normal, roughness: 0.6, metalness: 0.45, side: THREE.DoubleSide }),
+    roofFlat: std({ map: lot.map, normalMap: lot.normal, color: 0x4a4744, roughness: 0.95 }),
     fence: std({ map: T.chainLink(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6 }),
     tree: std({ vertexColors: true, roughness: 0.95, flatShading: true }),
     corn: std({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }),

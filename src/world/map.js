@@ -10,6 +10,9 @@ import { rand, smooth, clamp, damp } from '../core/utils.js';
 import * as P from './props.js';
 import * as T from '../core/textures.js';
 import { LightPool } from './lightpool.js';
+import { Sky, atmoSettings, applyFog } from './atmosphere.js';
+import { bakeGridLight, GRID } from './gridlight.js';
+import { LightShafts, collectShafts } from './lightshafts.js';
 
 export const WALLDIR = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] };
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -408,9 +411,17 @@ export class GameMap {
     if (this.def.lightPool) this.lightPool = new LightPool(scene, this.def.lightPool(ctx.quality || {}));
     if (this.def.buildDecor) this.def.buildDecor(this, scene, M);
     if (this.def.buildLights) this.def.buildLights(this, scene, M);
+    // Lichtkegel und Lichthöfe unter allen Lampen mit Glühbirne
+    if (ctx.quality && ctx.quality.shafts !== false) {
+      this.shafts = new LightShafts(scene, this.def.shafts || {});
+      collectShafts(this, this.shafts);
+      this.shafts.build();
+    }
     // Spots für Kiste und Perks blockieren die Navigation
     for (const s of this.def.boxSpots || []) this.blockCell(s.cx, s.cy);
     for (const k in this.def.perkSpots || {}) this.blockCell(this.def.perkSpots[k].cx, this.def.perkSpots[k].cy);
+    // Ecken, Kontaktschatten und Rücklicht der Lampen vorberechnen
+    this.gridBaked = bakeGridLight(this, { gain: this.def.env?.bounce });
   }
 
   buildWindows(scene, M) {
@@ -568,9 +579,19 @@ export class GameMap {
     scene.add(hemi);
     this.hemi = hemi;
 
+    // Bodennebel, Mondschein, Horizont (gemeinsam für Himmel und Nebel).
+    // Draußen heller, mondbeschienener Dunst, drinnen dunkler Staub.
+    this.atmo = atmoSettings(env);
+    // Treibende Schwaden kosten Rechenzeit pro Pixel → erst ab Qualität "mittel"
+    if ((this.ctx.quality?.lightTier ?? 3) < 2) this.atmo.mistNoise = 0;
+    this.mistScale = 1;
+    this.inside = 0;
+    this.fogOut = scene.fog.color.clone();
+    this.fogIn = new THREE.Color(env.fogColorIndoor ?? 0x0c0c0e);
+
     const moon = new THREE.DirectionalLight(env.moonColor ?? 0x9fb4e0, env.moon ?? 1.1);
     const cx = (this.w * C) / 2, cz = (this.h * C) / 2;
-    this.moonOffset = new THREE.Vector3(-30, 55, -40);
+    this.moonOffset = new THREE.Vector3(...this.atmo.moonDir).multiplyScalar(80);
     moon.position.set(cx, 0, cz).add(this.moonOffset);
     moon.target.position.set(cx, 0, cz);
     moon.castShadow = true;
@@ -583,24 +604,20 @@ export class GameMap {
     scene.add(moon, moon.target);
     this.moon = moon;
 
-    const N = 1600, pos = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const th = Math.random() * Math.PI * 2, ph = Math.acos(rand(0.15, 1));
-      const r = 300;
-      pos[i * 3] = Math.sin(ph) * Math.cos(th) * r;
-      pos[i * 3 + 1] = Math.cos(ph) * r;
-      pos[i * 3 + 2] = Math.sin(ph) * Math.sin(th) * r;
-    }
-    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.sky = new THREE.Group();
-    this.sky.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xaab4cc, size: 1.4, sizeAttenuation: false, fog: false })));
-    const moonSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: M.tex.moon, color: new THREE.Color(2.2, 2.2, 2.4), fog: false, depthWrite: false }));
-    moonSpr.position.copy(this.moonOffset).normalize().multiplyScalar(250);
-    moonSpr.scale.set(26, 26, 1);
-    this.sky.add(moonSpr);
-    this.sky.position.set(cx, 0, cz);
-    this.sky.userData.dynamic = true;
-    scene.add(this.sky);
+    this.skyDome = new Sky(scene, M, this.atmo, scene.fog.color, this.ctx.game ? this.ctx.game.rs.renderer.getPixelRatio() : 1);
+  }
+
+  // Nebelwerte dieser Karte für das nächste Bild setzen
+  applyAtmosphere(time) {
+    const a = this.atmo;
+    if (!a) return;
+    a.time = time;
+    const mist = a.mist;
+    a.mist = mist * this.mistScale * (this.fogScaleMist ?? 1);
+    applyFog(a);
+    a.mist = mist;
+    this.skyDome.update(time, this.scene.fog.color);
+    GRID.p2.value.x = this.gridPower ?? (this.power ? 1 : 0);
   }
 
   // ── Laufzeit ────────────────────────────────────────────────
@@ -614,6 +631,7 @@ export class GameMap {
       if (k >= 1) this.anims.splice(i, 1);
     }
     if (boardsMoving) { this.syncBoards(); this.boardsDirty = false; }
+    this.gridPower = damp(this.gridPower ?? (this.power ? 1 : 0), this.power ? 1 : 0, 3, dt);
     for (const e of this.lights) {
       let f = 1;
       if (e.flicker > 0) {
@@ -628,14 +646,19 @@ export class GameMap {
     }
     if (camPos) {
       if (this.lightPool) this.lightPool.update(dt, camPos, this.power);
+      if (this.shafts) this.shafts.update(dt, camPos);
       // Große Karten: Mondschatten und Himmel folgen der Kamera (auf Raster eingerastet → kein Flimmern)
       if (this.def.env && this.def.env.moonFollow) {
         const sx = Math.round(camPos.x / 4) * 4, sz = Math.round(camPos.z / 4) * 4;
         this.moon.target.position.set(sx, 0, sz);
         this.moon.position.set(sx, 0, sz).add(this.moonOffset);
         this.moon.target.updateMatrixWorld();
-        this.sky.position.set(camPos.x, 0, camPos.z);
       }
+      // Bodennebel und Nebelfarbe: drinnen nur ein Hauch Staub, draußen volle Schwaden
+      const c = this.cellAt(camPos.x, camPos.z);
+      this.inside = damp(this.inside, c && this.hasCeiling(c) ? 1 : 0, 1.5, dt);
+      this.mistScale = 1 + (this.atmo.mistIndoor - 1) * this.inside;
+      this.scene.fog.color.copy(this.fogOut).lerp(this.fogIn, this.inside);
     }
     if (this.def.update) this.def.update(this, dt, time, camPos);
   }

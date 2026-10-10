@@ -6,13 +6,14 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { IS_MOBILE } from './platform.js';
+import { GRID } from '../world/gridlight.js';
 
 // lightTier/shadowTier: welche Lichter bzw. Schatten aktiv sind (siehe GameMap.addLight)
 export const QUALITY = {
   hoch: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, shadowTier: 3, msaa: 4, bloom: true, lightTier: 3, texScale: 1, hrtf: true },
   mittel: { pixelRatio: 1.25, shadows: true, shadowSize: 1024, shadowTier: 2, msaa: 2, bloom: true, lightTier: 2, texScale: 1, hrtf: true },
   niedrig: { pixelRatio: 1.0, shadows: false, shadowSize: 1024, shadowTier: 0, msaa: 0, bloom: true, lightTier: 1, texScale: 0.5, hrtf: false },
-  minimal: { pixelRatio: 0.75, shadows: false, shadowSize: 512, shadowTier: 0, msaa: 0, bloom: false, lightTier: 1, texScale: 0.5, hrtf: false },
+  minimal: { pixelRatio: 0.75, shadows: false, shadowSize: 512, shadowTier: 0, msaa: 0, bloom: false, lightTier: 1, texScale: 0.5, hrtf: false, shafts: false, gridLight: false },
 };
 
 // "auto": Handys & Tablets starten mit "niedrig", Computer mit "hoch";
@@ -35,7 +36,11 @@ class OverlayPass extends Pass {
     renderer.autoClear = false;
     renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
     renderer.clearDepth();
+    // Die Waffe in der Hand liegt nicht in der Karte → kein Raster-Licht
+    const grid = GRID.p2.value.y;
+    GRID.p2.value.y = 0;
     renderer.render(this.scene, this.camera);
+    GRID.p2.value.y = grid;
     renderer.autoClear = ac;
   }
 }
@@ -60,7 +65,7 @@ const GradeShader = {
     uFlash: { value: 0 },
     uVignette: { value: 0.55 },
     uGrain: { value: 0.035 },
-    uAberr: { value: 1.0 },
+    uAberr: { value: 0.45 },
     uPap: { value: 0 },
   },
   vertexShader: /* glsl */`
