@@ -27,27 +27,38 @@ export class ZombieManager {
     this.remaining = 0;
     this.spawnT = 0;
     this.round = 0;
+    this.uidSeq = 0;
   }
+
+  // Zombie anhand seiner Spawn-Nummer finden (Koop: Treffer/Ereignisse über das Netz)
+  byUid(uid) { return this.pool.find((z) => z.active && z.uid === uid) || null; }
 
   get active() { return this.pool.filter((z) => z.active); }
   get aliveCount() { let n = 0; for (const z of this.pool) if (z.alive) n++; return n; }
 
   startRound(r) {
     this.round = r;
-    this.toSpawn = zombiesForRound(r);
+    this.toSpawn = zombiesForRound(r, this.game.playerCount);
     this.remaining = this.toSpawn;
     this.hp = zombieHealth(r);
     this.spawnT = 1.0;
   }
 
-  // BFS vom Spieler aus über begehbare Zellen
+  // BFS von allen angreifbaren Überlebenden aus über begehbare Zellen
+  // (jeder Zombie folgt so dem Weg zum nächsten Spieler)
   computeFlow() {
     const map = this.map, w = map.w, d = this.dist;
     d.fill(-1);
-    const pc = this.game.player.pos;
-    const sx = Math.floor(pc.x / CELL), sy = Math.floor(pc.z / CELL);
-    const q = [sy * w + sx];
-    d[q[0]] = 0;
+    const q = [];
+    let srcs = this.game.survivors.filter((s) => s.targetable);
+    if (!srcs.length) srcs = this.game.survivors.filter((s) => !s.left);
+    for (const s of srcs) {
+      const sx = Math.floor(s.pos.x / CELL), sy = Math.floor(s.pos.z / CELL);
+      if (sx < 0 || sy < 0 || sx >= w || sy >= map.h) continue;
+      const k = sy * w + sx;
+      if (d[k] === 0) continue;
+      d[k] = 0; q.push(k);
+    }
     for (let i = 0; i < q.length; i++) {
       const k = q[i], x = k % w, y = (k - x) / w;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -62,11 +73,10 @@ export class ZombieManager {
   }
 
   // Weit voraus schauen und den entferntesten direkt erreichbaren Pfadpunkt wählen
-  pathTarget(pos, out) {
+  pathTarget(pos, out, pc) {
     const map = this.map, w = map.w, d = this.dist;
     let x = Math.floor(pos.x / CELL), y = Math.floor(pos.z / CELL);
     let best = null;
-    const pc = this.game.player.pos;
     if (d[y * w + x] < 0) { out.copy(pc); return; }
     for (let step = 0; step < 7; step++) {
       const cur = d[y * w + x];
@@ -105,8 +115,8 @@ export class ZombieManager {
     return _sep;
   }
 
-  pickWindow(maxDist = Infinity) {
-    const map = this.map, p = this.game.player.pos;
+  pickWindow(maxDist = Infinity, p = this.game.spawnFocus()) {
+    const map = this.map;
     const cands = map.windows.filter((w) => map.openZones.has(w.zone) && Math.hypot(w.center.x - p.x, w.center.z - p.z) < maxDist);
     if (!cands.length) return null;
     let total = 0;
@@ -126,29 +136,36 @@ export class ZombieManager {
     const z = this.pool.find((x) => !x.active);
     if (!z) return false;
     const type = rollSpeedType(this.round);
+    const focus = this.game.spawnFocus();
     if (this.game.mapDef.spawnMode === 'mixed') {
       // Große Karte: in Gebäuden meist durch Fenster, draußen aus dem Boden
-      const map = this.map, p = this.game.player.pos;
+      const map = this.map, p = focus;
       const c = map.cellAt(p.x, p.z);
       const inside = c && map.hasCeiling(c) && p.y < 0.3;
-      const win = this.pickWindow(40);
+      const win = this.pickWindow(40, focus);
       if (win && Math.random() < (inside ? 0.8 : 0.25)) {
         z.spawn(win, this.hp, type);
         z.rise('approach');
       } else {
-        const pt = this.groundPoint();
+        const pt = this.groundPoint(focus);
         if (pt) z.spawnAt(pt, this.hp, type);
         else if (win) { z.spawn(win, this.hp, type); z.rise('approach'); }
         else return false;
       }
-    } else z.spawn(this.pickWindow(), this.hp, type);
+    } else {
+      const win = this.pickWindow(Infinity, focus);
+      if (!win) return false;
+      z.spawn(win, this.hp, type);
+    }
+    z.uid = this.uidSeq = (this.uidSeq + 1) & 0xffff;
     this.toSpawn--;
+    if (this.game.net) this.game.net.zombieSpawned(z);
     return true;
   }
 
-  // Zufälliger erreichbarer Punkt im Freien in der Nähe des Spielers (bzw. vor dem fahrenden Bus)
-  groundPoint() {
-    const g = this.game, map = this.map, p = g.player.pos, bus = g.bus;
+  // Zufälliger erreichbarer Punkt im Freien in der Nähe eines Spielers (bzw. vor dem fahrenden Bus)
+  groundPoint(p = this.game.spawnFocus()) {
+    const g = this.game, map = this.map, bus = g.bus;
     let around = p, r0 = 12, r1 = 26;
     if (bus && bus.playerOn && bus.v > 2) { around = bus.lanePoint(bus.s + rand(28, 55), new THREE.Vector3()); r0 = 3; r1 = 9; }
     for (let i = 0; i < 40; i++) {
@@ -173,6 +190,14 @@ export class ZombieManager {
   onDespawn() { }
 
   update(dt) {
+    if (this.game.isClient) {
+      // Koop-Mitspieler: Zombies sind Puppen, gesteuert vom Host
+      this.stepBudget = Math.min(2, this.stepBudget + dt * 7);
+      for (const z of this.pool) if (z.active) z.puppet(dt, this.game);
+      this.renderer.update(this.pool);
+      this.eyes.update(this.pool, dt, this.game);
+      return;
+    }
     this.flowT -= dt;
     if (this.flowT <= 0) { this.flowT = 0.2; this.computeFlow(); }
 
@@ -222,10 +247,12 @@ export class ZombieManager {
     return this.pool.filter((z) => z.alive && Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < r && Math.abs(z.pos.y + 1 - p.y) < r + 1);
   }
 
-  // Schaden anwenden. opts: {dir, point, knife, explosive, nuke, fling, sub, silent}
+  // Schaden anwenden. opts: {dir, point, knife, explosive, nuke, fling, sub, pellet, wonder, by}
+  // `by` ist der Überlebende, der getroffen hat (Punkte/Statistik); ohne Angabe der eigene Spieler.
   damage(z, amount, part, opts = {}) {
     if (!z.alive) return false;
     const g = this.game;
+    if (g.isClient) return g.net.hitZombie(z, amount, part, opts); // Mitspieler: Treffer geht an den Host
     if (g.powerups.instaKill) amount = z.hp + 1;
     const sub = opts.sub || z.lastSub || null;
     z.lastSub = null;
@@ -235,49 +262,74 @@ export class ZombieManager {
     const dir = opts.dir || null;
     const armIdx = sub === 'armR' ? 0 : sub === 'armL' ? 1 : -1;
     const legIdx = sub === 'legR' ? 0 : sub === 'legL' ? 1 : -1;
+    const by = opts.by || g.me;
     if (z.hp <= 0) {
       // Explosionen und der Bus werfen Zombies um, der Gewitter-Werfer verschmort sie
       const fling = opts.fling || (opts.explosive && !opts.nuke ? 1 : 0);
       const shock = amount >= 1e9 && !opts.nuke && !opts.explosive && !opts.fling;
       let head = part === 'head' && !opts.explosive;
+      const lost = [];
       if (fling) {
-        for (let i = 0; i < 2; i++) if (Math.random() < 0.3) z.loseLimb('arm', i, dir, 5);
-        if (!z.crawler) for (let i = 0; i < 2; i++) if (Math.random() < 0.25) z.loseLimb('leg', i, dir, 4);
+        for (let i = 0; i < 2; i++) if (Math.random() < 0.3) lost.push(['arm', i]);
+        if (!z.crawler) for (let i = 0; i < 2; i++) if (Math.random() < 0.25) lost.push(['leg', i]);
         if (Math.random() < 0.15) head = true;
-      } else if (armIdx >= 0 && Math.random() < 0.7) z.loseLimb('arm', armIdx, dir, 3);
-      else if (legIdx >= 0 && opts.pellet && Math.random() < 0.3) z.loseLimb('leg', legIdx, dir, 3);
-      z.die(head, dir, { fling, shock });
-      if (head) { g.effects.gore(z.headMesh.getWorldPosition(_c3), dir, 'head'); if (g.audio.zombieHeadPop) g.audio.zombieHeadPop(point); }
-      g.effects.blood(point, dir || _c2.set(0, 0, 0), 1.4, head);
-      g.effects.bloodDecal(z.pos.x + rand(-0.3, 0.3), z.pos.z + rand(-0.3, 0.3), head ? 1.2 : 0.9);
-      g.audio.hitFlesh(point, head);
-      if (Math.random() < 0.6) g.audio.zombieDeath(point);
+      } else if (armIdx >= 0 && Math.random() < 0.7) lost.push(['arm', armIdx]);
+      else if (legIdx >= 0 && opts.pellet && Math.random() < 0.3) lost.push(['leg', legIdx]);
+      const death = { head, dir, point, fling: fling === true ? 1 : fling, shock, lost, by: by.slot };
+      this.presentDeath(z, death);
       let pts = opts.knife ? POINTS.knife : opts.explosive || opts.fling || shock || opts.wonder ? POINTS.blast : head ? POINTS.head : part === 'limb' ? POINTS.limb : POINTS.kill;
       if (opts.nuke) pts = 0;
-      if (pts) g.addPoints(pts);
-      g.stats.kills++;
-      if (head) g.stats.headshots++;
+      if (pts) g.addPoints(pts, false, by);
+      g.creditKill(by, head);
       this.remaining--;
+      if (g.net) g.net.zombieDied(z, death);
       g.onZombieKilled(z, opts);
       return true;
     }
-    z.hurt(dir, part, sub);
     // Schwere Treffer reißen Unterarme ab, Explosionen kosten die Beine (→ Kriecher)
-    if (armIdx >= 0 && heavy && Math.random() < 0.45) this.gib(z, 'arm', armIdx, dir);
+    const gibs = [];
+    let crawl = false;
+    if (armIdx >= 0 && heavy && Math.random() < 0.45) gibs.push(['arm', armIdx]);
     const standing = z.state === 'chase' && !z.onBus && !z.crawler;
     if (standing && opts.explosive && amount >= z.maxHp * 0.2 && Math.random() < 0.5) {
-      const both = Math.random() < 0.55;
-      this.gib(z, 'leg', Math.random() < 0.5 ? 0 : 1, dir);
-      if (both) this.gib(z, 'leg', z.legs[0].lost ? 1 : 0, dir);
-      z.makeCrawler();
+      const first = Math.random() < 0.5 ? 0 : 1;
+      gibs.push(['leg', first]);
+      if (Math.random() < 0.55) gibs.push(['leg', 1 - first]);
+      crawl = true;
     } else if (standing && legIdx >= 0 && heavy && Math.random() < 0.18) {
-      this.gib(z, 'leg', legIdx, dir);
-      z.makeCrawler();
+      gibs.push(['leg', legIdx]);
+      crawl = true;
     }
+    const hurt = { part, sub, dir, point, gibs, crawl, by: by.slot };
+    this.presentHurt(z, hurt);
+    if (g.net) g.net.zombieHurt(z, hurt);
+    if (!opts.noPoints) g.addPoints(POINTS.hit, false, by);
+    return false;
+  }
+
+  // Sichtbare Folgen eines tödlichen Treffers (auf jedem Gerät gleich)
+  presentDeath(z, { head, dir, point, fling, shock, lost }) {
+    const g = this.game;
+    for (const [kind, i] of lost || []) {
+      if (kind === 'leg' && z.crawler) continue;
+      z.loseLimb(kind, i, dir, kind === 'arm' ? (fling ? 5 : 3) : (fling ? 4 : 3));
+    }
+    z.die(head, dir, { fling, shock });
+    if (head) { g.effects.gore(z.headMesh.getWorldPosition(_c3), dir, 'head'); if (g.audio.zombieHeadPop) g.audio.zombieHeadPop(point); }
+    g.effects.blood(point, dir || _c2.set(0, 0, 0), 1.4, head);
+    g.effects.bloodDecal(z.pos.x + rand(-0.3, 0.3), z.pos.z + rand(-0.3, 0.3), head ? 1.2 : 0.9);
+    g.audio.hitFlesh(point, head);
+    if (Math.random() < 0.6) g.audio.zombieDeath(point);
+  }
+
+  // Sichtbare Folgen eines nicht tödlichen Treffers
+  presentHurt(z, { part, sub, dir, point, gibs, crawl }) {
+    const g = this.game;
+    z.hurt(dir, part, sub);
+    for (const [kind, i] of gibs || []) this.gib(z, kind, i, dir);
+    if (crawl) z.makeCrawler();
     g.effects.blood(point, dir || _c2.set(0, 0, 0), 0.6, false);
     g.audio.hitFlesh(point, part === 'head');
-    if (!opts.noPoints) g.addPoints(POINTS.hit);
-    return false;
   }
 
   // Gliedmaße abtrennen mit Fleischfetzen und Geräusch

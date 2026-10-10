@@ -259,6 +259,7 @@ export class GameMap {
   removeBoard(win) {
     if (win.boards <= 0) return false;
     win.boards--;
+    if (this.onBoards) this.onBoards(win);
     const b = win.boardMeshes[win.boards];
     const from = b.position.clone(), q0 = b.quaternion.clone();
     const to = from.clone().addScaledVector(win.out, rand(2.2, 3.2));
@@ -277,6 +278,7 @@ export class GameMap {
     if (win.boards >= BOARDS) return false;
     const b = win.boardMeshes[win.boards];
     win.boards++;
+    if (this.onBoards) this.onBoards(win);
     const home = b.userData.home, hq = b.userData.homeQ;
     const from = home.clone().addScaledVector(win.out, 1.8);
     from.y = home.y + 0.6;
@@ -288,6 +290,14 @@ export class GameMap {
       b.quaternion.slerpQuaternions(q0, hq, e);
     } });
     return true;
+  }
+
+  // Koop (Mitspieler): Brettanzahl vom Host übernehmen – liefert die Änderung
+  setBoards(win, n) {
+    const before = win.boards;
+    while (win.boards > n && this.removeBoard(win));
+    while (win.boards < n && this.addBoard(win));
+    return win.boards - before;
   }
 
   setPower(on) {

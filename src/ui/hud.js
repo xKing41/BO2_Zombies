@@ -60,7 +60,13 @@ export class HUD {
       perks: $('perks'), score: $('score'), popups: $('popups'), wname: $('wname'), ammo: $('ammo'), mag: $('mag'), reserve: $('reserve'), nades: $('nades'),
       powerups: $('powerups'), damage: $('damage'), dmgdir: $('dmgdir'), hit: $('hitmarker'), cross: $('crosshair'), scope: $('scope'), downed: $('downed'), fps: $('fps'),
       subtitle: $('subtitle'), carry: $('carry'), latch: $('latch'), intro: $('intro'), reviveRing: $('reviveRing'),
+      team: $('team'), downTitle: $('downTitle'), downSub: $('downSub'),
     };
+    // Zuschauer-Hinweis (Koop, nach dem Ausbluten)
+    this.el.spec = document.createElement('div');
+    this.el.spec.id = 'spec';
+    this.el.spec.className = 'hidden';
+    this.el.hud.appendChild(this.el.spec);
     this.cross = ['t', 'b', 'l', 'r'].map((c) => this.el.cross.querySelector('.' + c));
     this.cache = {};
     this.hitT = 0;
@@ -268,6 +274,24 @@ export class HUD {
     this.dirT = 1;
   }
 
+  // Koop: Punkte und Zustand der Mitspieler (über den eigenen Punkten)
+  team(list) {
+    const key = list.map((s) => `${s.name}|${s.points}|${s.down ? 1 : 0}|${s.dead ? 1 : 0}`).join(';');
+    this.set('team', key, () => {
+      const el = this.el.team;
+      el.innerHTML = '';
+      for (const s of list) {
+        const d = document.createElement('div');
+        d.className = 'tm' + (s.down ? ' down' : '') + (s.dead ? ' dead' : '');
+        d.style.color = s.color;
+        const n = document.createElement('small');
+        n.textContent = s.name;
+        d.append(n, String(s.points));
+        el.appendChild(d);
+      }
+    });
+  }
+
   update(dt, player, fps) {
     this.hitT = Math.max(0, this.hitT - dt);
     this.el.hit.style.opacity = this.hitT > 0 ? 1 : 0;
@@ -278,9 +302,21 @@ export class HUD {
     this.set('dmg', Math.round(dmg * 50), () => (this.el.damage.style.opacity = dmg));
     this.set('downed', player.downed, (x) => this.el.downed.classList.toggle('hidden', !x));
     if (player.downed) {
-      const k = 1 - Math.max(0, player.reviveT) / (player.reviveTotal || 6);
+      let k, title, sub;
+      if (player.bleedT > 0) {
+        // Koop: Ring zeigt Wiederbelebung durch Mitspieler bzw. die restliche Zeit bis zum Ausbluten
+        if (player.reviveBy) { k = player.reviveP || 0; title = 'Wiederbelebung'; sub = `${player.reviveBy} hilft dir …`; }
+        else { k = player.bleedT / (player.bleedTotal || 45); title = 'Am Boden'; sub = `Warte auf Hilfe … ${Math.ceil(player.bleedT)} s`; }
+      } else {
+        k = 1 - Math.max(0, player.reviveT) / (player.reviveTotal || 6);
+        title = 'Wiederbelebung'; sub = 'Phönix-Soda wirkt …';
+      }
       this.set('revive', Math.round(k * 100), (v) => (this.el.reviveRing.style.strokeDashoffset = (283 * (1 - v / 100)).toFixed(1)));
+      this.set('downTitle', title, (x) => (this.el.downTitle.textContent = x));
+      this.set('downSub', sub, (x) => (this.el.downSub.textContent = x));
     }
+    const spec = player.spectating ? `Zuschauer: ${player.specName || '…'} – zurück in der nächsten Runde` : '';
+    this.set('spec', spec, (x) => { this.el.spec.textContent = x; this.el.spec.classList.toggle('hidden', !x); });
     if (fps !== null) this.el.fps.textContent = fps;
     else this.el.fps.textContent = '';
   }

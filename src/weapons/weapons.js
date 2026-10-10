@@ -434,6 +434,8 @@ export class Weapons {
     const g = this.g, w = this.weapon, st = w.stats, player = g.player, cam = g.camera;
     const doppel = player.perks.has('doppel');
     w.mag--;
+    this.fireSeq = (this.fireSeq || 0) + 1;
+    const net = g.net ? { ends: [], im: [], dist: 150 } : null;
     this.fireCd = 60 / (st.rpm * (doppel ? 1.33 : 1));
     const dmgMul = doppel ? 2 : 1;
     const moving = clamp(player.hSpeed / 4.4, 0, 1);
@@ -454,7 +456,8 @@ export class Weapons {
       const dir = _p.copy(_d).addScaledVector(_right, Math.cos(a) * r).addScaledVector(_up, Math.sin(a) * r).normalize();
       if (st.projectile) { this.spawnProjectile(muzzle, dir.clone(), st, dmgMul); continue; }
       const wall = g.rayBlock(_o, dir, g.map.rayCast(_o, dir, 150));
-      if (i === 0) for (const f of g.features) if (f.onShot) f.onShot(_o, dir, wall.dist);
+      if (i === 0) for (const f of g.features) if (f.onShot) f.onShot(_o, dir, wall.dist, g.me);
+      if (net && i === 0) net.dist = wall.dist;
       const hits = g.zombies.raycast(_o, dir, wall.dist);
       let pen = st.penetrate || 0, dmg = st.damage * dmgMul, endT = wall.dist;
       let stopped = false;
@@ -467,9 +470,11 @@ export class Weapons {
         if (pen-- <= 0) { stopped = true; endT = h.t; break; }
         dmg *= 0.75;
       }
+      if (net && net.ends.length < 2) net.ends.push(_o.clone().addScaledVector(dir, Math.min(endT, 60)));
       if (!stopped) {
         const point = _o.clone().addScaledVector(dir, wall.dist);
         if (wall.dist < 150) {
+          if (net && net.im.length < 2) net.im.push([point.clone(), wall.normal.clone(), wall.mat]);
           g.effects.impact(point, wall.normal, wall.mat);
           if (i === 0) g.audio.impact(point, wall.mat);
           if (st.explosive) g.explode(point, st.explosive.radius, st.explosive.damage * dmgMul, { color: [3, 0.9, 0.3], small: true });
@@ -497,6 +502,10 @@ export class Weapons {
     this.vmFlash.color.set(flashColor);
     this.vmFlash.intensity = st.projectile || st.lightning ? 2.5 : 4;
     g.audio.gunshot(st.sound, w.pap);
+    if (net) {
+      const r3 = (v) => [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)];
+      g.net.shot({ k: st.sound, pap: !!w.pap, c: flashColor, e: net.ends.map(r3), im: net.im.map((x) => [r3(x[0]), r3(x[1]), x[2]]), o: r3(_o), d: r3(_d), dist: +net.dist.toFixed(2) });
+    }
     this.heat = Math.min(8, this.heat + c.heat);
     this.sinceShot = 0;
     this.cycleT = 0;
@@ -678,7 +687,8 @@ export class Weapons {
       n.mesh.rotation.x += dt * n.vel.length() * 3;
       if (n.fuse <= 0) {
         n.active = false; n.mesh.visible = false;
-        g.explode(n.pos.clone().setY(0.4), 6, 180 + g.round * 130, { color: [3, 1.6, 0.5] });
+        // Granaten von Mitspielern sind nur Bild – deren Explosion kommt über das Netz
+        if (!n.ghost) g.explode(n.pos.clone().setY(0.4), 6, 180 + g.round * 130, { color: [3, 1.6, 0.5] });
       }
     }
   }
@@ -688,11 +698,28 @@ export class Weapons {
     if (!n) return;
     const cam = this.g.camera;
     cam.getWorldPosition(_o); cam.getWorldDirection(_d);
-    n.active = true; n.fuse = 2.3; n.mesh.visible = true;
+    n.active = true; n.fuse = 2.3; n.mesh.visible = true; n.ghost = false;
     n.pos.copy(_o).addScaledVector(_d, 0.4).setY(_o.y - 0.15);
     n.vel.copy(_d).multiplyScalar(13).add(new THREE.Vector3(0, 3.2, 0)).add(this.g.player.vel.clone().multiplyScalar(0.5));
     this.grenades--;
     this.g.audio.nadeThrow && this.g.audio.nadeThrow();
+    if (this.g.net) this.g.net.send('nade', { p: [n.pos.x, n.pos.y, n.pos.z], v: [n.vel.x, n.vel.y, n.vel.z], f: n.fuse });
+  }
+
+  // Granate eines Mitspielers (fliegt sichtbar, explodiert aber nicht selbst)
+  ghostGrenade(pos, vel, fuse = 2.3) {
+    const n = this.thrown.find((x) => !x.active);
+    if (!n || !pos || !vel) return;
+    n.active = true; n.ghost = true; n.fuse = fuse; n.mesh.visible = true;
+    n.pos.copy(pos); n.vel.copy(vel);
+  }
+
+  // Was die Figur dieses Spielers gerade tut (für die Darstellung bei Mitspielern)
+  netAction() {
+    const st = this.state;
+    if (st === 'reload' || st === 'knife' || st === 'throw' || st === 'drink') return st;
+    if (st === 'draw' || st === 'raise' || st === 'lower') return 'raise';
+    return (this.sinceShot ?? 9) < 0.12 ? 'fire' : 'idle';
   }
 
   doKnifeHit() {
@@ -721,10 +748,12 @@ export class Weapons {
   // ── Update ──────────────────────────────────────────────────
   update(dt, input) {
     const g = this.g, player = g.player;
+    // Koop: Ausgeblutet → Zuschauer ohne Waffe
+    if (player.spectating) { this.root.visible = false; this.arms.root.visible = false; return; }
     this.time += dt;
     this.stateT += dt;
     this.fireCd -= dt;
-    const playing = g.state === 'playing';
+    const playing = g.state === 'playing' && !player.reviving;
     // Last Stand: Pistole ziehen bzw. nach der Wiederbelebung zurückwechseln
     if (playing && player.downed && !this.last) this.enterLastStand();
     else if (this.last && !player.downed) this.exitLastStand();

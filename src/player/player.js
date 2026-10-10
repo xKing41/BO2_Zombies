@@ -14,10 +14,9 @@ export class Player {
   }
 
   reset() {
-    const start = this.g.mapDef ? this.g.mapDef.playerStart : { cx: 0, cy: 0, yaw: 0 };
-    this.pos.set(start.cx * CELL + CELL / 2, 0, start.cy * CELL + CELL / 2);
+    this.placeAtStart();
     this.vel.set(0, 0, 0);
-    this.yaw = start.yaw; this.pitch = 0;
+    this.pitch = 0;
     this.recoilP = 0; this.recoilY = 0;
     this.onGround = true; this.crouch = 0; this.crouching = false;
     this.stamina = 1; this.sprinting = false; this.sprintLock = 0;
@@ -30,6 +29,17 @@ export class Player {
     this.snap = null; this.wasAds = false;
     this.stepY = 0; this.speedMul = 1;
     this.diving = false; this.proneT = 0; this.diveTilt = 0;
+    this.spectating = false; this.bleedT = 0; this.reviving = null; this.reviveBy = null; this.reviveP = 0; this.specIdx = 0;
+  }
+
+  // Startpunkt der Karte; im Koop stehen die Spieler nebeneinander
+  placeAtStart() {
+    const start = this.g.mapDef ? this.g.mapDef.playerStart : { cx: 0, cy: 0, yaw: 0 };
+    const slot = this.g.me ? this.g.me.slot : 0;
+    const off = [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6]][slot] || [0, 0];
+    const c = Math.cos(start.yaw), sn = Math.sin(start.yaw);
+    this.pos.set(start.cx * CELL + CELL / 2 + off[0] * c + off[1] * sn, 0, start.cy * CELL + CELL / 2 - off[0] * sn + off[1] * c);
+    this.yaw = start.yaw;
   }
 
   get walkSpeed() { return 4.4 * (this.perks.has('sprint') ? 1.07 : 1); }
@@ -44,7 +54,7 @@ export class Player {
   }
 
   damage(amount, from) {
-    if (this.downed || this.g.state !== 'playing' || this.g.godMode) return;
+    if (this.downed || this.spectating || this.g.state !== 'playing' || this.g.godMode) return;
     this.health -= amount;
     this.lastHit = this.time;
     this.hurtFlash = 1;
@@ -55,6 +65,25 @@ export class Player {
   }
 
   goDown() {
+    const g = this.g;
+    if (g.coop) {
+      // Koop: am Boden, Mitspieler können helfen – sonst nach 45 s ausbluten.
+      // Phönix-Soda belebt im Koop nicht selbst wieder (es beschleunigt das Helfen).
+      this.downed = true;
+      this.bleedT = this.bleedTotal = 45;
+      this.reviveT = 0; this.reviveBy = null; this.reviveP = 0;
+      this.perks.clear();
+      this.maxHealth = 100;
+      this.health = 1;
+      this.reviving = null;
+      // 5 % der Punkte gehen verloren (auf 10 gerundet)
+      const lost = Math.ceil((g.points * 0.05) / 10) * 10;
+      if (lost > 0) { g.points -= lost; g.hud.points(g.points); g.hud.pointsPop(-lost); }
+      g.hud.perks(this.perks);
+      g.audio.setMuffle(0.85);
+      if (g.net) g.net.survivorDown(g.me);
+      return;
+    }
     if (this.perks.has('phoenix')) {
       this.downed = true;
       this.reviveT = this.reviveTotal = 10;
@@ -67,6 +96,45 @@ export class Player {
     } else {
       this.g.gameOver();
     }
+  }
+
+  // Von einem Mitspieler wiederbelebt
+  getUp() {
+    if (!this.downed) return;
+    this.downed = false;
+    this.bleedT = 0; this.reviveBy = null; this.reviveP = 0;
+    this.health = this.maxHealth;
+    this.lastHit = this.time;
+    this.g.hud.notice('Wiederbelebt!');
+    this.g.audio.setMuffle(0);
+  }
+
+  // Ausgeblutet: bis zur nächsten Runde zuschauen
+  bleedOut() {
+    const g = this.g;
+    this.downed = false;
+    this.spectating = true;
+    this.bleedT = 0;
+    this.vel.set(0, 0, 0);
+    g.audio.setMuffle(0.4);
+    if (g.net) g.net.survivorBledOut(g.me);
+    g.hud.notice('Du bist verblutet – zurück in der nächsten Runde', 4000);
+  }
+
+  // Neue Runde: Ausgeblutete kehren mit der Startpistole zurück
+  respawn() {
+    const g = this.g;
+    this.spectating = false;
+    this.downed = false;
+    this.maxHealth = 100; this.health = 100;
+    this.perks.clear();
+    const mate = g.survivors.find((s) => !s.local && s.targetable);
+    if (mate) { this.pos.copy(mate.pos); this.pos.x += 0.5; } else this.placeAtStart();
+    this.vel.set(0, 0, 0);
+    g.weapons.reset();
+    g.hud.perks(this.perks);
+    g.audio.setMuffle(0);
+    g.hud.notice('Du bist zurück!', 2500);
   }
 
   // Nächster sichtbarer Zombie innerhalb eines Winkels um das Fadenkreuz
@@ -119,8 +187,16 @@ export class Player {
     this.recoilP = damp(this.recoilP, 0, 7, dt);
     this.recoilY = damp(this.recoilY, 0, 7, dt);
 
+    // Koop: am Boden läuft die Ausblut-Uhr, solange niemand hilft
+    if (this.downed && g.coop && this.bleedT > 0) {
+      if (!this.reviveBy) this.bleedT -= dt;
+      if (this.bleedT <= 0) this.bleedOut();
+    }
+    // Zuschauen: Kamera folgt einem Mitspieler
+    if (this.spectating) { this.spectate(dt, input); return; }
+
     // Wiederbelebung
-    if (this.downed) {
+    if (this.downed && this.reviveT > 0) {
       this.reviveT -= dt;
       this.vel.x = damp(this.vel.x, 0, 6, dt); this.vel.z = damp(this.vel.z, 0, 6, dt);
       if (this.reviveT <= 0) {
@@ -251,5 +327,21 @@ export class Player {
       cam.position.set(this.pos.x + Math.sin(a) * e * 2.2, this.pos.y + lerp(eye, 5.2, e), this.pos.z + Math.cos(a) * e * 2.2);
       cam.rotation.set(lerp(this.pitch, -1.1, e), a, lerp(roll, 0.08, e), 'YXZ');
     } else this.deathT = 0;
+  }
+
+  // Ausgeblutet: Kamera hängt hinter einem lebenden Mitspieler (Feuern = nächster)
+  spectate(dt, input) {
+    const g = this.g, cam = g.camera;
+    const mates = g.survivors.filter((s) => !s.local && !s.left && !s.dead);
+    if (input.hit('fire') || input.hit('jump')) this.specIdx++;
+    const m = mates.length ? mates[this.specIdx % mates.length] : null;
+    if (!m) return;
+    const back = 2.6, up = 1.0;
+    const fx = -Math.sin(m.yaw), fz = -Math.cos(m.yaw);
+    _t.set(m.pos.x - fx * back, m.pos.y + 1.6 + up, m.pos.z - fz * back);
+    cam.position.lerp(_t, 1 - Math.exp(-8 * dt));
+    cam.lookAt(m.pos.x + fx * 4, m.pos.y + 1.3 + Math.sin(m.pitch) * 3, m.pos.z + fz * 4);
+    this.pos.copy(m.pos); // Hörposition und Nebel folgen der Kamera
+    this.specName = m.name;
   }
 }

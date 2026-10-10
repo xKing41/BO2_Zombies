@@ -92,6 +92,12 @@ export class Input {
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
 
   // ── Abfragen ────────────────────────────────────────────────
+  // Eingaben dieses Bildes verwerfen (z. B. Koop-Menü offen, Welt läuft weiter)
+  suppress() {
+    this.aHeld.clear(); this.aHit.clear();
+    this.moveX = 0; this.moveY = 0; this.lookX = 0; this.lookY = 0;
+  }
+
   held(a) { return ACTIONS.has(a) ? this.aHeld.has(a) : this.keys.has(a); }
   hit(a) { return ACTIONS.has(a) ? this.aHit.has(a) : this.pressed.has(a); }
   down(code) { return this.keys.has(code); }

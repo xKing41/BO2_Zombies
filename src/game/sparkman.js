@@ -330,7 +330,7 @@ export class Sparkman {
     if ((this.teleT <= 0 && dist > 4) || dist > 18) { this.teleport(); return; }
     // schwebender, ruckartiger Gang zum Spieler (Flow-Field der Zombies)
     if (dist < 12 && map.clearPath(this.pos, player.pos, 0.3)) this.navTarget.copy(player.pos);
-    else g.zombies.pathTarget(this.pos, this.navTarget);
+    else g.zombies.pathTarget(this.pos, this.navTarget, g.player.pos);
     const tx = this.navTarget.x - this.pos.x, tz = this.navTarget.z - this.pos.z, td = Math.hypot(tx, tz) || 1;
     const sp = (dist < 1.6 ? 0 : 3.0) * (0.7 + 0.5 * Math.max(0, Math.sin(time * 6)));
     this.pos.x += (tx / td) * sp * dt;

@@ -157,11 +157,17 @@ export class PowerUps {
     const it = this.items.find((x) => !x.active);
     if (!it) return;
     type = type || this.nextType();
+    if (this.g.net && this.g.net.isHost) this.g.net.ev({ t: 'pud', i: this.items.indexOf(it), ty: type, x: +pos.x.toFixed(2), z: +pos.z.toFixed(2) });
+    this.show(it, pos, type);
+    this.dropsThisRound++;
+  }
+
+  // Power-Up sichtbar machen (Host und Mitspieler)
+  show(it, pos, type) {
     it.active = true; it.type = type; it.t = 0;
     it.model.geometry = this.geos[type];
     it.group.position.set(pos.x, 1.0, pos.z);
     it.group.visible = true;
-    this.dropsThisRound++;
     this.g.audio.powerupSpawn(it.group.position);
     this.stopLoop(it);
     it.loop = this.g.audio.powerupLoop(it.group.position.clone()); // schwebendes Summen
@@ -172,8 +178,11 @@ export class PowerUps {
     if (it.loop) { it.loop.stop(); it.loop = null; }
   }
 
-  apply(type) {
-    const g = this.g;
+  // Wirkung eines eingesammelten Power-Ups. Sie gilt für alle Spieler:
+  // Munition und Anzeigen auf jedem Gerät, Zombies/Bretter/Punkte beim Host.
+  apply(type, by = null, idx = -1) {
+    const g = this.g, auth = !g.isClient;
+    if (g.net && g.net.isHost) g.net.ev({ t: 'pug', ty: type, by: by ? by.slot : -1, i: idx });
     g.audio.powerupGrab(type);
     g.hud.powerupBanner(type);
     switch (type) {
@@ -184,17 +193,37 @@ export class PowerUps {
       case 'nuke':
         g.flash = 1;
         g.audio.explosion(g.player.pos.clone().setY(8), 1.6);
-        g.zombies.killAll({ explosive: true });
-        g.addPoints(POINTS.nuke, true);
         g.player.shake = 0.8;
+        if (auth) {
+          g.zombies.killAll({ explosive: true });
+          for (const s of g.survivors) if (!s.left) g.addPoints(POINTS.nuke, true, s); // jeder Spieler 400
+        }
         break;
       case 'carpenter':
-        for (const w of g.map.windows) {
-          for (let i = w.boards; i < 6; i++) setTimeout(() => { if (g.map.addBoard(w)) g.audio.boardPlace(w.center.clone().setY(1.6)); }, 200 + Math.random() * 2500);
+        if (auth) {
+          for (const w of g.map.windows) {
+            for (let i = w.boards; i < 6; i++) setTimeout(() => { if (g.map.addBoard(w)) g.audio.boardPlace(w.center.clone().setY(1.6)); }, 200 + Math.random() * 2500);
+          }
+          for (const s of g.survivors) if (!s.left) g.addPoints(POINTS.carpenter, true, s); // jeder Spieler 200
         }
-        g.addPoints(POINTS.carpenter, true);
         break;
     }
+  }
+
+  // Koop (Mitspieler): Power-Up erscheint, wird eingesammelt oder verfällt
+  netEvent(e) {
+    const it = this.items[e.i];
+    switch (e.t) {
+      case 'pud': if (it) { this.stopLoop(it); this.show(it, new THREE.Vector3(e.x, 0, e.z), e.ty); } return true;
+      case 'pug': {
+        const pi = e.i >= 0 ? this.items[e.i] : this.items.find((x) => x.active && x.type === e.ty);
+        if (pi) { pi.active = false; pi.group.visible = false; this.stopLoop(pi); }
+        this.apply(e.ty);
+        return true;
+      }
+      case 'pux': if (it) { it.active = false; it.group.visible = false; this.stopLoop(it); } return true;
+    }
+    return false;
   }
 
   // Sichtbarkeit am Boden: 15 s ruhig, dann Blinken (0,5 s → 0,25 s → 0,1 s Takt)
@@ -210,8 +239,8 @@ export class PowerUps {
     const was = this.fireSale;
     for (const k in this.timers) this.timers[k] = Math.max(0, this.timers[k] - dt);
     if (was && !this.fireSale) this.g.interact.fireSale(false);
-    this.watchScore();
-    const p = this.g.player;
+    if (!this.g.isClient) this.watchScore();
+    const g = this.g, auth = !g.isClient;
     for (const it of this.items) {
       if (!it.active) continue;
       it.t += dt;
@@ -224,11 +253,17 @@ export class PowerUps {
       // Summen flackert mit, kurz bevor das Power-Up verschwindet
       if (it.loop && blink !== it.blink) { it.blink = blink; it.loop.set(blink ? 1 : 0.35); }
       if (Math.random() < 0.25) this.g.effects.energy(gp, [0.3, 1.5, 0.3], 1, 0.3);
-      if (Math.hypot(p.pos.x - gp.x, p.pos.z - gp.z) < 1.3 && Math.abs(p.pos.y - (gp.y - 1)) < 1.6 && !p.downed) {
+      // Einsammeln: jeder Spieler, der nicht am Boden liegt (entscheidet der Host)
+      const by = auth ? g.survivors.find((s) => s.targetable && Math.hypot(s.pos.x - gp.x, s.pos.z - gp.z) < 1.3 && Math.abs(s.pos.y - (gp.y - 1)) < 1.6) : null;
+      if (by) {
         it.active = false; it.group.visible = false;
         this.stopLoop(it);
-        this.apply(it.type);
-      } else if (it.t > LIFETIME) {
+        this.apply(it.type, by, this.items.indexOf(it));
+      } else if (auth && it.t > LIFETIME) {
+        it.active = false; it.group.visible = false;
+        this.stopLoop(it);
+        if (g.net) g.net.ev({ t: 'pux', i: this.items.indexOf(it) });
+      } else if (!auth && it.t > LIFETIME + 1) {
         it.active = false; it.group.visible = false;
         this.stopLoop(it);
       }

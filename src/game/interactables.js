@@ -18,6 +18,8 @@ class Interactable {
   use() { }
   update() { }
   reset() { }
+  // Koop: Position in der (auf allen Geräten gleichen) Liste
+  get netId() { return this.g.interact.list.indexOf(this); }
 }
 
 function frontOf(map, cx, cy, wall, dist) {
@@ -38,7 +40,15 @@ class DoorBuy extends Interactable {
   }
   use() {
     if (this.door.open) return;
-    if (!this.g.spend(this.door.cost)) return;
+    const g = this.g;
+    if (g.isClient) { g.net.buy(this.door.cost, 'door', { id: this.door.id }); return; }
+    if (!g.spend(this.door.cost)) return;
+    this.open();
+  }
+  // Öffnen mit Staub und Geräusch (Host meldet es allen)
+  open() {
+    if (this.door.open) return;
+    if (this.g.net && this.g.net.isHost) this.g.net.ev({ t: 'door', id: this.door.id });
     this.g.map.openDoor(this.door.id);
     this.g.audio.doorOpen(this.door.center.clone().setY(2));
     this.g.hud.notice(`${this.door.label} geöffnet`);
@@ -65,11 +75,22 @@ class Barricade extends Interactable {
     this.t -= dt;
     if (this.t <= 0) {
       this.t = this.g.player.perks.has('blitz') ? 0.3 : 0.55;
-      if (this.g.map.addBoard(this.win)) {
-        this.g.audio.boardPlace(this.win.center.clone().setY(1.6));
-        if (this.g.repairPoints < 500) { this.g.addPoints(POINTS.board); this.g.repairPoints += POINTS.board; }
-      }
+      const g = this.g;
+      if (g.isClient) { g.net.request('board', { w: g.map.windows.indexOf(this.win) }); return; }
+      this.addBoard(g.me);
     }
+  }
+  // Host: ein Brett einsetzen und dem Reparierenden Punkte geben
+  addBoard(s) {
+    const g = this.g;
+    if (!g.map.addBoard(this.win)) return false;
+    g.audio.boardPlace(this.win.center.clone().setY(1.6));
+    if (s.local) { if (g.repairPoints < 500) { g.addPoints(POINTS.board); g.repairPoints += POINTS.board; } }
+    else {
+      if (s.repairRound !== g.round) { s.repairRound = g.round; s.repairPts = 0; }
+      if (s.repairPts < 500) { g.addPoints(POINTS.board, false, s); s.repairPts += POINTS.board; }
+    }
+    return true;
   }
 }
 
@@ -100,9 +121,10 @@ class WallBuy extends Interactable {
   }
 
   // Wie in BO2: Beim ersten Kauf wird aus der Kreidezeichnung die echte Waffe an der Wand
-  materialize() {
+  materialize(remote = false) {
     if (this.mount || this.id === 'grenade') return;
     const g = this.g, m = (this.mount = new THREE.Group());
+    if (!remote && g.net) g.net.send('wall', { i: this.netId });
     m.position.y = 1.5;
     m.userData.dynamic = true;
     g.map.place(m, this.def.cx, this.def.cy, this.def.wall, 0.0);
@@ -220,13 +242,13 @@ class PerkMachine extends Interactable {
     if (this.gone) return null;
     if (!this.powered) return 'Kein Strom';
     if (p.perks.size >= PERK_LIMIT) return `Perk-Limit erreicht (${PERK_LIMIT})`;
-    return `${this.press} für ${P.name} – ${P.desc} [Kosten: ${P.cost}]`;
+    return `${this.press} für ${P.name} – ${this.id === 'phoenix' && this.g.coop ? 'Belebt Mitspieler doppelt so schnell wieder' : P.desc} [Kosten: ${this.cost}]`;
   }
   use() {
     const g = this.g, p = g.player, P = PERKS[this.id];
     if (p.perks.has(this.id) || !this.powered || p.perks.size >= PERK_LIMIT || g.weapons.busy) return;
-    if (this.id === 'phoenix' && p.selfRevives >= 3) return;
-    if (!g.spend(P.cost)) return;
+    if (this.id === 'phoenix' && p.selfRevives >= 3 && !g.coop) return;
+    if (!g.spend(this.cost)) return;
     g.audio.perkJingle(this.id);
     g.weapons.drink(this.col.getHex(), () => {
       p.perks.add(this.id);
@@ -235,8 +257,10 @@ class PerkMachine extends Interactable {
       g.hud.notice(P.name);
     });
   }
-  // Phönix-Soda: Nach der dritten Selbst-Wiederbelebung verschwindet der Automat
-  get gone() { return this.id === 'phoenix' && this.g.player.selfRevives >= 3 && !this.g.player.downed; }
+  // Phönix-Soda kostet im Koop 1500 Punkte (allein 500)
+  get cost() { return this.id === 'phoenix' && this.g.coop ? 1500 : PERKS[this.id].cost; }
+  // Phönix-Soda: Nach der dritten Selbst-Wiederbelebung verschwindet der Automat (nur allein)
+  get gone() { return this.id === 'phoenix' && !this.g.coop && this.g.player.selfRevives >= 3 && !this.g.player.downed; }
   update(dt, time) {
     const gone = this.gone;
     if (gone === this.group.visible) {
@@ -313,9 +337,16 @@ class PowerSwitch extends Interactable {
   setBuilt() { this.built = true; this.group.visible = true; }
   use() {
     if (this.g.map.power || !this.built) return;
+    if (this.g.isClient) { this.g.net.request('power'); return; }
+    this.flip();
+  }
+  // Hebel umlegen, kurz danach geht der Strom an (Host meldet es allen)
+  flip() {
+    if (this.anim > 0) return;
+    if (this.g.net && this.g.net.isHost) this.g.net.ev({ t: 'pow' });
     this.anim = 0.0001;
     this.g.audio.lever();
-    setTimeout(() => this.g.powerOn(), 700);
+    setTimeout(() => { if (!this.g.map.power) this.g.powerOn(); }, 700);
   }
   reset() {
     this.anim = 0; this.lever.rotation.x = -0.6;
@@ -520,7 +551,8 @@ class MysteryBox extends Interactable {
 
   prompt() {
     if (this.state === 'idle') return `${this.press} für eine Zufallswaffe [Kosten: ${this.cost}]`;
-    if (this.state === 'offer') return `${this.press} für ${WEAPONS[this.result].name}`;
+    // Die Waffe darf nur nehmen, wer bezahlt hat
+    if (this.state === 'offer' && this.owner === this.g.me.slot) return `${this.press} für ${WEAPONS[this.result].name}`;
     return null;
   }
 
@@ -528,26 +560,67 @@ class MysteryBox extends Interactable {
     const g = this.g;
     if (this.state === 'idle') {
       const price = this.cost;
-      if (!g.spend(price)) return;
-      this.paid = price;
-      this.state = 'spin'; this.t = 0; this.uses++; this.totalUses++;
-      g.audio.boxJingle();
       const owned = g.weapons.slots.filter(Boolean).map((s) => s.id);
-      const pool = Object.entries(BOX_POOL).filter(([k]) => !owned.includes(k));
-      this.result = weightedPick(pool);
-      this.isTeddy = this.rollTeddy();
-      this.cycleT = 0;
-    } else if (this.state === 'offer') {
+      if (g.isClient) { g.net.buy(price, 'box', { i: this.netId, owned }); return; }
+      if (!g.spend(price)) return;
+      this.startSpin(g.me, price, owned);
+    } else if (this.state === 'offer' && this.owner === g.me.slot) {
       if (g.weapons.busy) return;
-      g.weapons.give(this.result);
-      this.close();
+      const id = this.result;
+      if (g.isClient) { g.net.request('boxTake', { i: this.netId }).then((r) => { if (r.ok) g.weapons.give(id); }); return; }
+      g.weapons.give(id);
+      this.go('closing');
     }
   }
 
-  close() {
-    this.state = 'closing'; this.t = 0;
-    this.showWeapon(null);
+  // Host: Kiste für einen Spieler drehen (seine Waffen sind ausgeschlossen)
+  startSpin(owner, price, owned = []) {
+    if (this.state !== 'idle') return false;
+    this.paid = price;
+    this.owner = owner.slot;
+    this.uses++; this.totalUses++;
+    const pool = Object.entries(BOX_POOL).filter(([k]) => !owned.includes(k));
+    this.result = weightedPick(pool.length ? pool : Object.entries(BOX_POOL));
+    this.isTeddy = this.rollTeddy();
+    this.go('spin');
+    return true;
   }
+
+  // Zustandswechsel: der Host löst ihn aus und meldet ihn, Mitspieler übernehmen ihn
+  go(st, data = {}) {
+    this.enter(st, data);
+    const net = this.g.net;
+    if (net && net.isHost) net.ev({ t: 'box', i: this.netId, st, sp: this.spot, r: this.result, o: this.owner ?? -1, ...data });
+  }
+
+  enter(st, data = {}) {
+    const g = this.g;
+    this.state = st; this.t = 0;
+    switch (st) {
+      case 'spin': g.audio.boxJingle(); this.cycleT = 0; this.teddy.visible = false; break;
+      case 'teddy': this.showWeapon(null); this.teddy.visible = true; g.audio.teddyLaugh(); break;
+      case 'offer': this.showWeapon(this.result); break;
+      case 'closing': this.showWeapon(null); break;
+      case 'leaving': this.teddy.visible = false; this.showWeapon(null); g.hud.notice('Die Kiste zieht weiter …'); break;
+      case 'moving': this.group.visible = false; this.beam.visible = false; break;
+      case 'idle':
+        if (data.moved) {
+          this.moveTo(this.spot);
+          g.effects.explosion(this.group.position.clone().setY(0.6), 2, [0.4, 1.4, 3]);
+        }
+        break;
+    }
+  }
+
+  // Mitspieler: Zustand der Kiste vom Host übernehmen
+  applyNet(e) {
+    if (e.sp !== undefined && e.st === 'idle' && e.moved) this.spot = e.sp;
+    this.result = e.r;
+    this.owner = e.o;
+    this.enter(e.st, e);
+  }
+
+  close() { this.go('closing'); }
 
   update(dt, time) {
     const g = this.g;
@@ -559,6 +632,7 @@ class MysteryBox extends Interactable {
     this.display.position.copy(base).setY(0.9);
     this.display.rotation.set(0, ry + Math.PI / 2, 0);
 
+    const auth = !g.isClient;
     switch (this.state) {
       case 'idle':
         if (this.vanish) { this.vanish = false; this.poof(); this.hide(); break; }
@@ -578,33 +652,23 @@ class MysteryBox extends Interactable {
           const ids = Object.keys(BOX_POOL);
           this.showWeapon(ids[Math.floor(Math.random() * ids.length)]);
         }
-        if (this.t >= 4.3) {
-          if (this.isTeddy) {
-            this.state = 'teddy'; this.t = 0;
-            this.showWeapon(null);
-            this.teddy.visible = true;
-            g.audio.teddyLaugh();
-          } else {
-            this.state = 'offer'; this.t = 0;
-            this.showWeapon(this.result);
-          }
-        }
+        if (auth && this.t >= 4.3) this.go(this.isTeddy ? 'teddy' : 'offer');
         break;
       }
       case 'offer': {
         this.display.position.y = 1.45 - (this.t / 12) * 0.5;
         this.display.rotation.y += Math.sin(time * 2) * 0.05;
-        if (this.t > 12) this.close();
+        if (auth && this.t > 12) this.go('closing');
         break;
       }
       case 'teddy': {
         this.teddy.position.copy(base).setY(1.5);
         this.teddy.rotation.y = ry;
-        if (this.t > 2.2) {
-          this.teddy.visible = false;
-          this.state = 'leaving'; this.t = 0;
-          g.addPoints(this.paid || BOX_COST, true);
-          g.hud.notice('Die Kiste zieht weiter …');
+        if (auth && this.t > 2.2) {
+          // Teddy: der Käufer bekommt seine Punkte zurück
+          const ow = g.net ? g.net.bySlot(this.owner) : g.me;
+          g.addPoints(this.paid || BOX_COST, true, ow || g.me);
+          this.go('leaving');
         }
         break;
       }
@@ -616,23 +680,22 @@ class MysteryBox extends Interactable {
         this.beam.visible = false;
         if (k >= 1) {
           this.group.visible = false;
-          this.state = 'moving'; this.t = 0;
+          if (auth) this.go('moving');
         }
         break;
       }
       case 'moving':
-        if (this.t > 2.5) {
+        if (auth && this.t > 2.5) {
           // freier Platz (dort steht gerade keine Ausverkaufs-Kiste)
           const extra = g.interact.extraBoxes || [];
           let free = this.spots.map((_, i) => i).filter((i) => i !== this.spot && !(extra[i] && extra[i].state !== 'hidden'));
           if (!free.length) free = this.spots.map((_, i) => i).filter((i) => i !== this.spot);
           const n = free.length ? free[Math.floor(Math.random() * free.length)] : this.spot;
           if (extra[n] && extra[n].state !== 'hidden') extra[n].hide();
-          this.moveTo(n);
+          this.spot = n;
           this.uses = 0;
           this.moves++;
-          this.state = 'idle';
-          g.effects.explosion(this.group.position.clone().setY(0.6), 2, [0.4, 1.4, 3]);
+          this.go('idle', { moved: 1 });
         }
         break;
       case 'closing':
@@ -719,7 +782,7 @@ class PackAPunch extends Interactable {
     const g = this.g, w = g.weapons.weapon;
     if (!this.built) return null;
     if (!g.map.power) return 'Kein Strom';
-    if (this.state === 'ready') return `${this.press} für ${this.slot.stats.name}`;
+    if (this.state === 'ready') return this.owner === g.me.slot && this.slot ? `${this.press} für ${this.slot.stats.name}` : null;
     if (this.state !== 'idle') return null;
     if (!w) return null;
     if (w.pap) return 'Diese Waffe ist bereits verbessert';
@@ -729,21 +792,62 @@ class PackAPunch extends Interactable {
     const g = this.g;
     if (!g.map.power || g.weapons.busy) return;
     if (this.state === 'ready') {
-      g.weapons.giveSlot(this.slot);
-      this.slot = null; this.state = 'idle'; this.display.clear();
+      if (this.owner !== g.me.slot || !this.slot) return;
+      const slot = this.slot;
+      if (g.isClient) { g.net.request('papTake', { i: this.netId }).then((r) => { if (r.ok && this.slot === slot) { g.weapons.giveSlot(slot); this.slot = null; } }); return; }
+      g.weapons.giveSlot(slot);
+      this.slot = null;
+      this.go('idle');
       return;
     }
     const w = g.weapons.weapon;
     if (this.state !== 'idle' || !w || w.pap) return;
+    if (g.isClient) {
+      g.net.buy(PAP_COST, 'pap', { i: this.netId, w: w.id }).then((r) => {
+        if (!r.ok) return;
+        const taken = g.weapons.takeCurrent();
+        if (taken) this.slot = g.weapons.makeSlot(taken.id, true);
+      });
+      return;
+    }
     if (!g.spend(PAP_COST)) return;
     const taken = g.weapons.takeCurrent();
     this.slot = g.weapons.makeSlot(taken.id, true);
-    this.state = 'work'; this.t = 0;
-    g.audio.papMachine();
-    const info = buildGun(taken.id, g.M, true);
-    info.group.scale.setScalar(1.5);
-    this.display.clear(); this.display.add(info.group);
+    this.start(g.me, taken.id);
   }
+
+  // Host: Waffe eines Spielers verbessern
+  start(owner, wid) {
+    if (this.state !== 'idle' || !this.g.map.power || !this.built) return false;
+    this.owner = owner.slot;
+    this.wid = wid;
+    this.go('work');
+    return true;
+  }
+
+  go(st) {
+    this.enter(st);
+    const net = this.g.net;
+    if (net && net.isHost) net.ev({ t: 'pap', i: this.netId, st, o: this.owner ?? -1, w: this.wid || null });
+  }
+
+  enter(st) {
+    const g = this.g;
+    this.state = st; this.t = 0;
+    if (st === 'work') {
+      g.audio.papMachine();
+      const info = buildGun(this.wid, g.M, true);
+      info.group.scale.setScalar(1.5);
+      this.display.clear(); this.display.add(info.group);
+    } else if (st === 'ready') this.display.visible = true;
+    else if (st === 'idle') {
+      this.display.clear();
+      // Zu lange gewartet: die eigene Waffe ist weg
+      if (this.slot && this.owner === g.me.slot) { this.slot = null; g.hud.notice('Waffe verloren – zu lange gewartet!'); }
+    }
+  }
+
+  applyNet(e) { this.owner = e.o; if (e.w) this.wid = e.w; this.enter(e.st); }
   update(dt, time) {
     const g = this.g, on = g.map.power && this.built;
     this.t += dt;
@@ -760,11 +864,11 @@ class PackAPunch extends Interactable {
       this.display.position.z = c.z + 0.6 - k * 0.6 + (k > 0.5 ? (k - 0.5) * 2.4 : 0);
       this.display.visible = k < 0.25 || k > 0.75;
       if (Math.random() < 0.4) g.effects.energy(new THREE.Vector3(c.x, 2.3, c.z), [2, 0.8, 4], 2, 0.2);
-      if (k >= 1) { this.state = 'ready'; this.t = 0; this.display.visible = true; }
+      if (k >= 1) { if (!g.isClient) this.go('ready'); else this.display.visible = true; }
     } else if (this.state === 'ready') {
       this.display.position.z = c.z + 1.2 - Math.min(1, this.t / 15) * 0.6;
       this.display.rotation.y = Math.sin(time * 1.5) * 0.2;
-      if (this.t > 15) { this.state = 'idle'; this.display.clear(); this.slot = null; g.hud.notice('Waffe verloren – zu lange gewartet!'); }
+      if (this.t > 15 && !g.isClient) this.go('idle');
     }
     if (on && Math.random() < 0.15) g.effects.energy(new THREE.Vector3(c.x, 2.3, c.z), [1.5, 0.6, 3], 1, 0.12);
   }
@@ -796,8 +900,9 @@ export class Interactables {
   update(dt, time, input) {
     const g = this.g, p = g.player;
     for (const it of this.list) it.update(dt, time);
+    if (this.reviveCheck(dt, input)) return;
     let best = null, bd = Infinity;
-    if (g.state === 'playing' && !p.downed) {
+    if (g.state === 'playing' && !p.downed && !p.spectating) {
       const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
       for (const it of this.list) {
         const dx = it.pos.x - p.pos.x, dz = it.pos.z - p.pos.z;
@@ -824,6 +929,88 @@ export class Interactables {
   }
 
   reset() { for (const it of this.list) it.reset(); }
+
+  // Koop: Mitspieler am Boden – Benutzen halten belebt wieder
+  reviveCheck(dt, input) {
+    const g = this.g, p = g.player;
+    let rev = null;
+    if (g.net && g.state === 'playing' && !p.downed && !p.spectating) {
+      let bd = 2.1;
+      for (const s of g.survivors) {
+        if (s.local || !s.downed || s.dead || s.left) continue;
+        const d = Math.hypot(s.pos.x - p.pos.x, s.pos.z - p.pos.z);
+        if (d < bd) { bd = d; rev = s; }
+      }
+    }
+    const holding = !!rev && input.held('use');
+    if (p.reviving && (!holding || p.reviving !== rev)) { g.net.reviveIntent(p.reviving, false); p.reviving = null; }
+    if (!rev) return false;
+    let text;
+    if (rev.reviver && !rev.reviver.local) text = `${rev.reviver.name} belebt ${rev.name} wieder …`;
+    else if (p.reviving) text = `${rev.name} wird wiederbelebt … ${Math.round(Math.max(0, rev.reviveP || 0) * 100)} %`;
+    else text = `${input.verb(true)}, um ${rev.name} wiederzubeleben`;
+    if (holding && !p.reviving && !(rev.reviver && !rev.reviver.local)) { p.reviving = rev; g.net.reviveIntent(rev, true); }
+    g.hud.prompt(text);
+    input.useAvailable = true;
+    if (g.touch) g.touch.setUse('Wiederbeleben');
+    this.current = null;
+    return true;
+  }
+
+  // Koop (Mitspieler): Ereignis vom Host übernehmen – true, wenn erledigt
+  netEvent(e) {
+    switch (e.t) {
+      case 'door': { const d = this.list.find((it) => it.door && it.door.id === e.id); if (d) d.open(); else this.g.map.openDoor(e.id); return true; }
+      case 'pow': if (this.power) this.power.flip(); else if (!this.g.map.power) this.g.powerOn(); return true;
+      case 'box': case 'pap': { const it = this.list[e.i]; if (it && it.applyNet) it.applyNet(e); return true; }
+    }
+    return false;
+  }
+
+  // Koop (Host): Anfrage eines Mitspielers ausführen
+  netRequest(kind, d, s) {
+    const g = this.g;
+    switch (kind) {
+      case 'door': {
+        const it = this.list.find((x) => x.door && x.door.id === d.id);
+        if (!it || it.door.open || d.cost !== it.door.cost) return { ok: false };
+        it.open();
+        return { ok: true };
+      }
+      case 'power':
+        if (!this.power || g.map.power || !this.power.built) return { ok: false };
+        this.power.flip();
+        return { ok: true };
+      case 'board': {
+        const win = g.map.windows[d.w];
+        const it = win && this.list.find((x) => x.win === win);
+        return { ok: !!it && it.addBoard(s) };
+      }
+      case 'box': {
+        const box = this.list[d.i];
+        if (!(box instanceof MysteryBox) || d.cost !== box.cost) return { ok: false };
+        return { ok: box.startSpin(s, d.cost, d.owned || []) };
+      }
+      case 'boxTake': {
+        const box = this.list[d.i];
+        if (!(box instanceof MysteryBox) || box.state !== 'offer' || box.owner !== s.slot) return { ok: false };
+        box.go('closing');
+        return { ok: true };
+      }
+      case 'pap': {
+        const pap = this.list[d.i];
+        if (!(pap instanceof PackAPunch) || d.cost !== PAP_COST) return { ok: false };
+        return { ok: pap.start(s, d.w) };
+      }
+      case 'papTake': {
+        const pap = this.list[d.i];
+        if (!(pap instanceof PackAPunch) || pap.state !== 'ready' || pap.owner !== s.slot) return { ok: false };
+        pap.go('idle');
+        return { ok: true };
+      }
+    }
+    return undefined;
+  }
 
   fireSale(on) {
     if (this.box) this.box.onFireSale(on);

@@ -5,13 +5,16 @@
 //  Gliedmaßen und Zustandsautomat.
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
-import { rand, pick, clamp, damp, dampAngle, smooth, lerp } from '../core/utils.js';
+import { rand, pick, clamp, damp, dampAngle, smooth, lerp, seededRandom } from '../core/utils.js';
 import { ZOMBIE_HIT_DAMAGE } from '../config.js';
 import { HEAD } from './body.js';
 
 export { zombieTypes } from './body.js';
 
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _e = new THREE.Euler();
+// Zustände in fester Reihenfolge (Koop-Schnappschüsse übertragen nur den Index)
+export const ZSTATES = ['approach', 'tear', 'windowAttack', 'climbIn', 'chase', 'rise', 'board', 'attack', 'dying'];
+const SPEEDS = ['walk', 'run', 'sprint'];
 
 // Outfits: Farbpaletten-Indizes (siehe M.zombie.tints) und Zubehör
 const OUTFITS = [
@@ -138,13 +141,18 @@ export class Zombie {
   }
 
   // ── Aussehen ────────────────────────────────────────────────
-  randomizeLook() {
+  // Aussehen würfeln – mit Startwert, damit Mitspieler denselben Zombie sehen
+  randomizeLook(seed = (Math.random() * 4294967296) >>> 0) {
+    this.lookSeed = seed;
+    const R = seededRandom(seed);
+    const rand = (a = 0, b = 1) => a + R() * (b - a);
+    const pick = (arr) => arr[Math.floor(R() * arr.length)];
     const T = this.M.tints;
     let total = 0;
     for (const o of OUTFITS) total += o.w;
-    let r = Math.random() * total, outfit = OUTFITS[0];
+    let r = R() * total, outfit = OUTFITS[0];
     for (const o of OUTFITS) { r -= o.w; if (r <= 0) { outfit = o; break; } }
-    const idx = (list, n) => (list ? list[Math.floor(Math.random() * list.length)] : Math.floor(Math.random() * n));
+    const idx = (list, n) => (list ? list[Math.floor(R() * list.length)] : Math.floor(R() * n));
     this.mgr.renderer.setTints(this.index, {
       skin: pick(T.skin),
       shirt: T.shirt[idx(outfit.shirt, T.shirt.length)],
@@ -153,9 +161,9 @@ export class Zombie {
     this.outfit = outfit.name;
     const bare = !!outfit.bare;
     this.torso.shirt.visible = !bare; this.torso.skin.visible = bare;
-    const bellySkin = bare || Math.random() < 0.15;
+    const bellySkin = bare || R() < 0.15;
     this.belly.skin.visible = bellySkin; this.belly.shirt.visible = !bellySkin;
-    this.rag.visible = !bare && !bellySkin && Math.random() < 0.75;
+    this.rag.visible = !bare && !bellySkin && R() < 0.75;
     this.rag.scale.set(rand(0.96, 1.06), rand(0.7, 1.25), rand(0.96, 1.06));
     // Ärmel: keine, kurz, lang, zerfetzt
     const sl = bare ? 'none' : outfit.sleeves || pick(['none', 'short', 'short', 'long', 'long', 'torn']);
@@ -165,37 +173,37 @@ export class Zombie {
       a.sleeveU.scale.set(1, sl === 'short' ? rand(0.42, 0.6) : 1, 1);
       a.sleeveL.visible = sl === 'long' || sl === 'torn';
       a.sleeveL.scale.set(1, sl === 'torn' ? rand(0.35, 0.6) : rand(0.92, 1), 1);
-      if (sl === 'torn' && Math.random() < 0.4) a.sleeveL.visible = false;
+      if (sl === 'torn' && R() < 0.4) a.sleeveL.visible = false;
     }
     // Hosenbeine: lang, zerrissen, kurz
     for (const l of this.legs) {
-      const k = Math.random();
+      const k = R();
       l.pl.visible = k > 0.08;
       l.pl.scale.set(1, k < 0.3 ? rand(0.3, 0.65) : rand(0.94, 1.02), 1);
     }
     // Kopf und Zubehör
     this.headMesh.scale.set(rand(0.95, 1.05), rand(0.96, 1.06), rand(0.95, 1.04));
-    const h = Math.random();
+    const h = R();
     this.hair.visible = h < 0.52;
     this.hairBald.visible = h >= 0.52 && h < 0.78;
     this.apron.visible = !!outfit.apron;
     this.tie.visible = !!outfit.tie;
-    this.hardhat.visible = outfit.hat === 'hardhat' && Math.random() < 0.85;
-    this.cap.visible = !this.hardhat.visible && !outfit.tie && Math.random() < 0.1;
+    this.hardhat.visible = outfit.hat === 'hardhat' && R() < 0.85;
+    this.cap.visible = !this.hardhat.visible && !outfit.tie && R() < 0.1;
     if (this.hardhat.visible || this.cap.visible) this.hair.visible = false;
     // Statur: hager bis massig
     const s = rand(0.92, 1.08);
     this.scale = s;
     this.root.scale.set(s * rand(0.95, 1.05), s, s * rand(0.95, 1.05));
-    const belly = Math.random() < 0.18 ? rand(1.12, 1.3) : rand(0.92, 1.04);
+    const belly = R() < 0.18 ? rand(1.12, 1.3) : rand(0.92, 1.04);
     for (const b of [this.belly.shirt, this.belly.skin]) b.scale.set(belly, 1, belly * 1.08);
     this.rag.scale.x *= Math.max(1, belly * 0.98); this.rag.scale.z *= Math.max(1, belly);
     this.apron.scale.set(Math.max(1, belly), 1, Math.max(1, belly));
     const w = rand(0.93, 1.06);
     for (const t of [this.torso.shirt, this.torso.skin]) t.scale.set(w, 1, w);
-    this.armStyle = Math.random() < 0.65 ? 'reach' : Math.random() < 0.5 ? 'one' : 'hang';
+    this.armStyle = R() < 0.65 ? 'reach' : R() < 0.5 ? 'one' : 'hang';
     this.headTilt = rand(-0.35, 0.35);
-    this.limp = Math.random() < 0.35 ? rand(0.1, 0.32) : 0;
+    this.limp = R() < 0.35 ? rand(0.1, 0.32) : 0;
     this.hunch = rand(0.85, 1.25);
   }
 
@@ -217,10 +225,10 @@ export class Zombie {
     this.crawlBlend = 0;
   }
 
-  spawn(win, hp, speedType) {
+  spawn(win, hp, speedType, seed) {
     this.active = true;
     this.root.visible = true;
-    this.randomizeLook();
+    this.randomizeLook(seed);
     this.restoreBody();
     this.win = win;
     this.hp = this.maxHp = hp;
@@ -255,11 +263,13 @@ export class Zombie {
     this.groundY = 0;
     this.lastStep = 0;
     this.eyeFade = 1;
+    this.target = null; this.victim = null;
+    this.nb = null; this.spawnedAt = performance.now() / 1000;
   }
 
   // Auf freiem Feld: Zombie erscheint an einer beliebigen Stelle (steigt aus dem Boden)
-  spawnAt(pos, hp, speedType) {
-    this.spawn({ spawn: pos, out: new THREE.Vector3(0, 0, 1), outside: pos, center: pos, occupant: null, boards: 0, fake: true }, hp, speedType);
+  spawnAt(pos, hp, speedType, seed) {
+    this.spawn({ spawn: pos, out: new THREE.Vector3(0, 0, 1), outside: pos, center: pos, occupant: null, boards: 0, fake: true }, hp, speedType, seed);
     this.win = null;
     this.pos.copy(pos);
     this.yaw = Math.random() * Math.PI * 2;
@@ -419,8 +429,11 @@ export class Zombie {
     this.flinchHead = Math.max(0, this.flinchHead - dt * 4);
     this.stumble = Math.max(0, (this.stumble || 0) - dt);
     this.attackCd -= dt;
-    const player = game.player;
     const win = this.win;
+    // Ziel: nächster angreifbarer Überlebender (alle 0,4 s neu bestimmt)
+    this.targetT = (this.targetT || 0) - dt;
+    if (this.targetT <= 0 || !this.target || !this.target.targetable) { this.targetT = 0.4; this.target = game.nearestSurvivor(this.pos, this.target); }
+    const tgt = this.target;
 
     if (this.state !== 'dying') {
       this.voiceT -= dt;
@@ -456,8 +469,8 @@ export class Zombie {
         this.moveSpeed = 0;
         this.pos.lerp(win.outside, 1 - Math.exp(-6 * dt));
         // Spieler durchs Fenster angreifen
-        const pd = player.pos.distanceTo(win.center);
-        if (pd < 2.6 && !player.downed && this.attackCd <= 0) { this.setState('windowAttack'); break; }
+        const vic = this.attackCd <= 0 ? game.survivorNear(win.center, 2.6) : null;
+        if (vic) { this.victim = vic; this.setState('windowAttack'); break; }
         this.tearT -= dt;
         if (this.tearT <= 0) {
           if (win.boards > 0) {
@@ -479,7 +492,8 @@ export class Zombie {
         if (k >= 0.45 && !this.didHit) {
           this.didHit = true;
           game.audio.zombieSwipe(_v.copy(this.pos).setY(1.4));
-          if (player.pos.distanceTo(win.center) < 2.7) player.damage(ZOMBIE_HIT_DAMAGE, this.pos);
+          const v = this.victim;
+          if (v && v.targetable && v.pos.distanceTo(win.center) < 2.7) v.hurt(ZOMBIE_HIT_DAMAGE, this.pos);
         }
         if (k >= 1) { this.didHit = false; this.attackCd = 1.0; this.setState('tear'); }
         break;
@@ -534,37 +548,20 @@ export class Zombie {
       }
       case 'attack': {
         this.moveSpeed = damp(this.moveSpeed, 0, 10, dt);
-        const toP = Math.atan2(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
-        this.yaw = dampAngle(this.yaw, toP, 10, dt);
+        if (tgt) this.yaw = dampAngle(this.yaw, Math.atan2(tgt.pos.x - this.pos.x, tgt.pos.z - this.pos.z), 10, dt);
         const dur = this.speedType === 'walk' || this.crawler ? 0.95 : 0.75;
         const k = this.stateT / dur;
         if (k >= 0.48 && !this.didHit) {
           this.didHit = true;
           game.audio.zombieSwipe(_v.copy(this.pos).setY(this.crawler ? 0.5 : 1.4));
-          const d = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
           const reach = this.crawler ? 1.9 : 1.75;
-          if (d < reach && !player.downed && this.armsLeft > 0) player.damage(ZOMBIE_HIT_DAMAGE, this.pos);
+          if (tgt && tgt.targetable && this.armsLeft > 0 && Math.hypot(tgt.pos.x - this.pos.x, tgt.pos.z - this.pos.z) < reach) tgt.hurt(ZOMBIE_HIT_DAMAGE, this.pos);
         }
         if (k >= 1) { this.didHit = false; this.attackCd = 0.25; this.setState('chase'); }
         break;
       }
       case 'dying': {
-        this.moveSpeed = 0;
-        if (this.deathKind === 'fling') this.flight(dt, game);
-        if (this.deathKind === 'shock' && this.stateT < 0.9 && Math.random() < 0.7) {
-          const p = this.chest.getWorldPosition(_v);
-          game.effects.energy(p.set(p.x + rand(-0.3, 0.3), p.y + rand(-0.5, 0.5), p.z + rand(-0.3, 0.3)), [0.8, 1.8, 4], 2, 0.1);
-        }
-        if (this.stateT > 4.0) {
-          if (this.onBus) { this.despawn(); this.mgr.onDespawn(this); return; }
-          this.pos.y -= dt * 0.35;
-          if (this.stateT > 5.5) { this.despawn(); this.mgr.onDespawn(this); return; }
-        }
-        // Kopfloser Hals blutet kurz nach
-        if (this.headless && this.stateT < 1.4 && Math.random() < 0.7) {
-          const p = this.stump.getWorldPosition(_v);
-          game.effects.norm.spawn({ x: p.x, y: p.y, z: p.z, vx: rand(-0.5, 0.5), vy: rand(1, 2.6) * (1.4 - this.stateT), vz: rand(-0.5, 0.5), life: rand(0.4, 0.8), size: rand(0.02, 0.045), size1: 0.015, alpha: 0.95, r: 0.32, g: 0.01, b: 0.01, grav: 9.8, drag: 0.4, fade: 0 });
-        }
+        if (this.dyingStep(dt, game)) return;
         break;
       }
     }
@@ -572,6 +569,27 @@ export class Zombie {
     this.root.rotation.y = this.yaw;
     this.animate(dt, game);
     this.updatePieces(dt, game);
+  }
+
+  // Sterben: Wurf, Funken, Absinken – liefert true, wenn der Zombie verschwunden ist
+  dyingStep(dt, game) {
+    this.moveSpeed = 0;
+    if (this.deathKind === 'fling') this.flight(dt, game);
+    if (this.deathKind === 'shock' && this.stateT < 0.9 && Math.random() < 0.7) {
+      const p = this.chest.getWorldPosition(_v);
+      game.effects.energy(p.set(p.x + rand(-0.3, 0.3), p.y + rand(-0.5, 0.5), p.z + rand(-0.3, 0.3)), [0.8, 1.8, 4], 2, 0.1);
+    }
+    if (this.stateT > 4.0) {
+      if (this.onBus) { this.despawn(); this.mgr.onDespawn(this); return true; }
+      this.pos.y -= dt * 0.35;
+      if (this.stateT > 5.5) { this.despawn(); this.mgr.onDespawn(this); return true; }
+    }
+    // Kopfloser Hals blutet kurz nach
+    if (this.headless && this.stateT < 1.4 && Math.random() < 0.7) {
+      const p = this.stump.getWorldPosition(_v);
+      game.effects.norm.spawn({ x: p.x, y: p.y, z: p.z, vx: rand(-0.5, 0.5), vy: rand(1, 2.6) * (1.4 - this.stateT), vz: rand(-0.5, 0.5), life: rand(0.4, 0.8), size: rand(0.02, 0.045), size1: 0.015, alpha: 0.95, r: 0.32, g: 0.01, b: 0.01, grav: 9.8, drag: 0.4, fade: 0 });
+    }
+    return false;
   }
 
   get armsLeft() { return (this.arms[0].lost ? 0 : 1) + (this.arms[1].lost ? 0 : 1); }
@@ -605,9 +623,11 @@ export class Zombie {
   }
 
   chase(dt, game) {
-    const player = game.player, map = game.map, mgr = this.mgr;
+    const map = game.map, mgr = this.mgr;
     const bus = game.bus;
     if (this.onBus) { this.chaseOnBus(dt, game, bus); return; }
+    const player = this.target;
+    if (!player) { this.moveSpeed = damp(this.moveSpeed, 0, 8, dt); return; }
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z;
     const dist = Math.hypot(dx, dz);
 
@@ -618,7 +638,7 @@ export class Zombie {
     if (this.crawler && this.crawlBlend < 1) { this.moveSpeed = 0; return; }
 
     // Spieler sitzt im Bus: zum nächsten Einstieg laufen und einsteigen (Kriecher schaffen das nicht)
-    if (bus && bus.playerOn && !this.crawler) {
+    if (bus && player.onBus && !this.crawler) {
       const bd = Math.hypot(bus.pos.x - this.pos.x, bus.pos.z - this.pos.z);
       if (bd < 24) {
         let best = null, bdist = Infinity;
@@ -638,7 +658,7 @@ export class Zombie {
 
     // Angriff (ohne Arme nur noch beißen wollen – kein Schaden)
     const reach = this.crawler ? 1.45 : 1.25;
-    if (dist < reach && !player.downed && this.attackCd <= 0 && player.pos.y < this.pos.y + 1.2) {
+    if (dist < reach && player.targetable && this.attackCd <= 0 && player.pos.y < this.pos.y + 1.2) {
       this.setState('attack');
       if (Math.random() < 0.5) game.audio.zombieVoice(_v.copy(this.pos).setY(1.6), 'attack');
       return;
@@ -648,14 +668,14 @@ export class Zombie {
     this.navT -= dt;
     if (this.navT <= 0) {
       this.navT = 0.15 + Math.random() * 0.08;
-      if (player.downed) {
-        // Spieler wird wiederbelebt: ziellos umherwandern
+      if (!player.targetable) {
+        // Niemand angreifbar (z. B. Wiederbelebung läuft): ziellos umherwandern
         this.navTarget.set(this.pos.x + rand(-3, 3), 0, this.pos.z + rand(-3, 3));
         if (!map.clearPath(this.pos, this.navTarget)) this.navTarget.copy(this.pos);
       } else if (dist < 14 && map.clearPath(this.pos, player.pos, 0.25)) {
         this.navTarget.copy(player.pos);
       } else {
-        mgr.pathTarget(this.pos, this.navTarget);
+        mgr.pathTarget(this.pos, this.navTarget, player.pos);
       }
       // Fortschritt prüfen (gegen Hängenbleiben)
       if (dist < this.lastDist - 0.3) { this.lastDist = dist; this.stuckT = 0; }
@@ -667,8 +687,8 @@ export class Zombie {
 
   // Auf navTarget zulaufen (mit Abstand zu anderen Zombies und Kollision)
   steer(dt, game, dist) {
-    const player = game.player, map = game.map, mgr = this.mgr;
-    const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z;
+    const player = this.target, map = game.map, mgr = this.mgr;
+    const dx = player ? player.pos.x - this.pos.x : 0, dz = player ? player.pos.z - this.pos.z : 1;
     const tx = this.navTarget.x - this.pos.x, tz = this.navTarget.z - this.pos.z;
     const td = Math.hypot(tx, tz);
     let vx = 0, vz = 0;
@@ -707,9 +727,9 @@ export class Zombie {
   }
 
   chaseOnBus(dt, game, bus) {
-    const player = game.player;
+    const player = this.target;
     const H = 1.3, L = 5.6, CAB = 3.85, FLOOR = 0.55;
-    if (!bus.playerOn) {
+    if (!player || !player.onBus) {
       // Spieler ist ausgestiegen: durch Tür oder Fenster hinterher
       const sx = this.local.x < 0 || bus.doorIsOpen ? -1 : 1;
       this.local.set(sx * (H + 0.7), 0, bus.doorIsOpen ? 0 : this.local.z);
@@ -723,7 +743,7 @@ export class Zombie {
     const pl = bus.toLocal(player.pos, new THREE.Vector3());
     const dx = pl.x - this.local.x, dz = pl.z - this.local.z;
     const d = Math.hypot(dx, dz);
-    if (d < 1.2 && !player.downed && this.attackCd <= 0) {
+    if (d < 1.2 && player.targetable && this.attackCd <= 0) {
       this.setState('attack');
       if (Math.random() < 0.5) game.audio.zombieVoice(_v.copy(this.pos).setY(1.6), 'attack');
       return;
@@ -743,6 +763,96 @@ export class Zombie {
     this.groundY = FLOOR;
     this.moveSpeed = d > 0.9 ? sp : 0;
     this.yaw = dampAngle(this.yaw, bus.yaw + Math.atan2(dx, dz), 8, dt);
+  }
+
+  // ── Koop: Puppe auf den Geräten der Mitspieler ──────────────
+  // Der Host schickt Spawn-Daten und regelmäßige Schnappschüsse; hier wird nur
+  // interpoliert und animiert (KI, Schaden und Entscheidungen bleiben beim Host).
+  puppetSpawn(e, game) {
+    const win = e.w >= 0 ? game.map.windows[e.w] : null;
+    const at = new THREE.Vector3(e.p[0], e.p[1], e.p[2]);
+    if (win) this.spawn(win, e.hp, e.ty, e.sd);
+    else { this.spawn({ spawn: at, out: new THREE.Vector3(0, 0, 1), outside: at, center: at, occupant: null, boards: 0, fake: true }, e.hp, e.ty, e.sd); this.win = null; }
+    this.uid = e.u;
+    this.speed = e.sp;
+    this.pos.copy(at);
+    this.yaw = e.y;
+    this.root.rotation.set(0, this.yaw, 0);
+    this.state = ZSTATES[e.st] || 'approach';
+    this.stateT = 0;
+    this.afterRise = e.ar || null;
+    this.nb = [{ t: performance.now() / 1000, x: at.x, y: at.y, z: at.z, yaw: e.y, ms: 0 }];
+  }
+
+  puppetSnap(r) {
+    const nb = this.nb || (this.nb = []);
+    nb.push(r);
+    if (nb.length > 6) nb.shift();
+    this.hp = r.hp;
+    if ((r.flags & 1) && !this.crawler) this.makeCrawler();
+    this.burning = r.flags & 2 ? Math.max(this.burning || 0, 0.3) : this.burning;
+    const sp = SPEEDS[(r.flags >> 2) & 3];
+    if (sp && sp !== this.speedType && !this.crawler) this.speedType = sp;
+    if (r.st !== this.state && this.state !== 'dying' && r.st !== 'dying') {
+      this.setState(r.st);
+      this.stateT = r.stT;
+      this.didHit = false;
+      if (r.st === 'climbIn') this.climbFrom.copy(this.pos);
+    }
+  }
+
+  puppet(dt, game) {
+    this.time += dt;
+    this.stateT += dt;
+    this.flinch = Math.max(0, this.flinch - dt * 3);
+    this.flinchHead = Math.max(0, this.flinchHead - dt * 4);
+    this.stumble = Math.max(0, (this.stumble || 0) - dt);
+    if (this.state === 'dying') {
+      if (this.dyingStep(dt, game)) return;
+    } else {
+      this.voiceT -= dt;
+      if (this.voiceT <= 0) {
+        this.voiceT = rand(2.5, 6.5);
+        const p = _v.copy(this.pos).setY(this.crawler ? 0.4 : 1.6);
+        if (this.crawler && game.audio.crawlerVoice) game.audio.crawlerVoice(p);
+        else game.audio.zombieVoice(p, this.speedType === 'sprint' && Math.random() < 0.5 ? 'scream' : 'groan');
+      }
+      if (this.crawler && this.crawlBlend < 1) this.crawlBlend = Math.min(1, this.crawlBlend + dt / 0.55);
+      // Zwischen den Schnappschüssen des Hosts interpolieren (100 ms Verzögerung)
+      const nb = this.nb;
+      if (nb && nb.length) {
+        const rt = performance.now() / 1000 - 0.1;
+        let i = nb.length - 1;
+        while (i > 0 && nb[i - 1].t > rt) i--;
+        const b = nb[i], a = nb[Math.max(0, i - 1)];
+        if (a === b || rt >= b.t) {
+          this.pos.set(b.x, b.y, b.z); this.yaw = b.yaw; this.moveSpeed = damp(this.moveSpeed, b.ms, 10, dt);
+        } else {
+          const k = clamp((rt - a.t) / Math.max(1e-3, b.t - a.t), 0, 1);
+          this.pos.set(lerp(a.x, b.x, k), lerp(a.y, b.y, k), lerp(a.z, b.z, k));
+          let dy = b.yaw - a.yaw;
+          dy -= Math.round(dy / (Math.PI * 2)) * Math.PI * 2;
+          this.yaw = a.yaw + dy * k;
+          this.moveSpeed = lerp(a.ms, b.ms, k);
+        }
+      }
+      // Rein optische Teile der Zustände
+      const st = this.state;
+      if (st === 'rise' && Math.random() < 0.5) game.effects.norm.spawn({ x: this.pos.x + rand(-0.4, 0.4), y: 0.05, z: this.pos.z + rand(-0.4, 0.4), vx: rand(-0.6, 0.6), vy: rand(0.8, 2.2), vz: rand(-0.6, 0.6), life: rand(0.5, 1.0), size: rand(0.03, 0.07), size1: 0.02, alpha: 0.9, r: 0.16, g: 0.12, b: 0.08, grav: 9, drag: 0.5, fade: 0 });
+      if (st === 'rise' && this.stateT < 0.05) game.audio.dirtRise(this.pos);
+      if (st === 'attack' || st === 'windowAttack') {
+        const dur = st === 'windowAttack' ? 0.8 : this.speedType === 'walk' || this.crawler ? 0.95 : 0.75;
+        if (this.stateT / dur >= 0.46 && !this.didHit) { this.didHit = true; game.audio.zombieSwipe(_v.copy(this.pos).setY(this.crawler ? 0.5 : 1.4)); }
+      }
+      if (st === 'tear') {
+        this.tearT -= dt;
+        if (this.tearT <= 0 && !(this.tearAnim > 0)) { this.tearAnim = 0.001; this.tearT = rand(1.0, 1.4); }
+        if (this.tearAnim > 0) { this.tearAnim += dt / 0.9; if (this.tearAnim >= 1) this.tearAnim = 0; }
+      }
+    }
+    this.root.rotation.y = this.yaw;
+    this.animate(dt, game);
+    this.updatePieces(dt, game);
   }
 
   // ── Prozedurale Animation ───────────────────────────────────

@@ -17,11 +17,14 @@ import { ZombieManager } from '../zombies/manager.js';
 import { Interactables } from './interactables.js';
 import { PowerUps } from './powerups.js';
 import { HUD } from '../ui/hud.js';
+import { LocalSurvivor } from './survivors.js';
+import { NetSession } from '../net/session.js';
 import { clamp, damp } from '../core/utils.js';
 import { CELL } from '../config.js';
 import { MAPS } from '../maps/index.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Rekord je Karte (Nachtfall behält den alten Schlüssel)
 export const bestKey = (id) => (id === 'nachtfall' ? 'nachtfall.best' : 'nachtfall.best.' + id);
 
@@ -47,6 +50,52 @@ export class Game {
     this.perf = { acc: 0, n: 0 };
     this.features = [];
     this.mapDef = null;
+    this.survivors = [];
+    this.me = null;
+    this.net = null; // Koop-Sitzung (null = allein)
+    this.netHold = false;
+  }
+
+  // ── Mehrere Spieler ─────────────────────────────────────────
+  get isClient() { return !!(this.net && !this.net.isHost); }
+  get playerCount() { return Math.max(1, this.survivors.filter((s) => !s.left).length); }
+  get coop() { return this.playerCount > 1; }
+
+  // Nächster angreifbarer Überlebender (mit etwas Trägheit beim bisherigen Ziel)
+  nearestSurvivor(pos, current = null) {
+    let best = null, bd = Infinity, fallback = null, fd = Infinity;
+    for (const s of this.survivors) {
+      if (s.left) continue;
+      let d = Math.hypot(s.pos.x - pos.x, s.pos.z - pos.z);
+      if (!s.targetable) { if (d < fd) { fd = d; fallback = s; } continue; }
+      if (s === current) d -= 2;
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best || fallback || this.me;
+  }
+
+  // Angreifbarer Überlebender in Reichweite eines Punkts (z. B. am Fenster)
+  survivorNear(p, r) {
+    let best = null, bd = r;
+    for (const s of this.survivors) {
+      if (!s.targetable) continue;
+      const d = s.pos.distanceTo(p);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+
+  // Um wen herum Zombies erscheinen: abwechselnd um alle lebenden Spieler
+  spawnFocus() {
+    const list = this.survivors.filter((s) => s.targetable);
+    if (!list.length) return this.player.pos;
+    return list[Math.floor(Math.random() * list.length)].pos;
+  }
+
+  creditKill(by, head) {
+    if (!by || by.local) { this.stats.kills++; if (head) this.stats.headshots++; }
+    else if (this.net) this.net.credit(by, 0, { k: 1, h: head ? 1 : 0 });
+    if (by) { by.stats.kills++; if (head) by.stats.headshots++; }
   }
 
   async init(progress) {
@@ -77,6 +126,8 @@ export class Game {
     this.audio.panningModel = q.hrtf ? 'HRTF' : 'equalpower';
     this.hud = new HUD();
     this.player = new Player(this);
+    this.me = new LocalSurvivor(this);
+    this.survivors = [this.me];
     await this.loadMap(this.settings.map, (pct, text) => progress(52 + pct * 0.48, text));
     this.lastT = performance.now();
     this.fpsAcc = 0; this.fpsN = 0; this.fps = 0;
@@ -234,6 +285,47 @@ export class Game {
     this.lastT = performance.now();
   }
 
+  // ── Koop ────────────────────────────────────────────────────
+  // sess: { room, isHost, hostId, selfId, slot, players:[{slot, peerId, name, char}], map, code }
+  async startNetGame(sess, progress = () => {}) {
+    if (this.net) this.leaveNetGame(true);
+    if (!this.mapDef || this.mapDef.id !== sess.map) await this.loadMap(sess.map, progress);
+    this.net = new NetSession(this, sess);
+    this.net.setupSurvivors();
+    this.start();
+    this.net.begin();
+    if (this.onNetStart) this.onNetStart();
+  }
+
+  leaveNetGame(silent = false) {
+    const net = this.net;
+    if (!net) return;
+    net.close();
+    try { if (net.room && net.room.leave) net.room.leave(); } catch { /* */ }
+    this.net = null;
+    this.netHold = false;
+    for (const s of this.survivors) if (!s.local) s.dispose();
+    this.me = new LocalSurvivor(this);
+    this.survivors = [this.me];
+    this.menuOpen = false;
+    void silent;
+  }
+
+  // Ereignis vom Host (Mitspieler-Geräte): an das zuständige System weiterreichen
+  netEvent(e) {
+    if (this.interact.netEvent && this.interact.netEvent(e)) return;
+    if (this.powerups.netEvent && this.powerups.netEvent(e)) return;
+    for (const f of this.features) if (f.netEvent && f.netEvent(e)) return;
+  }
+
+  // Anfrage eines Mitspielers (nur Host): liefert { ok, ... }
+  netRequest(kind, d, s) {
+    let r = this.interact.netRequest ? this.interact.netRequest(kind, d, s) : undefined;
+    if (r) return r;
+    for (const f of this.features) if (f.netRequest && (r = f.netRequest(kind, d, s))) return r;
+    return { ok: false };
+  }
+
   // Komplett neue Partie, ohne die Seite neu zu laden (wichtig auf Handys)
   resetWorld() {
     this.zombies.clear();
@@ -257,9 +349,12 @@ export class Game {
     this.hud.perks(this.player.perks);
     this.hud.points(this.points);
     this.hud.round(1);
+    for (const s of this.survivors) if (s.reset) s.reset();
+    this.menuOpen = false;
   }
 
   toMenu() {
+    if (this.net) this.leaveNetGame();
     this.state = 'menu';
     this.hud.show(false);
     if (this.touch) this.touch.show(false);
@@ -270,18 +365,31 @@ export class Game {
 
   nextRound() {
     this.round++;
-    this.roundActive = true;
-    this.repairPoints = 0;
     this.powerups.dropsThisRound = 0;
     this.zombies.startRound(this.round);
-    if (this.round > 1) this.weapons.grenades = Math.min(4, this.weapons.grenades + 2);
-    this.hud.round(this.round, true);
-    this.audio.roundStart(this.round);
+    if (this.net) this.net.ev({ t: 'rnd', r: this.round });
+    this.netRound(this.round);
+  }
+
+  // Rundenbeginn auf jedem Gerät (beim Host direkt, bei Mitspielern per Ereignis)
+  netRound(r) {
+    this.round = r;
+    this.roundActive = true;
+    this.repairPoints = 0;
+    if (r > 1) this.weapons.grenades = Math.min(4, this.weapons.grenades + 2);
+    if (this.player.spectating) this.player.respawn();
+    this.hud.round(r, true);
+    this.audio.roundStart(r);
   }
 
   endRound() {
-    this.roundActive = false;
     this.intermission = 10;
+    if (this.net) this.net.ev({ t: 'rend' });
+    this.netRoundEnd();
+  }
+
+  netRoundEnd() {
+    this.roundActive = false;
     this.audio.roundEnd();
     this.hud.roundEnding();
   }
@@ -296,8 +404,14 @@ export class Game {
     return true;
   }
 
-  addPoints(n, raw = false) {
+  // by: Überlebender, dem die Punkte gehören (Mitspieler bekommen sie über das Netz)
+  addPoints(n, raw = false, by = null) {
     if (!raw && this.powerups.double) n *= 2;
+    if (by && !by.local) {
+      if (n > 0) this.stats.earned = (this.stats.earned || 500) + n;
+      if (this.net) this.net.credit(by, n);
+      return;
+    }
     this.points += n;
     if (n > 0) this.stats.earned = (this.stats.earned || 500) + n; // für die Power-Up-Schwelle
     this.hud.points(this.points);
@@ -336,11 +450,13 @@ export class Game {
     if (!opts.energy || !opts.small) this.audio.explosion(pos, opts.small ? 0.6 : 1);
     else this.audio.explosion(pos, 0.45);
     if (!opts.small) this.effects.bloodDecal(pos.x, pos.z, 0.6);
-    for (const z of this.zombies.inRadius(pos, radius)) {
+    // Koop: eigene Explosionen melden; den Schaden verteilt der Host
+    if (this.net && !opts.remote) this.net.boom(pos, radius, damage, opts);
+    if (!this.isClient) for (const z of this.zombies.inRadius(pos, radius)) {
       const d = Math.hypot(z.pos.x - pos.x, z.pos.z - pos.z);
       const dmg = damage * (1 - 0.5 * (d / radius));
       const dir = new THREE.Vector3(z.pos.x - pos.x, 0.5, z.pos.z - pos.z).normalize();
-      this.zombies.damage(z, dmg, 'torso', { dir, explosive: true, point: z.pos.clone().setY(1.2), noPoints: false });
+      this.zombies.damage(z, dmg, 'torso', { dir, explosive: true, point: z.pos.clone().setY(1.2), noPoints: false, by: opts.by });
     }
     const pd = this.player.pos.distanceTo(pos);
     this.player.shake = Math.max(this.player.shake, clamp(1 - pd / (radius * 3), 0, 1) * (opts.small ? 0.3 : 0.9));
@@ -361,8 +477,11 @@ export class Game {
     this.flash = 0.25;
   }
 
-  gameOver() {
+  // fromNet: vom Host ausgelöst (Koop). Allein bzw. als Host: lokal
+  gameOver(fromNet = false) {
     if (this.state === 'gameover') return;
+    // Im Koop ist man nach dem Ausbluten nur Zuschauer – Schluss ist erst, wenn alle liegen
+    if (this.net && this.coop && !fromNet) return;
     this.state = 'gameover';
     if (this.touch) this.touch.show(false);
     this.audio.gameOver();
@@ -371,7 +490,11 @@ export class Game {
     const secs = Math.floor(this.time - this.stats.start);
     const r = this.round;
     document.getElementById('goRounds').textContent = `Du hast ${r} ${r === 1 ? 'Runde' : 'Runden'} überlebt`;
-    document.getElementById('goStats').innerHTML = `
+    if (this.coop) {
+      // Koop: Übersicht für alle Spieler (wie die Tabelle am Ende einer BO2-Partie)
+      const rows = this.survivors.map((s) => `<tr><td style="color:${s.color}">${escapeHtml(s.name)}${s.left ? ' (weg)' : ''}</td><td>${s.local ? this.points : s.points} Pkt · ${s.stats.kills} Kills · ${s.stats.headshots} Kopf · ${s.stats.downs}× am Boden · ${s.stats.revives}× belebt</td></tr>`).join('');
+      document.getElementById('goStats').innerHTML = rows + `<tr><td>Überlebenszeit</td><td>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</td></tr>`;
+    } else document.getElementById('goStats').innerHTML = `
       <tr><td>Kills</td><td>${this.stats.kills}</td></tr>
       <tr><td>Kopfschüsse</td><td>${this.stats.headshots}</td></tr>
       <tr><td>Ausgegebene Punkte</td><td>${this.stats.spent}</td></tr>
@@ -390,6 +513,12 @@ export class Game {
 
   pause() {
     if (this.state !== 'playing') return false;
+    if (this.net) {
+      // Koop: Menü öffnen, aber die Welt läuft weiter (wie online in BO2)
+      this.menuOpen = true;
+      if (this.touch) this.touch.show(false);
+      return true;
+    }
     this.state = 'paused';
     if (this.touch) this.touch.show(false);
     this.audio.suspend();
@@ -397,6 +526,7 @@ export class Game {
   }
 
   resume() {
+    if (this.menuOpen) { this.menuOpen = false; if (this.touch) this.touch.show(true); return; }
     if (this.state !== 'paused') return;
     this.state = 'playing';
     if (this.touch) this.touch.show(true);
@@ -444,7 +574,9 @@ export class Game {
     const playing = this.state === 'playing';
     if (this.touch) this.touch.update();
     this.input.poll(dt);
-    if (playing && this.input.hit('pause') && this.onPauseRequest) { this.onPauseRequest(); return; }
+    if (this.menuOpen) this.input.suppress(); // Koop-Menü offen: Spielfigur hört nicht auf Eingaben
+    if (playing && !this.menuOpen && this.input.hit('pause') && this.onPauseRequest) { this.onPauseRequest(); return; }
+    if (this.net) this.net.update(dt);
 
     // Bewegliche Karten-Elemente (z. B. Bus) vor dem Spieler bewegen, damit Mitfahrer nicht ruckeln
     for (const f of this.features) if (f.early) f.early(dt, playing);
@@ -465,8 +597,8 @@ export class Game {
     this.effects.update(dt);
     if (playing) this.checkStation();
 
-    // Rundenlogik
-    if (playing) {
+    // Rundenlogik (im Koop nur beim Host)
+    if (playing && !this.isClient && !this.netHold) {
       if (this.roundActive && this.zombies.remaining <= 0 && this.zombies.toSpawn <= 0) this.endRound();
       if (!this.roundActive) {
         this.intermission -= dt;
@@ -494,6 +626,7 @@ export class Game {
     this.computeLightLevel();
     this.audio.updateListener(this.camera);
     this.hud.update(dt, this.player, this.settings.showFps ? this.fps : null);
+    if (this.net) this.hud.team(this.survivors.filter((s) => !s.local).map((s) => ({ name: s.name, color: s.color, points: s.points, down: s.downed, dead: s.dead || s.left })));
     if (this.input.keyHit('KeyP') && location.hash.includes('dev')) this.debugSkip();
   }
 

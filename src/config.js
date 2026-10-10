@@ -98,10 +98,11 @@ export const MAX_ALIVE = 24;
 
 // Zombies pro Runde (solo), wie bei Treyarch: 24 + 3 × Multiplikator, die ersten
 // fünf Runden anteilig (25 %, 30 %, 50 %, 70 %, 90 %) → 6, 8, 13, 18, 24, 27, …
-export function zombiesForRound(r) {
+// Allein: 24 + 3 × Faktor; im Koop je weiterem Spieler + 6 × Faktor (wie im Original)
+export function zombiesForRound(r, players = 1) {
   let mult = Math.max(1, r / 5);
   if (r >= 10) mult *= r * 0.15;
-  const max = 24 + Math.floor(0.5 * 6 * mult);
+  const max = 24 + Math.floor((players > 1 ? (players - 1) * 6 : 0.5 * 6) * mult);
   const early = [0.25, 0.3, 0.5, 0.7, 0.9];
   return r <= 5 ? Math.floor(max * early[r - 1]) : max;
 }

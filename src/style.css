@@ -142,6 +142,14 @@ td:first-child { color: #ffb08a; text-align: right; font-weight: 600; white-spac
 .perk { width: 50px; height: 50px; border-radius: 50%; background-size: cover; filter: drop-shadow(0 0 7px currentColor) drop-shadow(1px 2px 1px #000); animation: perkIn 0.5s ease-out; }
 @keyframes perkIn { from { transform: scale(2.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 #points { position: absolute; right: calc(40px + var(--safe-r)); bottom: calc(150px + var(--safe-b)); text-align: right; }
+/* Koop: Punkte der Mitspieler über den eigenen (wie in BO2) */
+#team { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-bottom: 4px; }
+#team .tm { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 1px; opacity: 0.92; }
+#team .tm small { font-size: 13px; letter-spacing: 1px; margin-right: 8px; opacity: 0.85; text-transform: uppercase; }
+#team .tm.down { animation: tmDown 0.8s steps(2) infinite; }
+#team .tm.dead { opacity: 0.4; text-decoration: line-through; }
+@keyframes tmDown { 50% { opacity: 0.35; } }
+#spec { position: absolute; left: 50%; bottom: calc(26% + var(--safe-b)); transform: translateX(-50%); font-family: Oswald, sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--ink); text-shadow: 0 0 6px #000, 1px 1px 0 #000; text-align: center; }
 #score { font-size: 40px; font-weight: 600; letter-spacing: 1px; color: #f1e2b4; transition: color 0.2s; font-variant-numeric: tabular-nums; }
 #score.deny { color: #ff3a2a; }
 #popups { position: relative; height: 0; }
@@ -221,6 +229,8 @@ body.touch #menu { padding-left: calc(24px + var(--safe-l)); }
 body.touch #perks { left: calc(16px + var(--safe-l)); top: calc(76px + var(--safe-t)); bottom: auto; transform: scale(0.75); transform-origin: top left; }
 body.touch #points { right: calc(16px + var(--safe-r)); top: calc(4px + var(--safe-t)); bottom: auto; }
 body.touch #score { font-size: 28px; }
+body.touch #team .tm { font-size: 15px; }
+body.touch #team .tm small { font-size: 10px; }
 body.touch .pop { right: 90px; top: 4px; font-size: 16px; }
 body.touch #weapon { right: calc(16px + var(--safe-r)); top: calc(44px + var(--safe-t)); bottom: auto; }
 body.touch #wname { font-size: 14px; }

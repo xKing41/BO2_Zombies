@@ -166,10 +166,11 @@ export class AudioEngine {
   // ── Waffen ──────────────────────────────────────────────────
   // Schuss: Knall (Transiente), Körper (gefiltertes Rauschen, angezerrt), Tiefdruck (Sinus-Sweep),
   // Mechanik (Verschluss), Raum (Hall + Echo), Zufallsvariation, PaP-Schicht
-  gunshot(kind, pap = false) {
+  // pos: Weltposition für Schüsse von Mitspielern (eigene Schüsse ohne Ortung)
+  gunshot(kind, pap = false, pos = null) {
     if (!this.ctx) return;
-    if (kind === 'ray') return this.rayShot(pap);
-    if (kind === 'tesla') return this.teslaBlast(pap);
+    if (kind === 'ray') return this.rayShot(pap, pos);
+    if (kind === 'tesla') return this.teslaBlast(pap, pos);
     const P = {
       pistol: { vol: 0.9, crack: 0.016, cf: 4300, body: 0.11, bf: 2700, thump: 140, td: 0.1, tail: 0.32, drive: 2.2, mech: 'slide', echo: 0.16 },
       rifle: { vol: 1.05, crack: 0.024, cf: 3400, body: 0.2, bf: 2200, thump: 108, td: 0.16, tail: 0.5, drive: 2.8, mech: 'oprod', echo: 0.26 },
@@ -181,9 +182,9 @@ export class AudioEngine {
     }[kind] || null;
     if (!P) return;
     const ctx = this.ctx, t = this.now, v = rand(0.92, 1.08);
-    const rapid = t - (this.wLastShot || 0) < 0.11;
-    this.wLastShot = t;
-    const out = this.out(null, P.vol * rand(0.94, 1.04), rapid ? P.tail * 0.6 : P.tail);
+    const rapid = !pos && t - (this.wLastShot || 0) < 0.11;
+    if (!pos) this.wLastShot = t;
+    const out = this.out(pos, P.vol * rand(0.94, 1.04) * (pos ? 1.6 : 1), rapid ? P.tail * 0.6 : P.tail);
     // Angezerrter Körper für Biss
     const drive = ctx.createGain(); drive.gain.value = P.drive;
     const ws = ctx.createWaveShaper(); ws.curve = this.distCurve;
@@ -229,9 +230,9 @@ export class AudioEngine {
     this.tone(out, t, dur * 1.6, { type: 'square', f: f / 3, f2: f / 6, peak: peak * 0.08 });
   }
 
-  rayShot(pap) {
+  rayShot(pap, pos = null) {
     if (!this.ctx) return;
-    const t = this.now, out = this.out(null, 0.75, 0.45), b = (pap ? 820 : 1250) * rand(0.97, 1.03);
+    const t = this.now, out = this.out(pos, 0.75, 0.45), b = (pap ? 820 : 1250) * rand(0.97, 1.03);
     this.tone(out, t, 0.3, { type: 'sawtooth', f: b * 2, f2: b * 0.18, peak: 0.2 });
     this.tone(out, t, 0.3, { type: 'sawtooth', f: b * 2.02, f2: b * 0.19, peak: 0.14, detune: 25 });
     this.tone(out, t, 0.32, { type: 'square', f: b, f2: b * 0.14, peak: 0.08, detune: -12 });
@@ -241,9 +242,9 @@ export class AudioEngine {
   }
 
   // Gewitter-Werfer: Entladung, Knistern, Donner
-  teslaBlast(pap) {
+  teslaBlast(pap, pos = null) {
     if (!this.ctx) return;
-    const t = this.now, out = this.out(null, 1.0, 0.55);
+    const t = this.now, out = this.out(pos, 1.0, 0.55);
     this.noise(out, t, 0.06, { type: 'highpass', f: 3000, peak: 1.0, a: 0.001 });
     this.noise(out, t, 0.45, { type: 'highpass', f: 2200, f2: 5000, a: 0.004, peak: 0.45 });
     for (let i = 0; i < 12; i++) this.noise(out, t + rand(0, 0.4), 0.025, { type: 'bandpass', f: rand(2000, 7000), q: 3, peak: rand(0.3, 0.75) });
