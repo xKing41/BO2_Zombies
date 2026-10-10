@@ -101,7 +101,8 @@ die Menüs.
 
 | Weg | So geht's |
 |---|---|
-| **Cloud (ohne PC)** | Jeder Push baut automatisch (Workflow „APK bauen“). APK unter **Actions → letzter Lauf → Artifacts → Nachtfall-APK** herunterladen, ZIP entpacken, `Nachtfall.apk` antippen und installieren. Von Hand starten: Actions → „APK bauen“ → *Run workflow*. |
+| **Direkt-Download** | **[Nachtfall.apk herunterladen](https://github.com/xKing41/BO2_Zombies/releases/latest/download/Nachtfall.apk)** – immer die neueste Version, ohne Anmeldung und ohne ZIP: antippen, herunterladen, installieren. |
+| **Cloud (ohne PC)** | Jeder Push baut automatisch (Workflow „APK bauen“) und ersetzt die APK hinter dem Direkt-Download. Außerdem unter **Actions → letzter Lauf → Artifacts → Nachtfall-APK** (als ZIP). Von Hand starten: Actions → „APK bauen“ → *Run workflow*. |
 | **Eigener Rechner** | `android/build-apk.sh` (braucht Node.js und das Android-SDK); die APK liegt danach als `Nachtfall.apk` im Projektordner. |
 
 - **Feste Signatur:** Alle Builds sind mit demselben Schlüssel (`android/ci-signing.jks`) signiert.

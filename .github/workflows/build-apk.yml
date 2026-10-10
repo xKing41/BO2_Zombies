@@ -2,8 +2,10 @@ name: APK bauen
 
 # Baut die Android-App in der Cloud – wie bei der Motorrad-App: Das Spiel
 # wird gebaut, in die Android-Hülle (android/) gelegt und als fest signierte
-# APK bereitgestellt. Herunterladen: Actions → letzter Lauf → Artifacts →
-# "Nachtfall-APK" (ZIP entpacken, APK antippen, installieren).
+# APK bereitgestellt.
+# Direkter Download (immer die neueste APK, ohne Anmeldung und ohne ZIP):
+#   https://github.com/xKing41/BO2_Zombies/releases/latest/download/Nachtfall.apk
+# Außerdem: Actions → letzter Lauf → Artifacts → "Nachtfall-APK" (als ZIP).
 
 on:
   # Von Hand startbar (auch vom Handy aus, im Reiter "Actions").
@@ -21,6 +23,9 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Zum Aktualisieren der Download-Release
+    permissions:
+      contents: write
 
     steps:
       - name: Code holen
@@ -77,3 +82,20 @@ jobs:
           path: out/Nachtfall.apk
           if-no-files-found: error
           retention-days: 30
+
+      # Fester Download-Link: Die APK hängt an der Release „apk-latest“ und
+      # wird bei jedem Bau ersetzt – der Link oben bleibt dadurch immer gleich.
+      - name: Direkt-Download aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=apk-latest
+          TITLE="Nachtfall – neueste APK"
+          NOTES="Neueste Nachtfall-APK, automatisch gebaut aus ${GITHUB_REF_NAME} (${GITHUB_SHA::7}) am $(date -u '+%d.%m.%Y um %H:%M') UTC. Nachtfall.apk herunterladen, antippen, installieren – neue Versionen lassen sich über die alte installieren."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" out/Nachtfall.apk --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES" --latest --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" out/Nachtfall.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES" --latest --repo "$GITHUB_REPOSITORY"
+          fi
+          echo "Download: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/Nachtfall.apk"
