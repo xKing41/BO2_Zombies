@@ -176,28 +176,114 @@ export class Buildables {
         if (part.state !== 'ground') return null;
         return `${g.input.verb(false)}, um ${part.name} aufzuheben`;
       },
-      use() { self.pickUp(part); },
+      use() { self.act('bpPick', { id: part.id }, () => { g.hud.notice(`${part.name} – Bauteil für: ${BLUEPRINTS[part.bp].name}`, 2600); g.audio.partPickup(); }); },
       update() {},
       reset() {},
     };
   }
 
-  pickUp(part) {
+  // ── Koop: Aktionen führt der Host aus, Mitspieler fragen an ──
+  act(kind, data, done) {
     const g = this.g;
-    if (this.carried) this.drop(this.carried, g.player.pos);
-    part.state = 'carried';
-    part.group.visible = false;
-    this.carried = part;
-    g.hud.carry(part);
-    g.hud.notice(`${part.name} – Bauteil für: ${BLUEPRINTS[part.bp].name}`, 2600);
-    g.audio.partPickup();
+    if (g.isClient) { g.net.request(kind, data).then((r) => { if (r.ok && done) done(); }); return; }
+    const r = this.hostAct(kind, data, g.me);
+    if (r.ok && done) done();
   }
 
-  drop(part, at) {
-    part.state = 'ground';
-    part.pos.set(at.x, 0, at.z);
-    part.group.visible = true;
-    if (this.carried === part) { this.carried = null; this.g.hud.carry(this.turbine.state === 'carried' ? { name: 'Turbine', icon: '✇' } : null); }
+  hostAct(kind, d, s) {
+    const g = this.g, t = this.turbine;
+    switch (kind) {
+      case 'bpPick': {
+        const part = this.parts[d.id];
+        if (!part || part.state !== 'ground') return { ok: false };
+        this.dropBy(s);
+        part.state = 'carried'; part.carrier = s.slot; part.group.visible = false;
+        break;
+      }
+      case 'bpInstall': {
+        const bench = this.benches[d.bp];
+        const part = Object.values(this.parts).find((p) => p.state === 'carried' && p.carrier === s.slot);
+        if (!bench || bench.done || !part || part.bp !== d.bp) return { ok: false };
+        this.install(bench, part);
+        break;
+      }
+      case 'turbTake':
+        if (t.state !== 'bench' && t.state !== 'placed') return { ok: false };
+        this.dropBy(s, true);
+        if (t.placedAt) this.onTurbineRemoved(t.placedAt);
+        t.state = 'carried'; t.carrier = s.slot; t.placedAt = null; t.model.visible = false;
+        break;
+      case 'turbPlace': {
+        const spot = this.turbineSpots.find((x) => x.id === d.spot);
+        if (!spot || t.state !== 'carried' || t.carrier !== s.slot) return { ok: false };
+        this.placeTurbine(spot);
+        break;
+      }
+      case 'teslaTake': return { ok: !!(this.benches.tesla && this.benches.tesla.done) };
+      default: return undefined;
+    }
+    this.syncMine();
+    this.share();
+    return { ok: true };
+  }
+
+  netRequest(kind, d, s) { return this.hostAct(kind, d, s); }
+
+  // Was ein Spieler trägt, fällt an seiner Position zu Boden
+  dropBy(s, partsOnly = false) {
+    for (const id in this.parts) {
+      const p = this.parts[id];
+      if (p.state === 'carried' && p.carrier === s.slot) { p.state = 'ground'; p.carrier = -1; p.pos.set(s.pos.x, 0, s.pos.z); p.group.visible = true; }
+    }
+    void partsOnly;
+  }
+
+  // Eigenes Tragen (HUD) aus dem gemeinsamen Zustand ableiten
+  syncMine() {
+    const g = this.g, me = g.me.slot;
+    this.carried = Object.values(this.parts).find((p) => p.state === 'carried' && p.carrier === me) || null;
+    const turb = this.turbine.state === 'carried' && this.turbine.carrier === me;
+    g.hud.carry(this.carried || (turb ? { name: 'Turbine', icon: '✇' } : null));
+  }
+
+  netState() {
+    const parts = {};
+    for (const id in this.parts) { const p = this.parts[id]; parts[id] = [p.state, +p.pos.x.toFixed(2), +p.pos.z.toFixed(2), p.carrier ?? -1]; }
+    const benches = {};
+    for (const bp in this.benches) { const b = this.benches[bp]; benches[bp] = [[...b.installed], b.done ? 1 : 0]; }
+    const t = this.turbine, m = t.model;
+    return { parts, benches, tb: [t.state, t.placedAt, t.carrier ?? -1, +m.position.x.toFixed(2), +m.position.z.toFixed(2), +m.rotation.y.toFixed(2)] };
+  }
+
+  share() { if (this.g.net && this.g.net.isHost) this.g.net.ev({ t: 'bld', s: this.netState() }); }
+  netShare() { this.share(); }
+
+  netEvent(e) {
+    if (e.t !== 'bld') return false;
+    this.applyNet(e.s);
+    return true;
+  }
+
+  applyNet(s) {
+    const g = this.g;
+    for (const id in s.parts) {
+      const [st, x, z, car] = s.parts[id], p = this.parts[id];
+      if (!p) continue;
+      p.state = st; p.pos.set(x, 0, z); p.carrier = car;
+      p.group.visible = st === 'ground';
+    }
+    for (const bp in s.benches) {
+      const b = this.benches[bp], [inst, done] = s.benches[bp];
+      if (!b) continue;
+      for (const id of inst) if (!b.installed.has(id)) { b.installed.add(id); b.onInstall(this.parts[id]); }
+      if (done && !b.done) { b.done = true; g.audio.buildDone(); g.hud.notice(`${BLUEPRINTS[bp].name} gebaut!`, 3000); b.onDone(); }
+    }
+    const t = this.turbine, [tst, at, car, x, z, ry] = s.tb;
+    t.state = tst; t.placedAt = at; t.carrier = car;
+    if (tst === 'placed') { t.model.visible = true; t.model.scale.setScalar(1.35); t.model.position.set(x, 0, z); t.model.rotation.y = ry; }
+    else if (tst === 'bench') t.model.visible = true;
+    else t.model.visible = false;
+    this.syncMine();
   }
 
   // ── Werkbänke ───────────────────────────────────────────────
@@ -218,17 +304,21 @@ export class Buildables {
     if (bench.click <= 0) { bench.click = 0.16; g.audio.buildStep(bench.pos); }
     if (bench.t >= BUILD_TIME) {
       bench.t = 0;
-      bench.installed.add(c.id);
-      c.state = 'installed';
-      this.carried = null;
-      g.hud.carry(null);
-      bench.onInstall(c);
-      if (bench.installed.size >= BLUEPRINTS[bp].parts.length) {
-        bench.done = true;
-        g.audio.buildDone();
-        g.hud.notice(`${BLUEPRINTS[bp].name} gebaut!`, 3000);
-        bench.onDone();
-      }
+      this.act('bpInstall', { bp });
+    }
+  }
+
+  // Host: Teil einbauen; mit dem letzten Teil ist der Bauplan fertig
+  install(bench, c) {
+    const g = this.g;
+    bench.installed.add(c.id);
+    c.state = 'installed'; c.carrier = -1;
+    bench.onInstall(c);
+    if (bench.installed.size >= BLUEPRINTS[bench.bp].parts.length) {
+      bench.done = true;
+      g.audio.buildDone();
+      g.hud.notice(`${BLUEPRINTS[bench.bp].name} gebaut!`, 3000);
+      bench.onDone();
     }
   }
 
@@ -295,10 +385,12 @@ export class Buildables {
           if (!g.input.hit('use')) return;
           if (bp === 'turbine' && self.turbine.state === 'bench') self.takeTurbine();
           else if (bp === 'tesla' && !g.weapons.has('tesla') && !g.weapons.busy) {
-            g.weapons.give('tesla');
-            g.hud.notice('Gewitter-Werfer', 2500);
-            g.audio.teslaPickup();
-            bench.solid.visible = false;
+            self.act('teslaTake', {}, () => {
+              g.weapons.give('tesla');
+              g.hud.notice('Gewitter-Werfer', 2500);
+              g.audio.teslaPickup();
+              if (bench.solid) bench.solid.visible = false;
+            });
           }
           return;
         }
@@ -356,15 +448,11 @@ export class Buildables {
 
   // ── Turbine ─────────────────────────────────────────────────
   takeTurbine() {
-    const g = this.g, t = this.turbine;
-    if (this.carried) this.drop(this.carried, g.player.pos);
-    if (t.placedAt) this.onTurbineRemoved(t.placedAt);
-    t.state = 'carried';
-    t.placedAt = null;
-    t.model.visible = false;
-    g.hud.carry({ name: 'Turbine', icon: '✇' });
-    g.audio.partPickup();
-    g.hud.notice('Turbine – stell sie an einem markierten Platz auf', 3000);
+    const g = this.g;
+    this.act('turbTake', {}, () => {
+      g.audio.partPickup();
+      g.hud.notice('Turbine – stell sie an einem markierten Platz auf', 3000);
+    });
   }
 
   makeTurbineSpots() {
@@ -382,13 +470,13 @@ export class Buildables {
         pos: s.pos, radius: 2.0,
         prompt() {
           const t = self.turbine;
-          if (t.state === 'carried') return `${g.input.verb(false)}, um die Turbine aufzustellen`;
+          if (t.state === 'carried' && t.carrier === g.me.slot) return `${g.input.verb(false)}, um die Turbine aufzustellen`;
           if (t.state === 'placed' && t.placedAt === s.id) return `${g.input.verb(false)}, um die Turbine aufzunehmen`;
           return null;
         },
         use() {
           const t = self.turbine;
-          if (t.state === 'carried') self.placeTurbine(s);
+          if (t.state === 'carried' && t.carrier === g.me.slot) self.act('turbPlace', { spot: s.id });
           else if (t.state === 'placed' && t.placedAt === s.id) self.takeTurbine();
         },
         update() {},
@@ -402,6 +490,7 @@ export class Buildables {
     const g = this.g, t = this.turbine;
     t.state = 'placed';
     t.placedAt = spot.id;
+    t.carrier = -1;
     t.model.visible = true;
     t.model.scale.setScalar(1.35);
     t.model.position.set(spot.pos.x, 0, spot.pos.z);
@@ -409,6 +498,7 @@ export class Buildables {
     g.hud.carry(this.carried);
     g.audio.turbineStart(spot.pos);
     if (spot.id === 'door') {
+      if (g.net && g.net.isHost && !g.map.doors.L.open) g.net.ev({ t: 'door', id: 'L' });
       if (g.map.openDoor('L')) {
         g.audio.doorOpen(g.map.doors.L.center.clone().setY(2));
         g.hud.notice('Die Turbine treibt das Lagertor an!', 3000);
@@ -421,6 +511,16 @@ export class Buildables {
 
   // ── Laufzeit ────────────────────────────────────────────────
   update(dt, time) {
+    const g = this.g;
+    if (g.net && g.net.isHost) {
+      for (const s of g.survivors) {
+        if (!(s.downed || s.dead || s.left)) continue;
+        const has = Object.values(this.parts).some((p) => p.state === 'carried' && p.carrier === s.slot);
+        if (has) { this.dropBy(s); this.syncMine(); this.share(); }
+        const t = this.turbine;
+        if (t.state === 'carried' && t.carrier === s.slot) { t.state = 'bench'; t.carrier = -1; t.model.visible = true; const b = this.benches.turbine; if (b) { t.model.position.copy(b.ghost.position).setY(0.94); t.model.scale.setScalar(0.55); } this.syncMine(); this.share(); }
+      }
+    }
     const cam = this.g.camera.position;
     for (const id in this.parts) {
       const p = this.parts[id];
@@ -449,7 +549,7 @@ export class Buildables {
     for (const id in this.parts) {
       const p = this.parts[id];
       const [cx, cy] = pick(PART_SPOTS[id]);
-      p.state = 'ground';
+      p.state = 'ground'; p.carrier = -1;
       p.pos.set(wx(cx), 0, wx(cy));
       p.group.visible = true;
     }
@@ -463,7 +563,7 @@ export class Buildables {
       if (b.solid) { b.solid.removeFromParent(); b.solid = null; }
     }
     const t = this.turbine;
-    t.state = 'none'; t.placedAt = null; t.model.visible = false;
+    t.state = 'none'; t.placedAt = null; t.carrier = -1; t.model.visible = false;
   }
 
   dispose() {}

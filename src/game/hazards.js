@@ -99,8 +99,10 @@ export class Hazards {
     if (this.latched === c) { this.latched = null; g.hud.latch(false); }
   }
 
-  // Schuss trifft Nebelkriecher (vom Waffensystem aufgerufen)
-  onShot(o, d, maxDist) {
+  // Schuss trifft Nebelkriecher (vom Waffensystem aufgerufen). Jeder Spieler hat
+  // seine eigenen Nebelkriecher – Schüsse von Mitspielern treffen sie nicht.
+  onShot(o, d, maxDist, shooter) {
+    if (shooter && !shooter.local) return;
     for (const c of this.crawlers) {
       if (!c.active || c === this.latched) continue;
       _v.copy(c.pos).setY(0.45).sub(o);
@@ -129,7 +131,7 @@ export class Hazards {
     // Zombies fangen Feuer
     for (const z of g.zombies.pool) {
       if (!z.alive) continue;
-      if (!z.onBus && z.pos.y < 0.2 && map.isLava(z.pos.x, z.pos.z)) {
+      if (!g.isClient && !z.onBus && z.pos.y < 0.2 && map.isLava(z.pos.x, z.pos.z)) {
         if (!z.burning) g.audio.ignite(z.pos);
         z.burning = 12;
       }
@@ -208,11 +210,22 @@ export class Hazards {
     if (!z.burning) return;
     const g = this.g, pos = z.pos.clone().setY(1.0);
     z.burning = 0;
-    g.effects.explosion(pos, 2.4, [3, 1.1, 0.25]);
-    g.audio.fireBurst(pos);
-    const pd = Math.hypot(g.player.pos.x - pos.x, g.player.pos.z - pos.z);
-    if (pd < 2.4) g.player.damage(18, pos);
+    this.fireBurst(pos);
+    if (g.net) g.net.ev({ t: 'fire', p: [+pos.x.toFixed(2), +pos.y.toFixed(2), +pos.z.toFixed(2)] });
+    // Die Flammenwolke trifft alle Spieler in der Nähe
+    for (const s of g.survivors) if (s.targetable && Math.hypot(s.pos.x - pos.x, s.pos.z - pos.z) < 2.4) s.hurt(18, pos);
     for (const o of g.zombies.inRadius(pos, 2.4)) if (o !== z) g.zombies.damage(o, 120 + g.round * 25, 'torso', { dir: new THREE.Vector3(o.pos.x - pos.x, 0.4, o.pos.z - pos.z).normalize(), explosive: true });
+  }
+
+  fireBurst(pos) {
+    this.g.effects.explosion(pos, 2.4, [3, 1.1, 0.25]);
+    this.g.audio.fireBurst(pos);
+  }
+
+  netEvent(e) {
+    if (e.t !== 'fire') return false;
+    this.fireBurst(new THREE.Vector3(e.p[0], e.p[1], e.p[2]));
+    return true;
   }
 
   dispose() {}

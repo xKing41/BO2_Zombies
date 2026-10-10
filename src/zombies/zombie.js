@@ -786,8 +786,12 @@ export class Zombie {
 
   puppetSnap(r) {
     const nb = this.nb || (this.nb = []);
+    r.bus = !!(r.flags & 16);
+    // Wechsel zwischen Bus und Boden: alte Werte passen nicht mehr zusammen
+    if (nb.length && nb[nb.length - 1].bus !== r.bus) nb.length = 0;
     nb.push(r);
     if (nb.length > 6) nb.shift();
+    this.onBus = r.bus;
     this.hp = r.hp;
     if ((r.flags & 1) && !this.crawler) this.makeCrawler();
     this.burning = r.flags & 2 ? Math.max(this.burning || 0, 0.3) : this.burning;
@@ -834,6 +838,15 @@ export class Zombie {
           dy -= Math.round(dy / (Math.PI * 2)) * Math.PI * 2;
           this.yaw = a.yaw + dy * k;
           this.moveSpeed = lerp(a.ms, b.ms, k);
+        }
+        // Im Bus: lokale Koordinaten in die (eigene) Busposition umrechnen
+        const bus = game.bus;
+        if (b.bus && bus) {
+          this.local = this.local || new THREE.Vector3();
+          this.local.set(this.pos.x, 0, this.pos.z);
+          const w = bus.toWorld(this.local, _w);
+          this.pos.set(w.x, this.pos.y, w.z);
+          this.yaw += bus.yaw;
         }
       }
       // Rein optische Teile der Zustände

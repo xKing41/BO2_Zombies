@@ -49,8 +49,8 @@ export class Teddies {
         prompt() { return this.pressed ? null : `${this.press} …`; },
         use() {
           if (this.pressed) return;
-          this.pressed = true;
-          self.press(this);
+          if (game.isClient) { game.net.request('teddy', { i: this.i }); return; }
+          self.share(this);
         },
         update(dt, time) {
           // gedrückter Teddy nickt kurz
@@ -61,6 +61,28 @@ export class Teddies {
         reset() { this.pressed = false; this.nod = 0; this.model.rotation.x = 0; },
       };
     });
+  }
+
+  // Host: drücken und allen melden
+  share(it) {
+    it.pressed = true;
+    if (this.g.net) this.g.net.ev({ t: 'ted', i: it.i });
+    this.press(it);
+  }
+
+  netEvent(e) {
+    if (e.t !== 'ted') return false;
+    const it = this.interactables[e.i];
+    if (it && !it.pressed) { it.pressed = true; this.press(it); }
+    return true;
+  }
+
+  netRequest(kind, d) {
+    if (kind !== 'teddy') return undefined;
+    const it = this.interactables[d.i];
+    if (!it || it.pressed) return { ok: false };
+    this.share(it);
+    return { ok: true };
   }
 
   press(it) {

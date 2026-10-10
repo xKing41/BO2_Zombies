@@ -44,6 +44,8 @@ export class NetSession {
     on('st', (d, from) => this.onState(d, from));
     on('ev', (d, from) => { if (from === this.hostId && !this.isHost) this.onEvents(d); });
     on('snap', (d, from) => { if (from === this.hostId && !this.isHost) this.onSnap(d); });
+    on('bus', (d, from) => { if (from === this.hostId && !this.isHost && this.g.bus) this.g.bus.applyNet(d); });
+    on('fx', (d, from) => { if (from === this.hostId && !this.isHost) this.onFx(d); });
     on('hit', (d, from) => { if (this.isHost) this.onHit(d, from); });
     on('boom', (d, from) => this.onBoom(d, from));
     on('shot', (d, from) => this.onShot(d, from));
@@ -100,6 +102,8 @@ export class NetSession {
       this.started = true;
       this.g.netHold = false;
       this.send('go', { t: 0 });
+      // Zufällige Startzustände der Karte (Bauteile, Quest-Code …) an alle verteilen
+      for (const f of this.g.features) if (f.netShare) f.netShare();
     }
   }
   onGo() { this.started = true; }
@@ -177,11 +181,15 @@ export class NetSession {
     const a = new Float32Array(2 + zs.length * REC);
     a[0] = this.tick++; a[1] = zs.length;
     let o = 2;
+    const bus = this.g.bus;
     for (const z of zs) {
+      const inBus = !!(bus && z.onBus && z.local);
       a[o++] = z.uid; a[o++] = z.index;
-      a[o++] = (z.crawler ? 1 : 0) | (z.burning > 0 ? 2 : 0) | (Math.max(0, SPEEDS.indexOf(z.speedType)) << 2);
+      a[o++] = (z.crawler ? 1 : 0) | (z.burning > 0 ? 2 : 0) | (Math.max(0, SPEEDS.indexOf(z.speedType)) << 2) | (inBus ? 16 : 0);
       a[o++] = ZSTATES.indexOf(z.state);
-      a[o++] = z.pos.x; a[o++] = z.pos.y; a[o++] = z.pos.z; a[o++] = z.yaw;
+      // Im Bus: Koordinaten relativ zum Bus (sonst hinken die Zombies dem fahrenden Bus hinterher)
+      if (inBus) { a[o++] = z.local.x; a[o++] = z.pos.y; a[o++] = z.local.z; a[o++] = z.yaw - bus.yaw; }
+      else { a[o++] = z.pos.x; a[o++] = z.pos.y; a[o++] = z.pos.z; a[o++] = z.yaw; }
       a[o++] = z.moveSpeed; a[o++] = z.stateT; a[o++] = z.hp;
     }
     this.sendFast('snap', a);
@@ -207,6 +215,12 @@ export class NetSession {
     // Vom Host neu eingereihte Zombies verschwinden hier ebenfalls
     for (const z of pool) if (z.active && z.state !== 'dying' && !seen.has(z) && t - (z.spawnedAt || 0) > 1.5) z.despawn();
   }
+
+  // Kurzlebige Effekte vom Host (z. B. Funkenmann-Blitze)
+  onFx(d) {
+    for (const f of this.g.features) if (f.netFx && f.netFx(d)) return;
+  }
+  fx(d) { if (this.isHost) this.sendFast('fx', d); }
 
   // ── Ereignisse (Host → alle) ────────────────────────────────
   onEvents(list) {

@@ -47,7 +47,7 @@ export class Quest {
       this.interactables.push({
         pos: tape.pos, radius: 1.5,
         prompt() { return tape.played ? null : `${verb()}, um das Tonband abzuspielen`; },
-        use() { self.playTape(tape); },
+        use() { self.act('qTape', tape.i); },
         update() {}, reset() {},
       });
     }
@@ -85,7 +85,7 @@ export class Quest {
       this.interactables.push({
         pos: radioFront.clone().add(side), radius: 1.3,
         prompt() { return self.step === 'done' ? null : `${verb()}, um Regler ${i + 1} zu drehen [${dial.v}]`; },
-        use() { self.turnDial(i); },
+        use() { self.act('qDial', i); },
         update() {}, reset() {},
       });
     }
@@ -131,7 +131,7 @@ export class Quest {
       this.interactables.push({
         pos: grp.position, radius: 1.3,
         prompt() { return mb.done ? null : `${verb()}, um die Spieluhr aufzuziehen`; },
-        use() { self.windBox(mb); },
+        use() { self.act('qBox', mb.i); },
         update() {}, reset() {},
       });
       return mb;
@@ -146,8 +146,81 @@ export class Quest {
 
   voice(who, text, opts = {}) {
     const g = this.g;
+    if (g.net && g.net.isHost) g.net.ev({ t: 'qv', w: who, x: text, o: opts });
     g.audio.say(text, { pitch: opts.pitch ?? 0.85, rate: opts.rate ?? 0.95, voice: opts.voice ?? 0, interrupt: true });
     g.hud.subtitle(who, text, Math.max(4500, text.length * 75));
+  }
+
+  // Untertitel/Hinweise, die alle Spieler sehen sollen
+  sub(who, text, ms) {
+    const g = this.g;
+    if (g.net && g.net.isHost) g.net.ev({ t: 'qsub', w: who, x: text, ms });
+    g.hud.subtitle(who, text, ms);
+  }
+  note(text, ms) {
+    const g = this.g;
+    if (g.net && g.net.isHost) g.net.ev({ t: 'not', m: text, ms });
+    g.hud.notice(text, ms);
+  }
+
+  // ── Koop: Aktionen führt der Host aus ───────────────────────
+  act(kind, i) {
+    const g = this.g;
+    if (g.isClient) { g.net.request(kind, { i }); return; }
+    this.hostAct(kind, i);
+  }
+
+  hostAct(kind, i) {
+    if (kind === 'qTape') { const t = this.tapes[i]; if (!t || t.played) return { ok: false }; this.playTape(t); }
+    else if (kind === 'qDial') { if (!this.dials[i] || this.step === 'done') return { ok: false }; this.turnDial(i); }
+    else if (kind === 'qBox') { const b = this.boxes[i]; if (!b || b.done) return { ok: false }; this.windBox(b); }
+    else return undefined;
+    this.share();
+    return { ok: true };
+  }
+
+  netRequest(kind, d) { return this.hostAct(kind, d.i); }
+
+  netState() {
+    return { st: this.step, c: this.code, so: this.souls, tp: this.tapes.map((t) => [t.played ? 1 : 0, +t.pos.x.toFixed(2), +t.pos.z.toFixed(2)]), dl: this.dials.map((d) => d.v), bx: this.boxes.map((b) => (b.done ? 1 : 0)), sp: this.songPlayed ? 1 : 0 };
+  }
+
+  share() { if (this.g.net && this.g.net.isHost) this.g.net.ev({ t: 'qst', s: this.netState() }); }
+  netShare() { this.share(); }
+
+  netEvent(e) {
+    const g = this.g;
+    switch (e.t) {
+      case 'qst': this.applyNet(e.s); return true;
+      case 'qv': g.audio.say(e.x, { pitch: e.o?.pitch ?? 0.85, rate: e.o?.rate ?? 0.95, voice: e.o?.voice ?? 0, interrupt: true }); g.hud.subtitle(e.w, e.x, Math.max(4500, e.x.length * 75)); return true;
+      case 'qsub': g.hud.subtitle(e.w, e.x, e.ms); return true;
+      case 'qorb': this.orb(new THREE.Vector3(e.p[0], 1.2, e.p[1])); return true;
+    }
+    return false;
+  }
+
+  netFx(d) {
+    if (d.q !== 'pulse') return false;
+    this.pulseFx(new THREE.Vector3(d.h[0], 0.1, d.h[1]));
+    return true;
+  }
+
+  // Mitspieler: gemeinsamen Zustand übernehmen
+  applyNet(s) {
+    const g = this.g, prev = this.step;
+    this.step = s.st; this.code = s.c; this.souls = s.so;
+    s.tp.forEach(([played, x, z], i) => {
+      const t = this.tapes[i];
+      t.pos.set(x, 0, z); t.group.position.copy(t.pos);
+      if (played && !t.played) { t.played = true; t.led.material.color.setRGB(0.1, 2.5, 0.4); g.audio.tapeClick(); }
+      t.played = !!played;
+    });
+    s.dl.forEach((v, i) => { const d = this.dials[i]; if (d.v !== v) { d.v = v; d.knob.rotation.y = (v / 10) * Math.PI * 2; g.audio.radioTune(this.radioPos); } });
+    this.renderDisplay();
+    s.bx.forEach((done, i) => { const b = this.boxes[i]; if (done && !b.done) this.openBox(b); });
+    if (s.sp && !this.songPlayed) { this.songPlayed = true; this.playSong(); }
+    this.beam.visible = this.step === 'transmit';
+    if (this.step === 'done' && prev !== 'done') this.reward();
   }
 
   // ── Tonbänder ───────────────────────────────────────────────
@@ -178,14 +251,15 @@ export class Quest {
     if (!ok) return;
     if (!g.map.power || !this.turbineAtMast) {
       g.audio.radioStatic(this.radioPos, 2);
-      g.hud.subtitle('Funkempfänger', 'Rauschen … Sender 7 antwortet nicht. Er braucht Strom und eine Turbine.');
+      this.sub('Funkempfänger', 'Rauschen … Sender 7 antwortet nicht. Er braucht Strom und eine Turbine.');
       return;
     }
     this.step = 'souls';
     this.souls = 0;
     g.audio.radioStatic(this.radioPos, 1.5);
     this.voice('Funkstimme', 'Frequenz bestätigt. Sender 7 ist bereit. Er braucht Energie. Tötet die Toten an seinem Fuß. Ich sammle ihre Seelen.');
-    g.hud.notice('Sammle Seelen am Funkmast', 3500);
+    this.note('Sammle Seelen am Funkmast', 3500);
+    this.share();
   }
 
   renderDisplay() {
@@ -202,7 +276,7 @@ export class Quest {
     if (id !== 'mast') return;
     const g = this.g;
     if (placed && this.step === 'idle' && g.map.power) this.wake();
-    else if (placed && this.step === 'idle') g.hud.subtitle('Sender 7', 'Die Turbine dreht sich … aber ohne Strom aus dem Kraftwerk bleibt der Sender stumm.');
+    else if (placed && this.step === 'idle') this.sub('Sender 7', 'Die Turbine dreht sich … aber ohne Strom aus dem Kraftwerk bleibt der Sender stumm.');
     if (!placed && this.step === 'transmit') this.abort('Die Turbine wurde entfernt!');
   }
 
@@ -210,7 +284,8 @@ export class Quest {
     this.step = 'tapes';
     this.g.audio.radioStatic(new THREE.Vector3(MAST.x, 2, MAST.z), 3);
     this.voice('Funkstimme', 'Hier … Sender 7. Ist da jemand? Die Frequenz ist verloren. Sucht die Tonbänder. Drei Stück. Dann geht zum Funkempfänger im Busbahnhof.');
-    this.g.hud.notice('Sender 7 ist erwacht', 3000);
+    this.note('Sender 7 ist erwacht', 3000);
+    this.share();
   }
 
   // ── Seelen ──────────────────────────────────────────────────
@@ -218,17 +293,24 @@ export class Quest {
     if (this.step !== 'souls' || !this.turbineAtMast) return;
     const d = Math.hypot(z.pos.x - MAST.x, z.pos.z - MAST.z);
     if (d > SOUL_RADIUS) return;
+    this.orb(z.pos);
+    if (this.g.net) this.g.net.ev({ t: 'qorb', p: [+z.pos.x.toFixed(2), +z.pos.z.toFixed(2)] });
+    this.souls++;
+    this.sub(null, `Seelen: ${this.souls} / ${SOULS}`, 2500);
+    if (this.souls >= SOULS) this.startTransmit();
+    this.share();
+  }
+
+  // Seele fliegt zur Mastspitze
+  orb(from) {
     const orb = this.orbs.find((o) => !o.active);
     if (orb) {
       orb.active = true; orb.t = 0;
-      orb.from.copy(z.pos).setY(1.2);
+      orb.from.copy(from).setY(1.2);
       orb.to.copy(this.mastTop);
       orb.s.visible = true;
     }
-    this.souls++;
-    this.g.audio.soulCollect(z.pos);
-    this.g.hud.subtitle(null, `Seelen: ${this.souls} / ${SOULS}`, 2500);
-    if (this.souls >= SOULS) this.startTransmit();
+    this.g.audio.soulCollect(from);
   }
 
   startTransmit() {
@@ -238,7 +320,7 @@ export class Quest {
     this.away = 0;
     this.beam.visible = true;
     this.voice('Funkstimme', 'Genug! Die Übertragung beginnt. Haltet den Mast eine Minute lang. Lasst ihn nicht allein!');
-    g.hud.notice('Verteidige Sender 7: 60 Sekunden', 3500);
+    this.note('Verteidige Sender 7: 60 Sekunden', 3500);
     // Zusätzliche Horde
     if (g.roundActive) { g.zombies.toSpawn += 10; g.zombies.remaining += 10; }
   }
@@ -248,13 +330,20 @@ export class Quest {
     this.step = 'souls';
     this.souls = Math.floor(SOULS * 0.6);
     this.beam.visible = false;
-    g.hud.notice(reason, 3000);
+    this.note(reason, 3000);
     this.voice('Funkstimme', 'Die Übertragung ist abgebrochen! Ich brauche wieder Seelen.');
+    this.share();
   }
 
   finish() {
-    const g = this.g, p = g.player;
     this.step = 'done';
+    this.share();
+    this.reward();
+  }
+
+  // Belohnung und Finale (jedes Gerät für seinen eigenen Spieler)
+  reward() {
+    const g = this.g, p = g.player;
     this.beam.visible = false;
     g.map.fogScale = 0.42;
     g.flash = 0.8;
@@ -270,24 +359,30 @@ export class Quest {
     g.weapons.refillAll();
     try { localStorage.setItem('nachtfall.ach.signal', '1'); } catch { /* */ }
     setTimeout(() => { if (this.step === 'done') { g.audio.achievement(); g.hud.notice('ERFOLG: Das Signal', 4000); } }, 6000);
-    if (g.bus) setTimeout(() => { if (g.bus) g.bus.say('signal', {}, true); }, 12000);
+    if (g.bus && !g.isClient) setTimeout(() => { if (g.bus) g.bus.say('signal', {}, true); }, 12000);
   }
 
   // ── Spieluhren ──────────────────────────────────────────────
   windBox(mb) {
-    const g = this.g;
+    this.openBox(mb);
+    const n = this.boxes.filter((b) => b.done).length;
+    if (n >= this.boxes.length && !this.songPlayed) { this.songPlayed = true; this.playSong(); }
+  }
+
+  openBox(mb) {
     mb.done = true;
     mb.glow.material.opacity = 0.9;
     mb.lid.rotation.x = -1.1; mb.lid.position.set(0, 0.25, -0.08);
-    g.audio.musicBox(mb.i);
-    const n = this.boxes.filter((b) => b.done).length;
-    if (n >= this.boxes.length && !this.songPlayed) {
-      this.songPlayed = true;
-      setTimeout(() => {
-        const len = g.audio.secretSong();
-        if (len) g.hud.notice('♪  Nebelfahrt  ♪', 4000);
-      }, 1800);
-    }
+    this.g.audio.musicBox(mb.i);
+  }
+
+  playSong() {
+    const g = this.g;
+    setTimeout(() => {
+      if (g.state !== 'playing' && g.state !== 'paused') return;
+      const len = g.audio.secretSong();
+      if (len) g.hud.notice('♪  Nebelfahrt  ♪', 4000);
+    }, 1800);
   }
 
   // ── Laufzeit ────────────────────────────────────────────────
@@ -315,29 +410,40 @@ export class Quest {
       if (k >= 1) { o.active = false; o.s.visible = false; g.effects.lightning(this.mastTop.clone(), this.mastTop.clone().add(new THREE.Vector3(rand(-2, 2), -4, rand(-2, 2))), [0.6, 1.4, 2.6], 0.15); }
     }
     if (!active) return;
-    // Sender wird wach, sobald Strom und Turbine da sind
-    if (this.step === 'idle' && g.map.power && this.turbineAtMast) this.wake();
     if (this.step === 'transmit') {
       this.beamMat.uniforms.uTime.value = time;
       this.beamMat.uniforms.uAmp.value = 0.7 + Math.sin(time * 3) * 0.2;
+    }
+    if (g.isClient) return; // Ablauf bestimmt der Host
+    // Sender wird wach, sobald Strom und Turbine da sind
+    if (this.step === 'idle' && g.map.power && this.turbineAtMast) this.wake();
+    if (this.step === 'transmit') {
       this.tx -= dt;
-      const d = Math.hypot(g.player.pos.x - MAST.x, g.player.pos.z - MAST.z);
-      this.away = d > 30 ? this.away + dt : 0;
-      if (this.away > 6) { this.abort('Du hast den Mast verlassen!'); return; }
+      // Abbruch, wenn sich niemand mehr am Mast aufhält
+      const near = g.survivors.some((s) => !s.left && !s.dead && Math.hypot(s.pos.x - MAST.x, s.pos.z - MAST.z) <= 30);
+      this.away = near ? 0 : this.away + dt;
+      if (this.away > 6) { this.abort(g.coop ? 'Ihr habt den Mast verlassen!' : 'Du hast den Mast verlassen!'); return; }
       this.pulseT = (this.pulseT || 0) - dt;
       if (this.pulseT <= 0) {
         this.pulseT = 1.6;
-        g.audio.signalPulse(this.mastTop);
-        g.player.shake = Math.max(g.player.shake, 0.12);
         const a = rand(0, Math.PI * 2), r = rand(6, 16);
         const hit = new THREE.Vector3(MAST.x + Math.cos(a) * r, 0.1, MAST.z + Math.sin(a) * r);
-        g.effects.lightning(this.mastTop.clone(), hit, [0.7, 1.5, 3], 0.25, 0.05);
+        this.pulseFx(hit);
+        if (g.net) g.net.fx({ q: 'pulse', h: [+hit.x.toFixed(2), +hit.z.toFixed(2)] });
         for (const z of g.zombies.inRadius(hit, 2.5)) g.zombies.damage(z, 1e9, 'torso', { dir: new THREE.Vector3(0, 1, 0), explosive: true });
       }
       const sec = Math.ceil(this.tx);
-      if (sec !== this.lastSec && sec % 10 === 0 && sec > 0) { this.lastSec = sec; g.hud.subtitle('Sender 7', `Übertragung: noch ${sec} Sekunden`, 2500); }
+      if (sec !== this.lastSec && sec % 10 === 0 && sec > 0) { this.lastSec = sec; this.sub('Sender 7', `Übertragung: noch ${sec} Sekunden`, 2500); }
       if (this.tx <= 0) this.finish();
     }
+  }
+
+  // Blitz des Senders schlägt um den Mast ein
+  pulseFx(hit) {
+    const g = this.g;
+    g.audio.signalPulse(this.mastTop);
+    g.player.shake = Math.max(g.player.shake, 0.12);
+    g.effects.lightning(this.mastTop.clone(), hit, [0.7, 1.5, 3], 0.25, 0.05);
   }
 
   reset() {

@@ -189,13 +189,53 @@ export class Bus {
   say(kind, vars = {}, force = false) {
     if (!force && this.voiceCd > 0) return;
     const g = this.g;
-    const near = this.playerOn || g.player.pos.distanceTo(this.pos) < 28;
-    if (!near || g.state !== 'playing') return;
+    if (g.state !== 'playing') return;
+    // Koop: OTTO spricht für alle – jeder hört ihn, wenn er in der Nähe ist
+    const near = (s) => s.onBus || s.pos.distanceTo(this.pos) < 28;
+    if (!g.survivors.some((s) => !s.left && near(s))) return;
     let text = pick(LINES[kind]);
     for (const k in vars) text = text.replace('{' + k + '}', vars[k]);
     this.voiceCd = 5;
+    if (g.net && g.net.isHost) g.net.ev({ t: 'otto', x: text });
+    this.speak(text);
+  }
+
+  // OTTOs Stimme und Untertitel (nur in Hörweite des eigenen Spielers)
+  speak(text) {
+    const g = this.g;
+    if (!this.playerOn && g.player.pos.distanceTo(this.pos) >= 28) return;
     g.audio.say(text, { pitch: 0.55, rate: 1.08 });
     g.hud.subtitle('OTTO', text);
+  }
+
+  // Ist irgendein Spieler im Bus? (Host: auch die Mitspieler)
+  get anyOn() { return this.playerOn || this.g.survivors.some((s) => !s.local && s.onBus); }
+
+  // Koop: Zustand für die Mitspieler (10 Hz)
+  netState() {
+    return { s: +this.s.toFixed(3), v: +this.v.toFixed(3), st: this.state, t: +this.t.toFixed(2), d: +this.door.toFixed(2), i: this.stopIdx, tg: this.target, c: this.called, b: this.boss ? 1 : 0 };
+  }
+
+  applyNet(n) {
+    this.net = { ...n, at: performance.now() / 1000 };
+    this.state = n.st; this.door = n.d; this.stopIdx = n.i; this.target = n.tg; this.called = n.c; this.boss = !!n.b; this.t = n.t;
+    let d = this.path.ahead(this.s, n.s);
+    if (d > this.path.length / 2) d -= this.path.length;
+    if (this.netS === undefined || Math.abs(d) > 40) this.s = n.s; // zu weit weg: springen statt aufholen
+    this.netS = n.s;
+  }
+
+  // Mitspieler: Bus folgt dem Host (vorausberechnet, weich korrigiert)
+  follow(dt) {
+    const n = this.net;
+    if (!n) { this.placeAt(this.s); return; }
+    this.v = damp(this.v, n.v, 6, dt);
+    const age = performance.now() / 1000 - n.at;
+    const want = this.path.wrap(n.s + n.v * Math.min(age, 0.5));
+    let err = this.path.ahead(this.s, want);
+    if (err > this.path.length / 2) err -= this.path.length;
+    this.s = this.path.wrap(this.s + this.v * dt + err * Math.min(1, dt * 4));
+    this.placeAt(this.s);
   }
 
   depart() {
@@ -210,6 +250,10 @@ export class Bus {
 
   // Spieler ruft den Bus an einer Haltestelle
   call(i) {
+    if (this.g.isClient) {
+      this.g.net.request('busCall', { i }).then((r) => { if (r.ok) { this.g.audio.busChime(this.pos); this.g.hud.notice('Der Bus ist unterwegs zu dir', 2500); } });
+      return;
+    }
     if (this.state === 'wait' && this.stopIdx === i) return;
     this.called = i;
     if (this.state === 'wait') this.t = Math.min(this.t, 2.5);
@@ -225,17 +269,28 @@ export class Bus {
     const g = this.g, p = g.player;
     // Steht der Spieler im Bus?
     const lp = this.toLocal(p.pos, new THREE.Vector3());
-    this.playerOn = active && !p.downed && Math.abs(lp.x) < HALF_W - 0.02 && Math.abs(lp.z) < HALF_L && p.pos.y > FLOOR - 0.3;
+    this.playerOn = active && !p.downed && !p.spectating && Math.abs(lp.x) < HALF_W - 0.02 && Math.abs(lp.z) < HALF_L && p.pos.y > FLOOR - 0.3;
+    // Host: auch die Mitspieler (für Zombies, Funkenmann, OTTO)
+    for (const s of g.survivors) {
+      if (s.local) continue;
+      const l = this.toLocal(s.pos, _l);
+      s.onBus = active && !s.downed && !s.dead && Math.abs(l.x) < HALF_W + 0.2 && Math.abs(l.z) < HALF_L + 0.2 && s.pos.y > FLOOR - 0.3;
+    }
     const oldYaw = this.yaw;
-    this.drive(dt);
+    if (g.isClient) this.follow(dt);
+    else {
+      this.drive(dt);
+      this.netT = (this.netT || 0) - dt;
+      if (g.net && this.netT <= 0) { this.netT = 0.1; g.net.sendFast('bus', this.netState()); }
+    }
     this.boardPts = this.boardPoints();
     if (this.playerOn) {
       const w = this.toWorld(lp, _w);
       p.pos.x = w.x; p.pos.z = w.z;
       p.yaw += this.yaw - oldYaw;
     }
-    // Zombies im Bus fahren mit
-    for (const z of g.zombies.pool) {
+    // Zombies im Bus fahren mit (bei Mitspielern machen das die Puppen selbst)
+    if (!g.isClient) for (const z of g.zombies.pool) {
       if (!z.active || !z.onBus) continue;
       const w = this.toWorld(z.local, _w);
       z.pos.x = w.x; z.pos.z = w.z;
@@ -251,7 +306,7 @@ export class Bus {
     switch (this.state) {
       case 'wait':
         this.door = Math.min(1, this.door + dt * 1.5);
-        if (this.t < 5 && !this.warned) { this.warned = true; if (this.playerOn || this.g.player.pos.distanceTo(this.pos) < 20) this.say('soon', {}, true); }
+        if (this.t < 5 && !this.warned) { this.warned = true; if (this.g.survivors.some((s) => s.onBus || s.pos.distanceTo(this.pos) < 20)) this.say('soon', {}, true); }
         if (this.t <= 0 && !this.boss) this.depart();
         break;
       case 'closing':
@@ -269,8 +324,11 @@ export class Bus {
         vt = Math.min(vt, Math.sqrt(2 * BRAKE * Math.max(0, dist - 0.2)) + 0.3);
         if (this.boss) vt = 0; // Funkenmann auf dem Dach: Motor ist tot
         // Spieler auf der Fahrbahn vor dem Bus → bremsen und hupen
-        const lp = this.toLocal(this.g.player.pos, _l);
-        const ahead = this.g.state === 'playing' && !this.playerOn && lp.z > HALF_L - 0.5 && lp.z < HALF_L + 3 + this.v * 0.6 && Math.abs(lp.x) < HALF_W + 0.5 && this.g.player.pos.y < 1;
+        const ahead = this.g.state === 'playing' && this.g.survivors.some((sv) => {
+          if (sv.left || sv.dead || sv.onBus) return false;
+          const lp = this.toLocal(sv.pos, _l);
+          return lp.z > HALF_L - 0.5 && lp.z < HALF_L + 3 + this.v * 0.6 && Math.abs(lp.x) < HALF_W + 0.5 && sv.pos.y < 1;
+        });
         if (ahead) {
           vt = 0;
           this.blockT += dt;
@@ -294,7 +352,7 @@ export class Bus {
           this.g.audio.busChime(this.pos);
           this.say('arrive', { stop: stop.name }, true);
         }
-        if (this.playerOn && this.v > 6) {
+        if (this.anyOn && this.v > 6) {
           this.idleT -= dt;
           if (this.idleT <= 0) { this.idleT = rand(35, 60); this.say('idle'); }
         }
@@ -316,8 +374,8 @@ export class Bus {
   update(dt, time, active) {
     const g = this.g;
     this.shotCd -= dt;
-    // Zombies vor dem Bus werden überfahren, an der Seite weggeschoben
-    for (const z of g.zombies.pool) {
+    // Zombies vor dem Bus werden überfahren, an der Seite weggeschoben (entscheidet der Host)
+    if (!g.isClient) for (const z of g.zombies.pool) {
       if (!z.alive || z.onBus || z.state === 'rise') continue;
       const l = this.toLocal(z.pos, _l);
       if (Math.abs(l.x) > HALF_W + 0.45 || Math.abs(l.z) > HALF_L + 0.45) continue;
@@ -335,7 +393,7 @@ export class Bus {
       const w = this.toWorld(l, _w);
       z.pos.x = w.x; z.pos.z = w.z;
     }
-    if (active && this.zombieWarnCd <= 0 && this.playerOn && g.zombies.pool.some((z) => z.alive && z.onBus)) {
+    if (active && !g.isClient && this.zombieWarnCd <= 0 && this.anyOn && g.zombies.pool.some((z) => z.alive && z.onBus)) {
       this.zombieWarnCd = 25;
       this.say('zombie');
     }
@@ -344,7 +402,7 @@ export class Bus {
   }
 
   onShot(o, d, maxDist) {
-    if (this.shotCd > 0) return;
+    if (this.shotCd > 0 || this.g.isClient) return;
     const head = this.toWorld(this.otto.headLocal, new THREE.Vector3());
     const oc = head.clone().sub(o);
     const t = oc.dot(d);
@@ -393,6 +451,18 @@ export class Bus {
     this.engine.update(this.pos, this.v / VMAX, d < 90 ? 1 : 0, this.playerOn);
   }
 
+  // Koop: Ereignisse und Anfragen
+  netEvent(e) {
+    if (e.t === 'otto') { this.speak(e.x); return true; }
+    return false;
+  }
+
+  netRequest(kind, d) {
+    if (kind === 'busCall') { if (this.state === 'wait' && this.stopIdx === d.i) return { ok: false }; this.call(d.i); return { ok: true }; }
+    if (kind === 'busGo') { if (this.state !== 'wait') return { ok: false }; this.t = Math.min(this.t, 2.5); this.say('go', {}, true); return { ok: true }; }
+    return undefined;
+  }
+
   dispose() {
     if (this.engine) { this.engine.stop(); this.engine = null; }
     if (this.g.bus === this) this.g.bus = null;
@@ -409,7 +479,7 @@ export class Bus {
       pos: new THREE.Vector3(), radius: 1.6,
       update() { bus.toWorld(new THREE.Vector3(-0.5, 0, CAB_Z - 0.4), this.pos); },
       prompt() { return bus.playerOn && bus.state === 'wait' && bus.t > 3 ? `${verb()}, damit OTTO sofort losfährt` : null; },
-      use() { bus.t = Math.min(bus.t, 2.5); bus.say('go', {}, true); },
+      use() { if (g.isClient) { g.net.request('busGo'); return; } bus.t = Math.min(bus.t, 2.5); bus.say('go', {}, true); },
       reset() {},
     });
     // Notausstieg an der Tür während der Fahrt

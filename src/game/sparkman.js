@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
 import { zombieGeometries } from '../zombies/body.js';
-import { rand, clamp, dampAngle, smooth, raySphere } from '../core/utils.js';
+import { rand, clamp, damp, dampAngle, smooth, raySphere } from '../core/utils.js';
 import { CELL } from '../config.js';
 
 const COLOR = [0.6, 1.5, 4.2];
@@ -127,13 +127,19 @@ export class Sparkman {
   // ── Auftritt ────────────────────────────────────────────────
   arrive() {
     const g = this.g;
-    const p = this.groundSpot(g.player.pos, 16, 26, _v);
+    this.target = g.nearestSurvivor(g.spawnFocus());
+    const p = this.groundSpot(this.target.pos, 16, 26, _v);
     if (!p) return;
     this.pos.copy(p);
     this.state = 'arrive'; this.t = 0;
     this.hp = HP; this.shots = 0; this.life = 0; this.roofDone = false;
     this.lastRound = g.round;
-    // Gewitter: Blitze aus dem Himmel, Donner, kurzer Lichtblitz
+    this.storm();
+  }
+
+  // Gewitter beim Auftritt: Blitze aus dem Himmel, Donner, kurzer Lichtblitz
+  storm() {
+    const g = this.g;
     for (let i = 0; i < 3; i++) {
       setTimeout(() => {
         if (this.state !== 'arrive') return;
@@ -167,19 +173,24 @@ export class Sparkman {
     const g = this.g;
     this.state = 'dying'; this.t = 0;
     if (g.bus) g.bus.boss = false;
+    this.burst();
+    g.addPoints(500, true, this.lastHitBy || g.me); // Belohnung für den, der ihn erledigt hat
+    g.powerups.drop(this.pos.clone());
+  }
+
+  burst() {
+    const g = this.g;
     const c = this.pos.clone().setY(1.2);
     g.effects.explosion(c, 3, [1.2, 2.8, 7], true);
     for (let i = 0; i < 6; i++) g.effects.lightning(c, c.clone().add(new THREE.Vector3(rand(-5, 5), rand(-1, 4), rand(-5, 5))), COLOR, 0.4, 0.12);
     g.audio.teslaShot(true);
-    g.addPoints(500, true);
-    g.powerups.drop(this.pos.clone());
     g.hud.notice('Der Funkenmann ist erloschen', 2600);
   }
 
   // Als Blitzkugel zu einem neuen Punkt springen
   teleport(to = null, next = 'hunt') {
     const g = this.g;
-    const dest = to ? to.clone() : this.groundSpot(g.player.pos, 3.5, 7, new THREE.Vector3());
+    const dest = to ? to.clone() : this.groundSpot((this.target || g.me).pos, 3.5, 7, new THREE.Vector3());
     if (!dest) return;
     this.ballFrom = this.pos.clone().setY(this.pos.y + 1.2);
     this.ballTo = dest.clone();
@@ -210,7 +221,15 @@ export class Sparkman {
     const g = this.g;
     this.mat.uniforms.uTime.value = time;
     if (!active) { if (this.state !== 'hidden') this.reset(); return; }
-    const player = g.player;
+    if (g.isClient) { this.view(dt, time); return; }
+    // Ziel: nächster angreifbarer Spieler
+    this.targetT = (this.targetT || 0) - dt;
+    if (this.targetT <= 0 || !this.target || !this.target.targetable) { this.targetT = 0.5; this.target = g.nearestSurvivor(this.pos, this.target); }
+    const player = this.target;
+    if (g.net && this.state !== 'hidden') {
+      this.netT = (this.netT || 0) - dt;
+      if (this.netT <= 0) { this.netT = 0.1; g.net.fx(this.netState()); }
+    }
     if (this.state === 'hidden') {
       if (g.state !== 'playing') return;
       if (g.round !== this.checkedRound) {
@@ -223,7 +242,7 @@ export class Sparkman {
     }
     this.t += dt;
     this.life += dt;
-    if (player.downed || g.state === 'gameover') { if (this.state !== 'leave' && this.state !== 'dying') this.leave(); }
+    if (!player.targetable || g.state === 'gameover') { if (this.state !== 'leave' && this.state !== 'dying') this.leave(); }
     else if (this.life > 75 && ['hunt', 'roof'].includes(this.state)) this.leave();
 
     // Messer: der einzige Weg, ihn zu verletzen
@@ -231,9 +250,7 @@ export class Sparkman {
     if (w.state !== 'knife') this.knifeLatch = false;
     else if (w.knifeHit && !this.knifeLatch) {
       this.knifeLatch = true;
-      const dx = this.pos.x - player.pos.x, dz = this.pos.z - player.pos.z, d = Math.hypot(dx, dz);
-      const fwd = (-Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz) / (d || 1);
-      if (['hunt', 'charge'].includes(this.state) && d < 2.5 && fwd > 0.45) this.hurt(w.knifeLevel ? 2 : 1);
+      this.knifed(g.me, w.knifeLevel);
     }
 
     switch (this.state) {
@@ -250,15 +267,11 @@ export class Sparkman {
         if (Math.random() < 0.6) g.effects.lightning(_v.copy(this.pos).setY(2.3), this.arms[Math.random() < 0.5 ? 0 : 1].hand.getWorldPosition(_w), COLOR, 0.08, 0.15);
         this.face(player.pos, dt, 10);
         if (this.t > 0.55) {
-          const cam = g.camera.position;
           const d = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
-          g.effects.lightning(this.chest.getWorldPosition(_v), d < 3.4 ? _w.set(cam.x, cam.y - 0.25, cam.z) : _w.copy(this.pos).add(new THREE.Vector3(rand(-2, 2), 0, rand(-2, 2))), COLOR, 0.25, 0.1);
-          g.audio.teslaShot(false);
-          if (d < 3.4 && !player.downed) {
-            player.damage(40, this.pos);
-            player.shake = Math.max(player.shake, 0.6);
-            g.flash = Math.max(g.flash, 0.2);
-          }
+          const hit = d < 3.4 && player.targetable;
+          this.discharge(hit ? player : null);
+          if (g.net) g.net.fx({ sp: 'zap', s: hit ? player.slot : -1 });
+          if (hit) player.hurt(40, this.pos);
           this.state = 'hunt'; this.t = 0; this.cd = rand(1.8, 2.6);
         }
         break;
@@ -304,7 +317,106 @@ export class Sparkman {
       this.zapT = rand(0.7, 1.6);
       const p = this.ball.visible ? this.ball.position : _v.copy(this.pos).setY(this.pos.y + 1.2);
       if (this.root.visible && Math.random() < 0.6) g.effects.lightning(p, _w.copy(this.pos).add(new THREE.Vector3(rand(-1.2, 1.2), 0, rand(-1.2, 1.2))), COLOR, 0.1, 0.18);
-      if (player.pos.distanceTo(p) < 30) g.audio.teslaZap(p);
+      if (g.player.pos.distanceTo(p) < 30) g.audio.teslaZap(p);
+    }
+  }
+
+  // Entladung sichtbar machen: Blitz zum Getroffenen (beim eigenen Spieler ins Gesicht)
+  discharge(victim) {
+    const g = this.g;
+    let to;
+    if (victim && victim.local) { const cam = g.camera.position; to = _w.set(cam.x, cam.y - 0.25, cam.z); g.player.shake = Math.max(g.player.shake, 0.6); g.flash = Math.max(g.flash, 0.2); }
+    else if (victim) to = _w.copy(victim.pos).setY(victim.pos.y + 1.3);
+    else to = _w.copy(this.pos).add(new THREE.Vector3(rand(-2, 2), 0, rand(-2, 2)));
+    g.effects.lightning(this.chest.getWorldPosition(_v), to, COLOR, 0.25, 0.1);
+    g.audio.teslaShot(false);
+  }
+
+  // Messertreffer (eigener oder – beim Host – von einem Mitspieler)
+  knifed(by, level) {
+    const dx = this.pos.x - by.pos.x, dz = this.pos.z - by.pos.z, d = Math.hypot(dx, dz);
+    const fwd = (-Math.sin(by.yaw) * dx - Math.cos(by.yaw) * dz) / (d || 1);
+    if (!['hunt', 'charge'].includes(this.state) || d > 2.6 || fwd < 0.4) return false;
+    this.lastHitBy = by;
+    this.hurt(level ? 2 : 1);
+    return true;
+  }
+
+  // ── Koop ────────────────────────────────────────────────────
+  netState() {
+    const p = this.pos;
+    return { sp: 'st', st: this.state, p: [+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)], ry: +this.root.rotation.y.toFixed(2), t: +this.t.toFixed(2), sd: +(this.speed || 0).toFixed(2),
+      bf: this.ballFrom ? [this.ballFrom.x, this.ballFrom.y, this.ballFrom.z] : null, bt: this.ballTo ? [this.ballTo.x, this.ballTo.y, this.ballTo.z] : null, bd: this.ballDur || 0.5 };
+  }
+
+  netFx(d) {
+    if (d.sp === 'zap') { const s = this.g.net && this.g.net.bySlot(d.s); this.discharge(s || null); return true; }
+    if (d.sp !== 'st') return false;
+    const g = this.g, prev = this.state;
+    this.netPos = d.p; this.netRy = d.ry; this.speed = d.sd;
+    if (d.st !== prev) {
+      this.state = d.st; this.t = d.t;
+      if (d.st === 'arrive') { this.pos.set(d.p[0], d.p[1], d.p[2]); this.storm(); this.mat.uniforms.uFade.value = 0; }
+      if (d.st === 'ball' && d.bf && d.bt) { this.ballFrom = new THREE.Vector3(...d.bf); this.ballTo = new THREE.Vector3(...d.bt); this.ballDur = d.bd; g.audio.teslaZap(this.pos); }
+      if (d.st === 'dying') this.burst();
+      if (d.st === 'roof' && g.bus) g.bus.boss = true;
+      if (prev === 'roof' && g.bus) g.bus.boss = false;
+    }
+    this.netSeen = performance.now();
+    return true;
+  }
+
+  netRequest(kind, d, s) {
+    if (kind !== 'spKnife') return undefined;
+    return { ok: this.knifed(s, d.lvl) };
+  }
+
+  // Mitspieler: nur darstellen; eigene Messertreffer gehen an den Host
+  view(dt, time) {
+    const g = this.g;
+    if (this.state === 'hidden') { this.root.visible = false; this.ball.visible = false; if (this.light) this.light.intensity = 0; return; }
+    this.t += dt;
+    if (this.netPos && this.state !== 'ball') {
+      this.pos.x = damp(this.pos.x, this.netPos[0], 12, dt);
+      this.pos.y = damp(this.pos.y, this.netPos[1], 12, dt);
+      this.pos.z = damp(this.pos.z, this.netPos[2], 12, dt);
+      this.root.rotation.y = this.netRy;
+    }
+    const w = g.weapons;
+    if (w.state !== 'knife') this.knifeLatch = false;
+    else if (w.knifeHit && !this.knifeLatch) {
+      this.knifeLatch = true;
+      const d = Math.hypot(this.pos.x - g.player.pos.x, this.pos.z - g.player.pos.z);
+      if (d < 2.8) g.net.request('spKnife', { lvl: w.knifeLevel || 0 });
+    }
+    switch (this.state) {
+      case 'arrive': this.root.visible = true; this.mat.uniforms.uFade.value = smooth(clamp(this.t / 1.2, 0, 1)); break;
+      case 'hunt': case 'charge': case 'roof':
+        this.root.visible = true; this.ball.visible = false; this.mat.uniforms.uFade.value = 1;
+        if (this.state === 'charge' && Math.random() < 0.6) g.effects.lightning(_v.copy(this.pos).setY(2.3), this.arms[Math.random() < 0.5 ? 0 : 1].hand.getWorldPosition(_w), COLOR, 0.08, 0.15);
+        break;
+      case 'ball': {
+        if (!this.ballFrom) break;
+        const k = clamp(this.t / (this.ballDur || 0.5), 0, 1), e = smooth(k);
+        this.root.visible = false; this.ball.visible = true;
+        this.ball.position.lerpVectors(this.ballFrom, _v.copy(this.ballTo).setY(this.ballTo.y + 1.2), e);
+        this.ball.position.y += Math.sin(k * Math.PI) * 1.5;
+        this.ball.scale.setScalar(0.8 + Math.sin(time * 40) * 0.15);
+        if (Math.random() < 0.8) g.effects.energy(this.ball.position, COLOR, 3, 0.2);
+        if (k >= 1) this.pos.copy(this.ballTo);
+        break;
+      }
+      case 'leave': case 'dying': {
+        const k = clamp(this.t / (this.state === 'dying' ? 0.5 : 1.2), 0, 1);
+        this.mat.uniforms.uFade.value = 1 - k;
+        if (k >= 1) { this.root.visible = false; this.ball.visible = false; }
+        break;
+      }
+    }
+    this.animate(dt, time);
+    if (this.light) {
+      this.light.pos.copy(this.ball.visible ? this.ball.position : _v.copy(this.pos).setY(this.pos.y + 1.4));
+      this.light.intensity = this.root.visible || this.ball.visible ? 4 + Math.random() * 4 : 0;
     }
   }
 
@@ -314,23 +426,23 @@ export class Sparkman {
   }
 
   hunt(dt, time) {
-    const g = this.g, player = g.player, map = g.map;
+    const g = this.g, player = this.target || g.me, map = g.map;
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
     this.cd -= dt; this.teleT -= dt;
     // Spieler fährt Bus: aufs Dach springen und den Bus anhalten
     const bus = g.bus;
-    if (bus && bus.playerOn && bus.v > 2.5 && !this.roofDone && Math.hypot(bus.pos.x - this.pos.x, bus.pos.z - this.pos.z) < 32) {
+    if (bus && bus.anyOn && bus.v > 2.5 && !this.roofDone && Math.hypot(bus.pos.x - this.pos.x, bus.pos.z - this.pos.z) < 32) {
       this.roofDone = true;
       this.roofLocal = new THREE.Vector3(0, 3.1, rand(-3.5, 1.5));
       this.teleport(bus.toWorld(this.roofLocal, new THREE.Vector3()).setY(3.1), 'roof');
       this.shots = 0;
       return;
     }
-    if (dist < 2.2 && this.cd <= 0 && !player.downed && Math.abs(player.pos.y - this.pos.y) < 1.5) { this.state = 'charge'; this.t = 0; g.audio.teslaZap(this.pos); return; }
+    if (dist < 2.2 && this.cd <= 0 && player.targetable && Math.abs(player.pos.y - this.pos.y) < 1.5) { this.state = 'charge'; this.t = 0; g.audio.teslaZap(this.pos); return; }
     if ((this.teleT <= 0 && dist > 4) || dist > 18) { this.teleport(); return; }
     // schwebender, ruckartiger Gang zum Spieler (Flow-Field der Zombies)
     if (dist < 12 && map.clearPath(this.pos, player.pos, 0.3)) this.navTarget.copy(player.pos);
-    else g.zombies.pathTarget(this.pos, this.navTarget, g.player.pos);
+    else g.zombies.pathTarget(this.pos, this.navTarget, player.pos);
     const tx = this.navTarget.x - this.pos.x, tz = this.navTarget.z - this.pos.z, td = Math.hypot(tx, tz) || 1;
     const sp = (dist < 1.6 ? 0 : 3.0) * (0.7 + 0.5 * Math.max(0, Math.sin(time * 6)));
     this.pos.x += (tx / td) * sp * dt;
@@ -353,12 +465,14 @@ export class Sparkman {
     if (Math.random() < 0.25) g.effects.lightning(_v.copy(this.pos).setY(3.5), bus.toWorld(new THREE.Vector3(rand(-1.2, 1.2), rand(0.4, 2.8), rand(-5, 3.5)), _w), COLOR, 0.08, 0.2);
     // Fahrgäste bekommen gelegentlich einen Schlag ab
     this.cd -= dt;
-    if (bus.playerOn && this.cd <= 0) {
+    if (bus.anyOn && this.cd <= 0) {
       this.cd = rand(3.5, 5);
-      const cam = g.camera.position;
-      g.effects.lightning(_v.copy(this.pos).setY(3.3), _w.set(cam.x, cam.y + 0.3, cam.z), COLOR, 0.2, 0.1);
-      g.audio.teslaShot(false);
-      if (!g.player.downed) { g.player.damage(20, this.pos); g.player.shake = Math.max(g.player.shake, 0.4); }
+      for (const s of g.survivors) {
+        if (!s.onBus || !s.targetable) continue;
+        this.discharge(s);
+        if (g.net) g.net.fx({ sp: 'zap', s: s.slot });
+        s.hurt(20, this.pos);
+      }
     }
     if (this.t > 16) { this.said = false; bus.boss = false; this.teleport(null, 'hunt'); }
   }
