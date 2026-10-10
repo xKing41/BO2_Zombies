@@ -62,7 +62,9 @@ export class NetSession {
   }
 
   // ── Grundlagen ──────────────────────────────────────────────
-  send(type, data, to) { if (!this.closed) this.room.send(type, data, to); }
+  send(type, data, to, opts) { if (!this.closed) this.room.send(type, data, to, opts); }
+  // Häufige Momentaufnahmen über den schnellen, ungesicherten Kanal (veraltete werden verworfen)
+  sendFast(type, data) { this.send(type, data, undefined, { unreliable: true }); }
   ev(e) { if (this.isHost && !this.closed) this.out.push(e); }
   bySlot(slot) { return this.g.survivors.find((s) => s.slot === slot) || null; }
   byPeer(id) { return this.g.survivors.find((s) => s.peerId === id) || null; }
@@ -109,7 +111,7 @@ export class NetSession {
     if (this.isHost && !this.started) { this.holdT -= dt; this.checkReady(); }
     for (const s of g.survivors) if (!s.local) s.update(dt, t);
     this.stateT -= dt;
-    if (this.stateT <= 0 && g.state !== 'menu') { this.stateT = STATE_DT; this.send('st', this.localState()); }
+    if (this.stateT <= 0 && g.state !== 'menu') { this.stateT = STATE_DT; this.sendFast('st', this.localState()); }
     if (this.isHost) {
       this.updateRevives(dt);
       this.snapT -= dt;
@@ -139,13 +141,14 @@ export class NetSession {
       c: +Math.min(1, p.crouch).toFixed(2), ad: +(w.ads || 0).toFixed(2),
       a: Math.max(0, ACTIONS.indexOf(act)), at: +(w.stateT || 0).toFixed(2), fs: w.fireSeq || 0,
       w: slot ? slot.id : null, pap: !!(slot && slot.pap),
-      pts: g.points, hp: Math.round(p.health), pk: [...p.perks],
+      pts: g.points, hp: Math.round(p.health), pk: [...p.perks], sq: (this.stSeq = (this.stSeq || 0) + 1),
     };
   }
 
   onState(d, from) {
     const s = this.byPeer(from);
     if (!s || s.local) return;
+    if (d.sq !== undefined) { if (d.sq <= (s.lastSq || 0)) return; s.lastSq = d.sq; } // verspätet angekommen
     const wasDown = s.st.downed, wasDead = s.st.dead;
     s.applyState(d, now());
     if (s.st.downed && !wasDown) this.survivorDown(s);
@@ -181,12 +184,14 @@ export class NetSession {
       a[o++] = z.pos.x; a[o++] = z.pos.y; a[o++] = z.pos.z; a[o++] = z.yaw;
       a[o++] = z.moveSpeed; a[o++] = z.stateT; a[o++] = z.hp;
     }
-    this.send('snap', a);
+    this.sendFast('snap', a);
   }
 
   onSnap(data) {
     const a = data instanceof Float32Array ? data : new Float32Array(data instanceof ArrayBuffer ? data : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
     const pool = this.g.zombies.pool, t = now();
+    if (a[0] <= (this.lastTick ?? -1)) return; // ältere Momentaufnahme, kam zu spät
+    this.lastTick = a[0];
     const n = a[1] | 0;
     const seen = new Set();
     let o = 2;

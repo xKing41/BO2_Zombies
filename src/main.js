@@ -43,7 +43,7 @@ function play() {
   hideAll();
   $('clickToPlay').classList.add('hidden');
   if (game.state === 'menu' || game.state === 'gameover') game.start();
-  else if (game.state === 'paused') game.resume();
+  else if (game.state === 'paused' || game.menuOpen) game.resume();
   if (!touch.active) game.input.lock();
   else enterFullscreen();
   requestWakeLock();

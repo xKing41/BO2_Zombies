@@ -287,9 +287,10 @@ export class Game {
 
   // ── Koop ────────────────────────────────────────────────────
   // sess: { room, isHost, hostId, selfId, slot, players:[{slot, peerId, name, char}], map, code }
-  async startNetGame(sess, progress = () => {}) {
+  async startNetGame(sess, progress = null) {
     if (this.net) this.leaveNetGame(true);
-    if (!this.mapDef || this.mapDef.id !== sess.map) await this.loadMap(sess.map, progress);
+    const onProgress = progress || sess.onProgress || (() => {});
+    if (!this.mapDef || this.mapDef.id !== sess.map) await this.loadMap(sess.map, onProgress);
     this.net = new NetSession(this, sess);
     this.net.setupSurvivors();
     this.start();
