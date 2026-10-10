@@ -3,9 +3,11 @@ import { Game, DEFAULT_SETTINGS, bestKey } from './game/game.js';
 import { TouchControls } from './ui/touch.js';
 import { IS_TOUCH, IS_IOS, IS_STANDALONE } from './core/platform.js';
 import { MAPS, MAP_ORDER } from './maps/index.js';
+import { Lobby } from './net/lobby.js';
+import { openRoom, makeCode, PROTOCOL } from './net/transport.js';
 
 const $ = (id) => document.getElementById(id);
-const screens = ['loading', 'menu', 'mapselect', 'pause', 'settings', 'controls', 'gameover'];
+const screens = ['loading', 'menu', 'mapselect', 'coop', 'lobby', 'pause', 'settings', 'controls', 'gameover'];
 let current = 'loading';
 const show = (id) => {
   current = id;
@@ -53,7 +55,10 @@ function pauseGame() {
   show('pause');
 }
 game.onPauseRequest = pauseGame;
-game.onGameOver = () => show('gameover');
+game.onGameOver = () => {
+  $('btnAgain').classList.toggle('hidden', !!game.net); // Koop: neue Runde nur über die Lobby
+  show('gameover');
+};
 
 // Maus-Fang (Desktop) steuert Pause/Weiter
 game.input.onUnlock = () => { if (game.state === 'playing' && !touch.active) pauseGame(); };
@@ -157,13 +162,73 @@ async function chooseMap(id) {
   loadingMap = false;
 }
 
+// ── Koop (Lobby in src/net/lobby.js) ─────────────────────────
+// Startet ein Koop-Spiel; true = läuft, sonst ein Hinweis für die Lobby-Statuszeile
+async function startNet(ctx) {
+  if (typeof game.startNetGame !== 'function') {
+    game.hud.notice('Koop-Spiel folgt');
+    console.info('[Koop] game.startNetGame fehlt noch – Startdaten:', { ...ctx, room: ctx.room && ctx.room.code });
+    return 'Koop-Spiel folgt';
+  }
+  if (game.audio && game.audio.ctx) game.audio.resume();
+  $('loadbar').style.width = '0%';
+  $('loadtext').textContent = 'Koop-Spiel startet …';
+  show('loading');
+  try {
+    await game.startNetGame({
+      ...ctx,
+      onProgress: (pct, text) => { $('loadbar').style.width = pct + '%'; if (text) $('loadtext').textContent = text; },
+    });
+  } catch (err) {
+    console.error(err);
+    show('lobby');
+    return 'Start fehlgeschlagen: ' + (err && err.message ? err.message : err);
+  }
+  saveSettings(settings);
+  menuTitle();
+  hideAll();
+  $('clickToPlay').classList.add('hidden');
+  if (!touch.active) game.input.lock();
+  else enterFullscreen();
+  requestWakeLock();
+  return true;
+}
+const lobby = new Lobby({
+  game, show, launch: startNet,
+  // Klick auf „Erstellen“/„Beitreten“: Ton und Vollbild jetzt freischalten – der Start kommt später per Netz
+  gesture: () => {
+    if (game.audio && game.audio.ctx) game.audio.resume();
+    if (touch.active) enterFullscreen();
+  },
+});
+window.__lobby = lobby;
+window.__net = { openRoom, makeCode, PROTOCOL };
+
+// Laufendes Spiel verlassen (Pause → „Spiel beenden“, Game Over → „Hauptmenü“)
+function quitToMenu() {
+  if (game.net) {
+    try { game.leaveNetGame?.(); } catch (err) { console.error(err); }
+  }
+  lobby.reset();
+  game.toMenu();
+  show('menu');
+}
+// Vom Spiel gemeldet: Koop-Partie vorbei (Host weg, Verbindung verloren …)
+game.onNetEnd = (reason) => {
+  game.input.unlock();
+  $('clickToPlay').classList.add('hidden');
+  if (game.state === 'playing' || game.state === 'paused' || game.state === 'gameover') game.toMenu();
+  lobby.open(typeof reason === 'string' && reason ? reason : 'Koop-Spiel beendet');
+};
+
 // ── Menü-Knöpfe ──────────────────────────────────────────────
 $('btnPlay').onclick = () => { buildMapCards(); show('mapselect'); };
+$('btnCoop').onclick = () => lobby.open();
 $('btnMapBack').onclick = () => show('menu');
 $('btnResume').onclick = play;
 $('btnAgain').onclick = play;
-$('btnQuit').onclick = () => { game.toMenu(); show('menu'); };
-$('btnMenu').onclick = () => { game.toMenu(); show('menu'); };
+$('btnQuit').onclick = quitToMenu;
+$('btnMenu').onclick = quitToMenu;
 $('btnSettings').onclick = () => { backTo = 'menu'; show('settings'); };
 $('btnSettings2').onclick = () => { backTo = 'pause'; show('settings'); };
 $('btnControls').onclick = () => { backTo = 'menu'; show('controls'); };
@@ -243,6 +308,7 @@ const padNav = {
       if (edge('b')) {
         if (current === 'pause') play();
         else if (current === 'settings' || current === 'controls') $(current).querySelector('.back').click();
+        else if (current === 'coop' || current === 'lobby') lobby.back(current);
       }
       if (edge('start') && current === 'pause') play();
     }
@@ -284,7 +350,9 @@ window.__nfBack = () => {
     case 'pause': play(); return 'handled';
     case 'settings': case 'controls': $(current).querySelector('.back').click(); return 'handled';
     case 'mapselect': show('menu'); return 'handled';
-    case 'gameover': game.toMenu(); show('menu'); return 'handled';
+    case 'coop': show('menu'); return 'handled';
+    case 'lobby': lobby.leave(); return 'handled';
+    case 'gameover': quitToMenu(); return 'handled';
     case 'loading': return 'handled';
     default: return 'exit';
   }
@@ -315,6 +383,9 @@ game.init((pct, text) => {
   const installable = !!document.querySelector('link[rel="manifest"]') && window.top === window;
   if (IS_IOS && !IS_STANDALONE && installable) $('iosHint').classList.remove('hidden');
   checkOrientation();
+  // Einladungslink (#join=CODE) → Koop-Bildschirm mit vorausgefülltem Code
+  lobby.consumeDeepLink();
+  addEventListener('hashchange', () => { if (current === 'menu' || current === 'coop') lobby.consumeDeepLink(); });
 }).catch((err) => {
   console.error(err);
   $('loadtext').textContent = 'Fehler beim Laden: ' + err.message + ' (WebGL2 wird benötigt)';
