@@ -31,11 +31,12 @@ class PlaceholderAvatar {
     this.pivot = new THREE.Group();
     this.pivot.add(this.body, this.head, this.gun);
     g.add(this.pivot);
-    this.tag = new THREE.Sprite(new THREE.SpriteMaterial({ depthWrite: false, transparent: true }));
-    this.tag.scale.set(1.2, 0.3, 1); this.tag.position.y = 2.05;
+    // Name und Wiederbelebungs-Symbol wie in BO2 in fester Bildschirmgröße (Maßstab je Bild, siehe update)
+    this.tag = new THREE.Sprite(new THREE.SpriteMaterial({ depthWrite: false, transparent: true, sizeAttenuation: false }));
+    this.tag.position.y = 2.05;
     g.add(this.tag);
-    this.icon = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff3020, depthTest: false, depthWrite: false, transparent: true }));
-    this.icon.scale.set(0.5, 0.5, 1); this.icon.position.y = 1.2; this.icon.visible = false; this.icon.renderOrder = 999;
+    this.icon = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff3020, depthTest: false, depthWrite: false, transparent: true, sizeAttenuation: false }));
+    this.icon.position.y = 1.2; this.icon.visible = false; this.icon.renderOrder = 999;
     g.add(this.icon);
     this.setTag(name || 'Mitspieler', '#ffffff');
   }
@@ -55,6 +56,12 @@ class PlaceholderAvatar {
     this.pivot.position.y = lying ? 0.35 : 0;
     this.pivot.scale.y = 1 - (s.crouch || 0) * 0.3;
     this.gun.rotation.x = s.pitch;
+    // Feste Bildschirmgröße (18–40 px hoch), unabhängig von Entfernung und Sichtfeld der eigenen Kamera
+    const k = Math.tan(((this.g.camera ? this.g.camera.fov : 80) * Math.PI) / 360);
+    const vh = this.g.rs ? this.g.rs.height : 720;
+    const h = (Math.min(40, Math.max(18, vh * 0.05)) / vh) * 2 * k;
+    this.tag.scale.set(h * 4, h, 1);
+    this.icon.scale.set(h * 1.4, h * 1.4, 1);
   }
   muzzleWorld(out) { return this.gun.localToWorld(out.set(0, 0, -0.3)); }
   headWorld(out) { return this.head.getWorldPosition(out); }

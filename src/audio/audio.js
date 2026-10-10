@@ -10,6 +10,10 @@ import BankWorker from './bankWorker.js?worker&inline';
 
 const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
 const VOX_CAP = 8; // gleichzeitige Zombie-Stimmen (Handy-tauglich)
+// Splitscreen: Musik, Ansager, Sprachausgabe und Atmosphäre spielt nur der erste Spieler –
+// weitere Instanzen hören nur ihre eigenen und räumlichen Geräusche (aus ihrer Position)
+const SHARED_ONLY = ['roundStart', 'roundEnd', 'gameOver', 'announce', 'announcerFx', 'say', 'powerupGrab',
+  'musicBox', 'signalFinale', 'achievement', 'startAmbience', 'randomAmbient', 'stopSong', 'typeClick'];
 
 export class AudioEngine {
   constructor({ bank = true } = {}) {
@@ -21,6 +25,17 @@ export class AudioEngine {
     this.jingle = null;
     // Klangbank schon während des Ladens im Hintergrund rendern
     if (bank) this.startBank();
+  }
+
+  // Weitere Splitscreen-Instanz: eigener Kontext (eigene Hörerposition), gemeinsame Klangbank
+  static follower(main) {
+    const a = new AudioEngine({ bank: false });
+    a.secondary = true;
+    a.bank = main.bank;
+    a.scores = main.scores;
+    for (const k of SHARED_ONLY) a[k] = () => {};
+    a.secretSong = () => 1; // Hinweis „Nebelfahrt“ trotzdem zeigen
+    return a;
   }
 
   // ctx: optional eigener Kontext (z. B. OfflineAudioContext für Tests)

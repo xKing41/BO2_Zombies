@@ -5,9 +5,10 @@ import { IS_TOUCH, IS_IOS, IS_STANDALONE } from './core/platform.js';
 import { MAPS, MAP_ORDER } from './maps/index.js';
 import { Lobby } from './net/lobby.js';
 import { openRoom, makeCode, PROTOCOL } from './net/transport.js';
+import { SplitScreen } from './ui/splitscreen.js';
 
 const $ = (id) => document.getElementById(id);
-const screens = ['loading', 'menu', 'mapselect', 'coop', 'lobby', 'pause', 'settings', 'controls', 'gameover'];
+const screens = ['loading', 'menu', 'mapselect', 'coop', 'lobby', 'split', 'pause', 'settings', 'controls', 'gameover'];
 let current = 'loading';
 const show = (id) => {
   current = id;
@@ -30,6 +31,7 @@ function saveSettings(s) {
 // Läuft das Spiel in der Android-App? (Die App stellt window.NachtfallApp bereit)
 const IN_APP = !!window.NachtfallApp;
 const settings = loadSettings();
+const HUD_TEMPLATE = $('hud').cloneNode(true); // unberührte Vorlage für die HUDs weiterer Splitscreen-Spieler
 const game = new Game($('game'), settings);
 const touch = new TouchControls(game.input);
 game.touch = touch;
@@ -43,20 +45,22 @@ function play() {
   hideAll();
   $('clickToPlay').classList.add('hidden');
   if (game.state === 'menu' || game.state === 'gameover') game.start();
-  else if (game.state === 'paused' || game.menuOpen) game.resume();
-  if (!touch.active) game.input.lock();
+  else if (game.state === 'paused' || game.menuOpen) { game.resume(); split.resumeOthers(); }
+  if (split.active) { if (split.kbm) game.input.lock(); }
+  else if (!touch.active) game.input.lock();
   else enterFullscreen();
   requestWakeLock();
 }
 
 function pauseGame() {
   if (!game.pause()) return;
+  split.pauseOthers();
   game.input.unlock();
   show('pause');
 }
 game.onPauseRequest = pauseGame;
 game.onGameOver = () => {
-  $('btnAgain').classList.toggle('hidden', !!game.net); // Koop: neue Runde nur über die Lobby
+  $('btnAgain').classList.toggle('hidden', !!game.net && !split.active); // Koop: neue Runde nur über die Lobby
   show('gameover');
 };
 
@@ -72,6 +76,7 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', () => {
   if (game.state !== 'playing') return;
+  if (split.active) { $('clickToPlay').classList.remove('hidden'); return; }
   const now = performance.now();
   if (now - lastLockError > 400) lockErrors++; // ein Versuch kann zwei Fehler melden
   lastLockError = now;
@@ -84,6 +89,7 @@ document.addEventListener('pointerlockerror', () => {
 });
 $('game').addEventListener('click', () => {
   if (game.audio && game.audio.ctx) game.audio.resume();
+  if (split.active) { split.onClick(); return; }
   if (game.state === 'playing' && !game.input.locked && !touch.active) game.input.lock();
 });
 
@@ -204,8 +210,27 @@ const lobby = new Lobby({
 window.__lobby = lobby;
 window.__net = { openRoom, makeCode, PROTOCOL };
 
+// ── Splitscreen (src/ui/splitscreen.js) ──────────────────────
+const split = new SplitScreen(game, settings, HUD_TEMPLATE, {
+  show,
+  current: () => current,
+  progress: (pct, text) => { $('loadbar').style.width = pct + '%'; if (text) $('loadtext').textContent = text; },
+  paused: () => pauseGame(),
+  started: () => {
+    saveSettings(settings);
+    menuTitle();
+    hideAll();
+    $('clickToPlay').classList.add('hidden');
+    if (game.audio && game.audio.ctx) game.audio.resume();
+    if (split.kbm) game.input.lock();
+    requestWakeLock();
+  },
+});
+window.__split = split;
+
 // Laufendes Spiel verlassen (Pause → „Spiel beenden“, Game Over → „Hauptmenü“)
 function quitToMenu() {
+  if (split.active) { split.stop(); touch.setActive(IS_TOUCH); }
   if (game.net) {
     try { game.leaveNetGame?.(); } catch (err) { console.error(err); }
   }
@@ -224,16 +249,17 @@ game.onNetEnd = (reason) => {
 // ── Menü-Knöpfe ──────────────────────────────────────────────
 $('btnPlay').onclick = () => { buildMapCards(); show('mapselect'); };
 $('btnCoop').onclick = () => lobby.open();
+$('btnSplit').onclick = () => split.open();
 $('btnMapBack').onclick = () => show('menu');
 $('btnResume').onclick = play;
-$('btnAgain').onclick = play;
+$('btnAgain').onclick = () => (split.active ? split.restart() : play());
 $('btnQuit').onclick = quitToMenu;
 $('btnMenu').onclick = quitToMenu;
 $('btnSettings').onclick = () => { backTo = 'menu'; show('settings'); };
 $('btnSettings2').onclick = () => { backTo = 'pause'; show('settings'); };
 $('btnControls').onclick = () => { backTo = 'menu'; show('controls'); };
 $('btnControls2').onclick = () => { backTo = 'pause'; show('controls'); };
-document.querySelectorAll('.back').forEach((b) => (b.onclick = () => { saveSettings(settings); game.applySettings(); show(backTo); }));
+document.querySelectorAll('.back').forEach((b) => (b.onclick = () => { saveSettings(settings); game.applySettings(); split.applySettings(); show(backTo); }));
 
 // ── Einstellungen ────────────────────────────────────────────
 const bind = (id, key, fmt = (v) => v) => {
@@ -287,11 +313,13 @@ const padNav = {
   tick() {
     requestAnimationFrame(() => this.tick());
     const pads = game.input.getPads();
-    const gp = pads.find((p) => p.mapping === 'standard') || pads[0];
-    if (!gp) return;
-    const b = (i) => !!gp.buttons[i] && gp.buttons[i].pressed;
-    const ay = gp.axes[1] || 0, ax = gp.axes[0] || 0;
-    const now = { up: b(12) || ay < -0.6, down: b(13) || ay > 0.6, left: b(14) || ax < -0.6, right: b(15) || ax > 0.6, a: b(0), b: b(1), start: b(9) };
+    if (!pads.length) return;
+    // Splitscreen-Beitritt: jeder Controller einzeln (A = beitreten, B = gehen, Start = los)
+    if (current === 'split') { split.menuTick(pads); this.prev = { a: true, b: true, start: true }; return; }
+    // Sonst steuern alle Controller gemeinsam das Menü
+    const b = (i) => pads.some((gp) => !!gp.buttons[i] && gp.buttons[i].pressed);
+    const ax = (k, s) => pads.some((gp) => s * (gp.axes[k] || 0) > 0.6);
+    const now = { up: b(12) || ax(1, -1), down: b(13) || ax(1, 1), left: b(14) || ax(0, -1), right: b(15) || ax(0, 1), a: b(0), b: b(1), start: b(9) };
     const p = this.prev;
     const edge = (k) => now[k] && !p[k];
     if (current) {
@@ -352,6 +380,7 @@ window.__nfBack = () => {
     case 'mapselect': show('menu'); return 'handled';
     case 'coop': show('menu'); return 'handled';
     case 'lobby': lobby.leave(); return 'handled';
+    case 'split': split.back(); return 'handled';
     case 'gameover': quitToMenu(); return 'handled';
     case 'loading': return 'handled';
     default: return 'exit';

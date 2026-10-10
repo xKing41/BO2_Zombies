@@ -56,7 +56,7 @@ export class TouchControls {
     root.addEventListener('pointercancel', (e) => this.up(e), opt);
     // Erste Berührung irgendwo → Touch-Modus einschalten
     addEventListener('pointerdown', (e) => {
-      if (e.pointerType !== 'touch') return;
+      if (e.pointerType !== 'touch' || this.blocked) return; // blocked: Splitscreen (nur Controller)
       this.input.device = 'touch';
       if (!this.active) this.setActive(true);
     }, { capture: true, passive: true });

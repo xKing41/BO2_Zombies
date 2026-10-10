@@ -54,7 +54,9 @@ function bloodOverlay() {
 }
 
 export class HUD {
-  constructor() {
+  // root: eigenes HUD-Element (Splitscreen: Kopie von #hud je Spieler)
+  constructor(root = null) {
+    const $ = root ? (id) => (id === 'hud' ? root : root.querySelector('#' + id)) : (id) => document.getElementById(id);
     this.el = {
       hud: $('hud'), prompt: $('prompt'), notice: $('notice'), banner: $('banner'), round: $('round'), tally: $('tally'),
       perks: $('perks'), score: $('score'), popups: $('popups'), wname: $('wname'), ammo: $('ammo'), mag: $('mag'), reserve: $('reserve'), nades: $('nades'),

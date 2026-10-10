@@ -34,9 +34,14 @@ export const DEFAULT_SETTINGS = {
 };
 
 export class Game {
-  constructor(canvas, settings) {
+  // opts (Splitscreen): { input: { kbm, pad }, hudRoot, view: { x, y, w, h }, sharedM, audioFrom, split, secondary }
+  constructor(canvas, settings, opts = {}) {
     this.canvas = canvas;
     this.settings = settings;
+    this.opts = opts;
+    this.split = !!opts.split; // Teil einer Splitscreen-Partie
+    this.secondary = !!opts.secondary; // weitere Instanz (Spieler 2–4): keine Menüs, Musik, Sprachausgabe
+    this.qualityOverride = opts.quality || null; // Splitscreen: Grafikstufe statt „Automatisch“
     this.state = 'loading';
     this.round = 0;
     this.points = 500;
@@ -45,7 +50,7 @@ export class Game {
     this.time = 0;
     this.lightLevel = 0.5;
     this.repairPoints = 0;
-    this.input = new Input(canvas);
+    this.input = new Input(canvas, opts.input);
     this.touch = null; // wird von main.js gesetzt
     this.perf = { acc: 0, n: 0 };
     this.features = [];
@@ -101,17 +106,18 @@ export class Game {
   async init(progress) {
     const step = async (pct, text) => { progress(pct, text); await nextFrame(); };
     await step(5, 'Grafik wird initialisiert …');
-    this.rs = new RenderSystem(this.canvas, this.settings.quality);
+    this.rs = new RenderSystem(this.canvas, this.qualityOverride || this.settings.quality);
+    if (this.opts.view) this.rs.setView(this.opts.view);
     const q = this.rs.quality;
     setAnisotropy(Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()));
     setTextureScale(q.texScale);
-    this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, 0.05, 400);
+    this.camera = new THREE.PerspectiveCamera(this.settings.fov, this.rs.width / this.rs.height, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
-    this.vmCamera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.01, 10);
+    this.vmCamera = new THREE.PerspectiveCamera(54, this.rs.width / this.rs.height, 0.01, 10);
     this.scene = new THREE.Scene();
     this.vmScene = new THREE.Scene();
     this.rs.setup(this.scene, this.camera, this.vmScene, this.vmCamera);
-    this.rs.onResize = () => this.effects && this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
+    this.rs.onResize = () => this.effects && this.effects.setScale(this.rs.height * this.rs.renderer.getPixelRatio(), this.camera.fov);
     const pmrem = new THREE.PMREMGenerator(this.rs.renderer);
     this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
@@ -120,11 +126,13 @@ export class Game {
 
     let n = 0;
     const labels = 8;
-    this.M = buildMaterials((label) => { n++; progress(10 + (n / labels) * 40, `Texturen: ${label} …`); });
+    // Splitscreen: weitere Spieler nutzen dieselben Materialien (spart Zeit und Speicher)
+    this.M = this.opts.sharedM || buildMaterials((label) => { n++; progress(10 + (n / labels) * 40, `Texturen: ${label} …`); });
     this.collectShared();
-    this.audio = new AudioEngine();
+    // Splitscreen: weitere Spieler nutzen die fertige Klangbank des ersten mit
+    this.audio = this.opts.audioFrom ? AudioEngine.follower(this.opts.audioFrom) : new AudioEngine();
     this.audio.panningModel = q.hrtf ? 'HRTF' : 'equalpower';
-    this.hud = new HUD();
+    this.hud = new HUD(this.opts.hudRoot || null);
     this.player = new Player(this);
     this.me = new LocalSurvivor(this);
     this.survivors = [this.me];
@@ -195,7 +203,7 @@ export class Game {
     this.player.reset();
     await step(90, 'Shader werden kompiliert …');
     this.precompile();
-    this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
+    this.effects.setScale(this.rs.height * this.rs.renderer.getPixelRatio(), this.camera.fov);
     this.player.update(0, this.input);
     this.station = null;
     await step(100, 'Bereit.');
@@ -251,22 +259,24 @@ export class Game {
 
   applySettings() {
     const s = this.settings;
-    this.camera.fov = s.fov;
+    this.camera.fov = this.viewFov(s.fov);
     this.audio.setVolumes({ master: s.master, music: s.music });
     this.hud.showHits = !!s.hitmarker;
-    if (this.rs.qualityName !== resolveQuality(s.quality)) {
-      this.rs.setQuality(s.quality);
+    const qn = this.qualityOverride || s.quality;
+    if (this.rs.qualityName !== resolveQuality(qn)) {
+      this.rs.setQuality(qn);
       this.applyLightQuality();
       // Schatten an/aus erfordert neue Shader
       this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => (m.needsUpdate = true)); });
-      this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), this.camera.fov);
+      this.effects.setScale(this.rs.height * this.rs.renderer.getPixelRatio(), this.camera.fov);
     }
   }
 
   // ── Spielablauf ─────────────────────────────────────────────
   start() {
     this.audio.init();
-    this.audio.setVolumes({ master: this.settings.master, music: this.settings.music });
+    // Splitscreen: Geräusche kommen aus mehreren Hörerpositionen zugleich → etwas leiser
+    this.audio.setVolumes({ master: this.settings.master, music: this.settings.music, sfx: this.split ? 0.75 : 1 });
     this.audio.enabledAmbient = true;
     this.resetWorld();
     this.state = 'playing';
@@ -490,6 +500,7 @@ export class Game {
     this.input.unlock();
     const secs = Math.floor(this.time - this.stats.start);
     const r = this.round;
+    if (this.secondary) { setTimeout(() => { if (this.state === 'gameover') this.hud.show(false); }, 3500); return; }
     document.getElementById('goRounds').textContent = `Du hast ${r} ${r === 1 ? 'Runde' : 'Runden'} überlebt`;
     if (this.coop) {
       // Koop: Übersicht für alle Spieler (wie die Tabelle am Ende einer BO2-Partie)
@@ -514,8 +525,8 @@ export class Game {
 
   pause() {
     if (this.state !== 'playing') return false;
-    if (this.net) {
-      // Koop: Menü öffnen, aber die Welt läuft weiter (wie online in BO2)
+    if (this.net && !this.split) {
+      // Koop: Menü öffnen, aber die Welt läuft weiter (wie online in BO2); Splitscreen hält wirklich an
       this.menuOpen = true;
       if (this.touch) this.touch.show(false);
       return true;
@@ -535,8 +546,25 @@ export class Game {
     this.lastT = performance.now();
   }
 
+  // Splitscreen: feste Grafikstufe (null = wieder die Einstellung)
+  setQualityOverride(q) {
+    this.qualityOverride = q || null;
+    this.applySettings();
+  }
+
+  // Splitscreen: zusätzliche Instanz wieder abbauen
+  dispose() {
+    this.disposed = true;
+    if (this.net) this.leaveNetGame(true);
+    try { this.unloadMap(); } catch (err) { console.error(err); }
+    try { this.rs.dispose(); } catch { /* */ }
+    try { if (this.audio && this.audio.ctx) this.audio.ctx.close(); } catch { /* */ }
+    this.input.dispose();
+  }
+
   // ── Hauptschleife ──────────────────────────────────────────
   loop(t) {
+    if (this.disposed) return;
     requestAnimationFrame((tt) => this.loop(tt));
     const raw = (t - this.lastT) / 1000;
     this.lastT = t;
@@ -669,11 +697,20 @@ export class Game {
     this.lightLevel = damp(this.lightLevel, clamp(sum * 0.06 + 0.12, 0.12, 1), 4, 1 / 60);
   }
 
+  // Splitscreen: sehr breite Ausschnitte (oben/unten geteilt) bekommen das waagerechte
+  // Sichtfeld eines 16:9-Bildes statt eines riesigen Weitwinkels
+  viewFov(f) {
+    const a = this.rs.width / this.rs.height;
+    if (!this.split || a <= 16 / 9 + 0.01) return f;
+    const h = Math.atan(Math.tan((f * Math.PI) / 360) * (16 / 9));
+    return (Math.atan(Math.tan(h) / a) * 360) / Math.PI;
+  }
+
   render(dt) {
     const u = this.rs.uniforms;
     const p = this.player;
     const w = this.weapons;
-    let fov = this.settings.fov;
+    let fov = this.viewFov(this.settings.fov);
     if (w.weapon && (this.state === 'playing' || this.state === 'gameover')) {
       fov = w.weapon.stats.scope ? fov - (fov - 22) * w.ads : fov * (1 - 0.18 * w.ads);
       if (p.sprinting) fov += 4;
@@ -681,7 +718,7 @@ export class Game {
     if (Math.abs(this.camera.fov - fov) > 0.01) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();
-      this.effects.setScale(innerHeight * this.rs.renderer.getPixelRatio(), fov);
+      this.effects.setScale(this.rs.height * this.rs.renderer.getPixelRatio(), fov);
     }
     u.uTime.value = this.time;
     const low = 1 - p.health / p.maxHealth;

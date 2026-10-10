@@ -27,6 +27,35 @@ Animationen und Sounds werden prozedural im Code erzeugt.
 - **Der Funkenmann:** Ab Runde 4 zieht manchmal ein Gewitter auf – mit ihm kommt ein Wesen aus Elektrizität. Es springt als Blitzkugel umher und entlädt sich auf dich. Kugeln verpuffen in Funken, nur das Messer verletzt es. Fährst du Bus, setzt es sich aufs Dach und legt den Bus lahm.
 - **Geheimnisse:** eine mehrstufige Hauptquest und ein verstecktes Lied.
 
+## Koop & Splitscreen (bis zu 4 Spieler)
+
+**Online-Koop ohne eigenen Server:** „Koop“ → Namen eingeben → „Spiel erstellen“. Den fünfstelligen Code
+(oder den Einladungslink `…#join=CODE`) an die Mitspieler schicken, die mit „Beitreten“ dazukommen. Die Geräte
+finden sich über öffentliche Nostr-Relays (Bibliothek *Trystero*) und verbinden sich dann direkt per WebRTC –
+die Spieldaten selbst laufen über keinen Server. Wer das Spiel erstellt (Host), wählt die Karte und startet.
+
+**Splitscreen an einem Gerät:** „Splitscreen“ im Hauptmenü. Controller treten mit A / ✕ bei (B / ○ verlässt),
+Tastatur & Maus spielt immer Spieler 1, Start legt los. Zu zweit wird das Bild wie in BO2 oben/unten geteilt,
+zu dritt oder viert in Viertel. Jeder hat sein eigenes HUD und hört die Welt aus seiner Position; die Grafikstufe
+„Automatisch“ wird dabei eine Stufe sparsamer. Pause hält hier – anders als online – alle an.
+
+**Regeln wie in BO2:**
+- Wer zu Boden geht, verliert 5 % seiner Punkte und alle Perks und blutet nach 45 Sekunden aus. Mitspieler beleben mit gehaltener Benutzen-Taste in 3 Sekunden wieder (mit Phönix-Soda in 1,5 Sekunden).
+- Ausgeblutet heißt zuschauen bis zur nächsten Runde, dann geht es mit der Startpistole weiter. Vorbei ist die Partie erst, wenn alle gleichzeitig am Boden liegen oder ausgeblutet sind.
+- Phönix-Soda kostet im Koop 1500 Punkte und belebt nicht selbst wieder.
+- Jeder hat eigene Punkte; Atombombe und Zimmermann zahlen jedem Spieler aus. Waffen aus Kiste und Äther-Schmiede kann nur nehmen, wer bezahlt hat. Barrikaden bringen je Spieler und Runde höchstens 500 Punkte.
+- Mehr Spieler bedeuten mehr Zombies pro Runde (Formel wie im Original).
+
+**So funktioniert es:** Der Host berechnet Zombies, Runden, Power-Ups, Kiste, Türen, Bus, Baupläne und Quest und
+verteilt den Stand an alle (Zombie-Momentaufnahmen 15-mal pro Sekunde über einen schnellen, ungesicherten Kanal).
+Jedes Gerät steuert seinen eigenen Spieler, zeigt Treffer sofort an und meldet sie dem Host. Splitscreen nutzt
+genau diese Koop-Logik: Jeder Bildausschnitt ist eine eigene Spielinstanz, verbunden über einen Raum im Speicher.
+
+**Noch offen:** Mitspieler sind vorerst einfache Platzhalter-Figuren; Projektile der Wunderwaffen anderer Spieler
+sind noch nicht sichtbar; man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
+im Hintergrund-Tab, steht die Partie. Hinter sehr strengen Firewalls kann die Direktverbindung scheitern – dafür
+lässt sich ein eigener TURN-Server angeben (`#turn=turn:host:3478|nutzer|passwort`, siehe `src/net/transport.js`).
+
 ## Auf jedem Gerät spielbar
 
 | Plattform | Steuerung | Hinweise |
@@ -165,9 +194,10 @@ src/
   zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
   player/              Bewegung, Kamera, Gesundheit, Perks
-  game/                Spiel-Loop, Runden, Interaktionen, Power-Ups; Linie 13: Bus, Baupläne, Gefahren, Quest, Bank
+  game/                Spiel-Loop, Runden, Interaktionen, Power-Ups, Überlebende (Koop); Linie 13: Bus, Baupläne, Gefahren, Quest, Bank
+  net/                 Koop: Verbindung (WebRTC über Trystero, BroadcastChannel, Speicher), Lobby, Sitzung mit Host-Autorität
   audio/               Prozedurales Sound-Design
-  ui/                  HUD und Touch-Steuerung
+  ui/                  HUD, Touch-Steuerung, Splitscreen
 public/                App-Manifest, Service Worker (offline), Icons
 android/               Android-App (WebView-Hülle, Gradle-Projekt, fester Signaturschlüssel)
 scripts/               Einzeldatei-Build
@@ -206,8 +236,8 @@ damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Anima
    Three.js mit WebGPU + echten Assets ausbauen.
 2. **Echte Assets:** gescannte/handmodellierte Zombies mit Skinning und Motion-Capture-Animationen
    (z. B. glTF-Import), PBR-Texturen aus Substance, aufgenommene Foley-Sounds und komponierte Musik.
-3. **Koop-Multiplayer (1–4 Spieler)** – das Herzstück der Kindheitserinnerungen: WebRTC/WebSocket
-   mit autoritativem Server, Wiederbeleben von Mitspielern.
+3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes: richtige
+   Spielfiguren mit Animationen, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),
    Höllenhund-Runden, weitere Spezialgegner, Spielfiguren mit eigenen Sprüchen, Rangsystem und Statistiken.
 5. **Verbesserungen ggü. BO2:** Barrierefreiheit (Farbfilter, frei belegbare Tasten; Untertitel gibt es

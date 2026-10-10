@@ -77,6 +77,7 @@
     <div class="buttons">
       <button id="btnPlay">Spielen</button>
       <button id="btnCoop">Koop</button>
+      <button id="btnSplit">Splitscreen</button>
       <button id="btnSettings">Einstellungen</button>
       <button id="btnControls">Steuerung</button>
       <button id="btnInstall" class="hidden">Als App installieren</button>
@@ -135,6 +136,23 @@
         <div id="lobbyMapHint" class="lobby-hint"></div>
       </section>
     </div>
+  </div>
+
+  <!-- Splitscreen: Spieler treten mit ihrem Controller bei -->
+  <div id="split" class="screen hidden">
+    <h2>Splitscreen</h2>
+    <ol id="splitSlots" class="split-slots"></ol>
+    <div class="split-maps">
+      <div class="field">Karte</div>
+      <div id="splitMaps" class="lobby-maps"></div>
+    </div>
+    <div id="splitMsg" class="coop-msg" role="status" aria-live="polite"></div>
+    <div class="buttons split-btns">
+      <button id="btnSplitStart" disabled>Spiel starten</button>
+      <button id="btnSplitKbm">Tastatur &amp; Maus hinzufügen</button>
+      <button id="btnSplitBack">Zurück</button>
+    </div>
+    <div class="hint">Bis zu vier Spieler an einem Bildschirm. Controller: A / ✕ beitreten · B / ○ verlassen · Steuerkreuz Karte wählen · Start loslegen. Tastatur &amp; Maus spielt immer Spieler 1.</div>
   </div>
 
   <!-- Pause -->

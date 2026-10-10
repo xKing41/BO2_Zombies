@@ -6,6 +6,7 @@
 //          die Spieldaten selbst laufen nie über die Relays.
 //  'local' BroadcastChannel: mehrere Tabs/Seiten im selben Browser
 //          (für Tests und Entwicklung, gleiche Semantik wie 'p2p').
+//  'memory' MemoryHub: mehrere Spielinstanzen in derselben Seite (Splitscreen).
 //
 //  Raum (Room):
 //    room.selfId, room.code, room.mode
@@ -464,6 +465,66 @@ class LocalRoom extends Room {
       try { this._ch.close(); } catch { /* schon zu */ }
     }
     return Promise.resolve();
+  }
+}
+
+// ── Im Speicher (Splitscreen: mehrere Spieler an einem Gerät) ──
+// Gleiche Semantik wie übers Netz: Daten werden kopiert (JSON bzw. neue Puffer)
+// und erst nach dem laufenden Ablauf zugestellt – in Sendereihenfolge, ohne Verluste.
+class MemoryRoom extends Room {
+  constructor(hub) {
+    super(hub.code, 'memory', genId());
+    this._hub = hub;
+  }
+
+  _send(type, data, targets) {
+    const bin = isBinary(data);
+    const body = bin ? toArrayBuffer(data).slice(0) : JSON.stringify(data);
+    for (const r of this._hub.rooms) {
+      if (r === this || (targets && !targets.includes(r.selfId))) continue;
+      this._hub.post(() => r._emit(type, bin ? body.slice(0) : JSON.parse(body), this.selfId));
+    }
+  }
+
+  _ping() { return Promise.resolve(0); }
+
+  leave() {
+    if (!this.left) {
+      const hub = this._hub;
+      hub.rooms.delete(this);
+      this._close();
+      for (const r of hub.rooms) hub.post(() => r._removePeer(this.selfId));
+    }
+    return Promise.resolve();
+  }
+}
+
+export class MemoryHub {
+  constructor(code = 'LOKAL') {
+    this.code = code;
+    this.rooms = new Set();
+    this._q = [];
+    this._queued = false;
+  }
+
+  // Neuer Teilnehmer; alle kennen sich sofort (wie nach dem Verbindungsaufbau)
+  join() {
+    const room = new MemoryRoom(this);
+    for (const r of this.rooms) { r._addPeer(room.selfId); room._addPeer(r.selfId); }
+    this.rooms.add(room);
+    return room;
+  }
+
+  post(fn) {
+    this._q.push(fn);
+    if (this._queued) return;
+    this._queued = true;
+    queueMicrotask(() => {
+      const q = this._q;
+      this._q = [];
+      this._queued = false;
+      for (const f of q) f();
+    });
   }
 }
 

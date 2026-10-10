@@ -314,7 +314,7 @@ export class NetSession {
     if (!s || s.local) return;
     const m = s.muzzle(_p);
     g.effects.muzzle(m, d.c ?? 0xffb060, 0.8);
-    g.audio.gunshot(d.k, !!d.pap, m.clone());
+    if (!g.split) g.audio.gunshot(d.k, !!d.pap, m.clone()); // Splitscreen: den Knall spielt schon die Instanz des Schützen
     for (const e of d.e || []) if (Math.random() < 0.5) g.effects.tracer(m.clone(), V(e));
     for (const im of d.im || []) g.effects.impact(V(im[0]), V(im[1]), im[2]);
     if (this.isHost && d.o && d.d) {

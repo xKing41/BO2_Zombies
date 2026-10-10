@@ -15,6 +15,7 @@ const PAD = { jump: [0], crouch: [1], reload: [2], switch: [3], knife: [11, 4], 
 const ACTIONS = new Set(['fire', 'ads', 'reload', 'use', 'knife', 'grenade', 'jump', 'crouch', 'sprint', 'switch', 'slot1', 'slot2', 'pause']);
 
 const MOUSE_RAD = 0.0022; // Radiant pro Maus-Zählschritt (Empfindlichkeit 1)
+const EMPTY = new Set();
 
 function deadzone(x, y, dz) {
   const m = Math.hypot(x, y);
@@ -24,8 +25,11 @@ function deadzone(x, y, dz) {
 }
 
 export class Input {
-  constructor(canvas) {
+  // opts.kbm: Tastatur/Maus auswerten · opts.pad: nur dieser Controller (Index), null = erster passender
+  constructor(canvas, opts = {}) {
     this.canvas = canvas;
+    this.useKbm = opts.kbm !== false;
+    this.padIndex = opts.pad ?? null;
     // Rohzustand Tastatur/Maus
     this.keys = new Set();
     this.pressed = new Set();
@@ -44,42 +48,61 @@ export class Input {
     this.aHit = new Set();
     this.moveX = 0; this.moveY = 0;
     this.lookX = 0; this.lookY = 0;
-    this.device = 'kbm';
+    this.device = this.useKbm ? 'kbm' : 'pad';
     this.useAvailable = false;
 
-    addEventListener('keydown', (e) => {
+    // Alle Beobachter merken, damit eine Splitscreen-Instanz sie beim Abbau wieder lösen kann
+    this.listeners = [];
+    const on = (target, type, fn, o) => { target.addEventListener(type, fn, o); this.listeners.push([target, type, fn, o]); };
+    on(window, 'keydown', (e) => {
       if (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow')) {
         if (document.activeElement === document.body || !document.activeElement) e.preventDefault();
       }
       if (!this.keys.has(e.code)) this.pressed.add(e.code);
       this.keys.add(e.code);
-      this.device = 'kbm';
+      if (this.useKbm) this.device = 'kbm';
     });
-    addEventListener('keyup', (e) => this.keys.delete(e.code));
-    addEventListener('blur', () => { this.keys.clear(); this.buttons.clear(); });
-    addEventListener('mousemove', (e) => {
+    on(window, 'keyup', (e) => this.keys.delete(e.code));
+    on(window, 'blur', () => { this.keys.clear(); this.buttons.clear(); });
+    on(window, 'mousemove', (e) => {
       if (!this.locked) return;
       // Ausreißer einiger Browser beim Lock-Wechsel ignorieren
       if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
       this.dx += e.movementX; this.dy += e.movementY;
       this.device = 'kbm';
     });
-    addEventListener('mousedown', (e) => {
+    on(window, 'mousedown', (e) => {
       if (!this.locked) return;
       this.buttons.add(e.button); this.mPressed.add(e.button);
     });
-    addEventListener('mouseup', (e) => this.buttons.delete(e.button));
-    addEventListener('wheel', (e) => { if (this.locked) this.wheel += Math.sign(e.deltaY); }, { passive: true });
-    addEventListener('contextmenu', (e) => e.preventDefault());
-    document.addEventListener('pointerlockchange', () => {
+    on(window, 'mouseup', (e) => this.buttons.delete(e.button));
+    on(window, 'wheel', (e) => { if (this.locked) this.wheel += Math.sign(e.deltaY); }, { passive: true });
+    on(window, 'contextmenu', (e) => e.preventDefault());
+    on(document, 'pointerlockchange', () => {
+      const was = this.locked;
       this.locked = document.pointerLockElement === this.canvas;
       if (this.locked) this.device = 'kbm';
-      else {
+      else if (was) {
         this.buttons.clear();
         this.lastUnlock = performance.now();
         if (this.onUnlock) this.onUnlock();
       }
     });
+  }
+
+  // Splitscreen: Eingabegeräte neu zuordnen (kbm: Tastatur/Maus, pad: Controller-Index, -1 = keiner, null = erster)
+  assign({ kbm = true, pad = null } = {}) {
+    this.useKbm = kbm !== false;
+    this.padIndex = pad ?? null;
+    this.pad.prev = [];
+    this.pad.sprintToggle = false;
+    this.device = this.useKbm ? 'kbm' : 'pad';
+  }
+
+  dispose() {
+    for (const [target, type, fn, o] of this.listeners) target.removeEventListener(type, fn, o);
+    this.listeners = [];
+    if (this.locked) this.unlock();
   }
 
   // ── Maus-Fang ───────────────────────────────────────────────
@@ -130,25 +153,26 @@ export class Input {
     held.clear(); hit.clear();
 
     // Tastatur
-    for (const a in KEYS) for (const c of KEYS[a]) {
+    if (this.useKbm) for (const a in KEYS) for (const c of KEYS[a]) {
       if (this.keys.has(c)) held.add(a);
       if (this.pressed.has(c)) hit.add(a);
     }
     // Maus (nur mit Maus-Fang, sonst sind Klicks UI-Bedienung)
-    if (this.locked) for (const a in MOUSE) for (const b of MOUSE[a]) {
+    if (this.locked && this.useKbm) for (const a in MOUSE) for (const b of MOUSE[a]) {
       if (this.buttons.has(b)) held.add(a);
       if (this.mPressed.has(b)) hit.add(a);
     }
     if (this.wheel !== 0) hit.add('switch');
 
-    let mx = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);
-    let my = (this.keys.has('KeyS') ? 1 : 0) - (this.keys.has('KeyW') ? 1 : 0);
+    const K = this.useKbm ? this.keys : EMPTY;
+    let mx = (K.has('KeyD') ? 1 : 0) - (K.has('KeyA') ? 1 : 0);
+    let my = (K.has('KeyS') ? 1 : 0) - (K.has('KeyW') ? 1 : 0);
     const kl = Math.hypot(mx, my);
     if (kl > 1) { mx /= kl; my /= kl; }
-    let lx = this.dx * MOUSE_RAD, ly = this.dy * MOUSE_RAD;
+    let lx = this.useKbm ? this.dx * MOUSE_RAD : 0, ly = this.useKbm ? this.dy * MOUSE_RAD : 0;
     // Pfeiltasten zum Umsehen (Barrierefreiheit)
-    lx += ((this.keys.has('ArrowRight') ? 1 : 0) - (this.keys.has('ArrowLeft') ? 1 : 0)) * 2.2 * dt;
-    ly += ((this.keys.has('ArrowDown') ? 1 : 0) - (this.keys.has('ArrowUp') ? 1 : 0)) * 1.6 * dt;
+    lx += ((K.has('ArrowRight') ? 1 : 0) - (K.has('ArrowLeft') ? 1 : 0)) * 2.2 * dt;
+    ly += ((K.has('ArrowDown') ? 1 : 0) - (K.has('ArrowUp') ? 1 : 0)) * 1.6 * dt;
 
     // Touch
     const T = this.touch;
@@ -161,7 +185,7 @@ export class Input {
 
     // Gamepad
     const pads = this.getPads();
-    const gp = pads.find((p) => p.mapping === 'standard') || pads[0];
+    const gp = this.padIndex !== null ? pads.find((p) => p.index === this.padIndex) : pads.find((p) => p.mapping === 'standard') || pads[0];
     this.pad.connected = !!gp;
     if (gp) {
       this.pad.id = gp.id || '';

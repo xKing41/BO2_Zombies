@@ -111,6 +111,20 @@ export class RenderSystem {
     this.qualityName = resolveQuality(qualityName);
     this.quality = QUALITY[this.qualityName];
     this.scale = 1; // dynamische Auflösung (0.55 … 1)
+    this.view = { x: 0, y: 0, w: 1, h: 1 }; // Bildschirmausschnitt (Splitscreen), Anteile 0…1
+  }
+
+  // Größe des eigenen Ausschnitts in CSS-Pixeln
+  get width() { return Math.max(1, Math.round(window.innerWidth * this.view.w)); }
+  get height() { return Math.max(1, Math.round(window.innerHeight * this.view.h)); }
+
+  // Splitscreen: Leinwand auf einen Teil des Fensters legen
+  setView(v) {
+    this.view = { x: 0, y: 0, w: 1, h: 1, ...v };
+    const st = this.canvas.style, V = this.view;
+    if (V.w >= 1 && V.h >= 1) { st.left = st.top = st.width = st.height = ''; }
+    else { st.left = V.x * 100 + '%'; st.top = V.y * 100 + '%'; st.width = V.w * 100 + '%'; st.height = V.h * 100 + '%'; }
+    if (this.composer) this.resize();
   }
 
   get pixelRatio() { return Math.min(window.devicePixelRatio || 1, this.quality.pixelRatio) * this.scale; }
@@ -126,7 +140,8 @@ export class RenderSystem {
   setup(scene, camera, vmScene, vmCamera) {
     this.scene = scene; this.camera = camera; this.vmScene = vmScene; this.vmCamera = vmCamera;
     this.build();
-    window.addEventListener('resize', () => this.resize());
+    this.onWinResize = () => this.resize();
+    window.addEventListener('resize', this.onWinResize);
   }
 
   // Neue Szenen nach einem Kartenwechsel
@@ -138,7 +153,7 @@ export class RenderSystem {
   build() {
     const q = this.quality;
     this.renderer.setPixelRatio(this.pixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    this.renderer.setSize(this.width, this.height, false);
     this.renderer.shadowMap.enabled = q.shadows;
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: q.msaa });
@@ -168,7 +183,7 @@ export class RenderSystem {
   }
 
   resize() {
-    const w = window.innerWidth, h = window.innerHeight;
+    const w = this.width, h = this.height;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
     this.camera.aspect = w / h;
@@ -181,4 +196,11 @@ export class RenderSystem {
   get uniforms() { return this.grade.uniforms; }
 
   render() { this.composer.render(); }
+
+  dispose() {
+    window.removeEventListener('resize', this.onWinResize);
+    if (this.composer) { for (const pass of this.composer.passes) if (pass.dispose) pass.dispose(); this.composer.dispose(); }
+    this.renderer.dispose();
+    try { this.renderer.forceContextLoss(); } catch { /* */ }
+  }
 }
