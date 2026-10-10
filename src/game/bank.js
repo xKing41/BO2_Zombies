@@ -129,7 +129,7 @@ export class Bank {
     const [kx, kz] = WALLDIR[K.wall];
     this.interactables.push({
       pos: map.center(K.x, K.y).add(new THREE.Vector3(-kx * 0.4, 0, -kz * 0.4)), radius: 1.7,
-      prompt() { return g.weapons.knifeLevel > 0 ? null : `${verb()} für das Jagdmesser – Messer tötet sofort [Kosten: 3000]`; },
+      prompt() { return g.weapons.knifeLevel > 0 ? null : `${verb()} für das Jagdmesser – tötet bis Runde 9 mit einem Stich [Kosten: 3000]`; },
       use() {
         if (g.weapons.knifeLevel > 0 || !g.spend(3000)) return;
         g.weapons.upgradeKnife();

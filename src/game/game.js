@@ -465,7 +465,8 @@ export class Game {
     if (this.net && !opts.remote) this.net.boom(pos, radius, damage, opts);
     if (!this.isClient) for (const z of this.zombies.inRadius(pos, radius)) {
       const d = Math.hypot(z.pos.x - pos.x, z.pos.z - pos.z);
-      const dmg = damage * (1 - 0.5 * (d / radius));
+      // Voller Schaden in der Mitte, am Rand nur noch der Anteil falloff (Standard: die Hälfte)
+      const dmg = damage * (1 - (1 - (opts.falloff ?? 0.5)) * Math.min(1, d / radius));
       const dir = new THREE.Vector3(z.pos.x - pos.x, 0.5, z.pos.z - pos.z).normalize();
       this.zombies.damage(z, dmg, 'torso', { dir, explosive: true, point: z.pos.clone().setY(1.2), noPoints: false, by: opts.by });
     }

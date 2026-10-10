@@ -4,7 +4,7 @@
 //  Viewmodel-Animation (Arme mit IK, Nachlade-Zeitachsen, Rückstoß-Feder).
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
-import { WEAPONS } from '../config.js';
+import { WEAPONS, KNIFE_DAMAGE, KNIFE_DAMAGE_UPGRADED, GRENADE } from '../config.js';
 import { buildGun, buildKnife, buildGrenade, buildBottle, buildShell, setFrame } from './guns.js';
 import { Arms, POSES } from './arms.js';
 import { gunMats } from './gunTextures.js';
@@ -437,7 +437,8 @@ export class Weapons {
     this.fireSeq = (this.fireSeq || 0) + 1;
     const net = g.net ? { ends: [], im: [], dist: 150 } : null;
     this.fireCd = 60 / (st.rpm * (doppel ? 1.33 : 1));
-    const dmgMul = doppel ? 2 : 1;
+    // Doppelschuss verdoppelt nur normale Kugeln (wie im Original nicht bei Wunderwaffen)
+    const dmgMul = doppel && !st.projectile && !st.lightning ? 2 : 1;
     const moving = clamp(player.hSpeed / 4.4, 0, 1);
     let spread = lerp(st.spread, st.adsSpread, this.ads) * (1 + moving * 1.2 + (player.onGround ? 0 : 2)) * (player.crouching ? 0.75 : 1);
     if (st.pellets > 1) spread = lerp(st.spread, st.adsSpread, this.ads);
@@ -463,10 +464,13 @@ export class Weapons {
       let stopped = false;
       for (const h of hits) {
         const point = _o.clone().addScaledVector(dir, h.t);
-        const mult = h.part === 'head' ? st.headMult : 1;
+        // Schaden fällt mit der Entfernung (damage → dmgMin), Rumpf- und Kopftreffer zählen mehr
+        const fall = st.range && st.dmgMin !== undefined ? clamp((h.t - st.range[0]) / (st.range[1] - st.range[0]), 0, 1) : 0;
+        const near = fall > 0 ? 1 - fall * (1 - st.dmgMin / st.damage) : 1;
+        const mult = (h.part === 'head' ? st.headMult : h.part === 'torso' ? st.bodyMult || 1 : 1) * near;
         g.zombies.damage(h.z, dmg * mult, h.part, { dir: dir.clone(), point, pellet });
         anyHit = true; headHit = headHit || h.part === 'head';
-        if (st.explosive) { g.explode(point, st.explosive.radius, st.explosive.damage * dmgMul, { color: [3, 0.9, 0.3], small: true }); stopped = true; endT = h.t; break; }
+        if (st.explosive) { g.explode(point, st.explosive.radius, st.explosive.damage * dmgMul, { color: [3, 0.9, 0.3], small: true, falloff: st.explosive.falloff }); stopped = true; endT = h.t; break; }
         if (pen-- <= 0) { stopped = true; endT = h.t; break; }
         dmg *= 0.75;
       }
@@ -477,7 +481,7 @@ export class Weapons {
           if (net && net.im.length < 2) net.im.push([point.clone(), wall.normal.clone(), wall.mat]);
           g.effects.impact(point, wall.normal, wall.mat);
           if (i === 0) g.audio.impact(point, wall.mat);
-          if (st.explosive) g.explode(point, st.explosive.radius, st.explosive.damage * dmgMul, { color: [3, 0.9, 0.3], small: true });
+          if (st.explosive) g.explode(point, st.explosive.radius, st.explosive.damage * dmgMul, { color: [3, 0.9, 0.3], small: true, falloff: st.explosive.falloff });
         }
       }
       if (Math.random() < (st.pellets > 1 ? 0.25 : 0.5)) g.effects.tracer(muzzle, _o.clone().addScaledVector(dir, Math.min(endT, 60)));
@@ -642,7 +646,7 @@ export class Weapons {
     p.active = true; p.life = 3; p.ghost = false;
     p.pos.copy(from);
     p.vel.copy(dir).multiplyScalar(ps.speed);
-    p.damage = st.damage * dmgMul; p.splash = ps.splash * dmgMul; p.radius = ps.radius;
+    p.damage = st.damage * dmgMul; p.splash = ps.splash * dmgMul; p.radius = ps.radius; p.falloff = ps.falloff;
     p.color = new THREE.Color(ps.color);
     p.mesh.material.color.copy(p.color).multiplyScalar(3);
     p.halo.material.color.copy(p.color);
@@ -691,7 +695,7 @@ export class Weapons {
       }
       if (boom || p.life <= 0) {
         const c = p.color;
-        g.explode(boom || p.pos, p.radius, p.splash, { color: [c.r * 3, c.g * 3, c.b * 3], small: true, energy: true });
+        g.explode(boom || p.pos, p.radius, p.splash, { color: [c.r * 3, c.g * 3, c.b * 3], small: true, energy: true, falloff: p.falloff });
         p.active = false; p.mesh.visible = false;
         continue;
       }
@@ -729,7 +733,7 @@ export class Weapons {
       if (n.fuse <= 0) {
         n.active = false; n.mesh.visible = false;
         // Granaten von Mitspielern sind nur Bild – deren Explosion kommt über das Netz
-        if (!n.ghost) g.explode(n.pos.clone().setY(0.4), 6, 180 + g.round * 130, { color: [3, 1.6, 0.5] });
+        if (!n.ghost) g.explode(n.pos.clone().setY(0.4), GRENADE.radius, rand(GRENADE.min, GRENADE.max), { color: [3, 1.6, 0.5], falloff: 0.3 });
       }
     }
   }
@@ -779,7 +783,7 @@ export class Weapons {
     if (best) {
       if (bd > 1.2) { player.vel.x += fwd.x * 6; player.vel.z += fwd.z * 6; } // Ausfallschritt
       const point = best.pos.clone().setY(1.3);
-      g.zombies.damage(best, this.knifeLevel ? 1000 + g.round * 100 : 150, 'torso', { dir: fwd.clone(), point, knife: true });
+      g.zombies.damage(best, this.knifeLevel ? KNIFE_DAMAGE_UPGRADED : KNIFE_DAMAGE, 'torso', { dir: fwd.clone(), point, knife: true });
       g.hud.hitmarker(false);
       g.player.shake = Math.max(g.player.shake, 0.15);
       g.audio.knifeHit && g.audio.knifeHit(point);

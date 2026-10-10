@@ -302,12 +302,12 @@ export class NetSession {
 
   // Explosion eines Mitspielers: Host verteilt den Schaden, alle zeigen sie
   boom(pos, radius, damage, opts) {
-    this.send('boom', { p: v3(pos), r: radius, dm: damage, o: packOpts(opts), c: opts.color || null });
+    this.send('boom', { p: v3(pos), r: radius, dm: damage, o: packOpts(opts), c: opts.color || null, fo: opts.falloff ?? null });
   }
   onBoom(d, from) {
     const s = this.byPeer(from);
     const o = unpackOpts(d.o || 0);
-    this.g.explode(V(d.p), d.r, d.dm, { ...o, color: d.c || undefined, by: s, remote: true });
+    this.g.explode(V(d.p), d.r, d.dm, { ...o, color: d.c || undefined, falloff: d.fo ?? undefined, by: s, remote: true });
   }
 
   // Schüsse der Mitspieler: Mündungsfeuer, Leuchtspur und Knall an ihrer Figur
@@ -447,6 +447,9 @@ export class NetSession {
       if (p >= 1) {
         this.revives.delete(slot);
         by.stats.revives++;
+        // Belohnung wie im Original: 5 % der Punkte des Wiederbelebten (auf 10 abgerundet)
+        const reward = Math.floor(((target.local ? this.g.points : target.points) || 0) * 0.05 / 10) * 10;
+        if (reward > 0) this.g.addPoints(reward, true, by);
         const e = { t: 'rv', s: slot, by: by.slot, p: 1, done: 1 };
         this.ev(e); this.onReviveEvent(e);
         this.ev({ t: 'sv', k: 'up', s: slot });

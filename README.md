@@ -47,7 +47,7 @@ In den Händen liegt immer die echte Waffe des Spielers, gegriffen per IK. Name 
 stehen in fester Größe über der Figur, das Armband zeigt die Spielerfarbe.
 
 **Regeln wie in BO2:**
-- Wer zu Boden geht, verliert 5 % seiner Punkte und alle Perks und blutet nach 45 Sekunden aus. Mitspieler beleben mit gehaltener Benutzen-Taste in 3 Sekunden wieder (mit Phönix-Soda in 1,5 Sekunden).
+- Wer zu Boden geht, verliert 5 % seiner Punkte und alle Perks und blutet nach 45 Sekunden aus. Mitspieler beleben mit gehaltener Benutzen-Taste in 3 Sekunden wieder (mit Phönix-Soda in 1,5 Sekunden) und bekommen dafür 5 % der Punkte des Wiederbelebten.
 - Ausgeblutet heißt zuschauen bis zur nächsten Runde, dann geht es mit der Startpistole weiter. Vorbei ist die Partie erst, wenn alle gleichzeitig am Boden liegen oder ausgeblutet sind.
 - Phönix-Soda kostet im Koop 1500 Punkte und belebt nicht selbst wieder.
 - Jeder hat eigene Punkte; Atombombe und Zimmermann zahlen jedem Spieler aus. Waffen aus Kiste und Äther-Schmiede kann nur nehmen, wer bezahlt hat. Barrikaden bringen je Spieler und Runde höchstens 500 Punkte.
@@ -148,6 +148,20 @@ die Menüs.
   - Wandwaffen sind Kreidezeichnungen – nach dem ersten Kauf wird daraus in einer Kreidestaubwolke die echte Waffe an der Wand
   - Ab Runde 4 sprintet der letzte Zombie einer Runde – außer er hat keine Beine mehr (Kriecher)
   - Hechtsprung aus dem Sprint (Ducken drücken): flach nach vorn, kurz liegen bleiben – wer vor einem Perk-Automaten landet, findet einmalig 100 Punkte
+  - Waffenwerte nach den BO2-Gegenstücken, soweit dokumentiert (Schaden nah → fern, Kopf- und Rumpf-Multiplikator, Magazin/Reserve; Reichweiten geschätzt):
+
+    | Waffe | Gegenstück | Schaden | Magazin | Äther-Schmiede |
+    |---|---|---|---|---|
+    | K-14 Karabiner | M14 | 105 → 80, Kopf ×3, Rumpf ×1,25 | 8/96 | 200 → 150, Kopf ×6, 16/192 |
+    | Doppellauf | Olympia | 4 Schrot à 150 → 29 | 2/38 | 4 × 600 → 135, 2/60 |
+    | Vektor MP | MP5 | 100 → 50 | 30/120 | 140 → 80, Kopf ×5, 40/200 |
+    | Pumpgun 870 | Remington 870 | 4 Schrot je Patrone | 6/54 | 10/80 |
+    | AR-77 | M16A1 (bei uns vollautomatisch) | 100 → 70 | 30/120 | 150 → 100, 30/270 |
+    | Falke .50 | Barrett M82A1 | 600 → 500 | 5/30 | 1000, 7/42 |
+    | Strahlenkanone | Ray Gun | 1000, Druckwelle 1500 → 300 | 20/160 | Druckwelle 2000 → 300, 40/200 |
+    | P-45 (Start) | M1911 | 45 | 8/80 | explosiv: 1000 + 1200 → 75, 12/50 |
+
+    Messer 150, Jagdmesser 1000 (ein Stich bis Runde 9), Splittergranaten 500–1000 in 6,5 m; Doppelschuss verdoppelt nur normale Kugeln. Unsicher bzw. noch eigene Werte: Hammer LMG, Schaden der Pumpgun, Kopf-Multiplikatoren ohne Tabellenwert
 
 **Gameplay-Kern**
 - Endlose Runden mit BO-ähnlicher Skalierung (Anzahl, Lebenspunkte, Spawn-Tempo, Geher → Läufer → Sprinter)

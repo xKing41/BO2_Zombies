@@ -9,65 +9,78 @@ export const WALL_H = 4; // Wandhöhe in Metern
 // Karten (Layout, Spots, Deko) liegen in src/maps/.
 
 // ── Waffen ───────────────────────────────────────────────────
-// damage pro Treffer/Pellet · rpm Schuss/Minute · spread in Radiant
+// Spielwerte nach Black Ops 2 Zombies, soweit öffentlich dokumentiert (v. a. die Tabelle
+// „Upgraded Weapons/Black Ops II“ im CoD-Wiki); das Gegenstück steht jeweils dabei.
+// Schaden in denselben Einheiten wie die Zombie-Lebenspunkte (Runde 1 = 150).
+// damage → dmgMin über range [nah, fern] in Metern (die Reichweiten selbst sind geschätzt),
+// headMult Kopf, bodyMult Rumpf, rpm Schuss/Minute, spread in Radiant.
 export const WEAPONS = {
+  // ↔ M1911 · PaP ↔ Mustang & Sally: Direkttreffer 1000, Explosion 1200 → 75, 6+6 Schuss, 50 Reserve
   p45: {
     name: 'P-45', cls: 'pistol', auto: false, damage: 45, headMult: 3, rpm: 420,
     mag: 8, reserve: 80, reload: 1.5, spread: 0.018, adsSpread: 0.003, recoil: 0.03,
     pellets: 1, cost: 0, sound: 'pistol',
-    pap: { name: 'P-45 Höllenfeuer', damage: 120, mag: 12, reserve: 120, explosive: { damage: 260, radius: 2.6 } },
+    pap: { name: 'P-45 Höllenfeuer', damage: 1000, mag: 12, reserve: 50, explosive: { damage: 1200, radius: 2.6, falloff: 0.06 } },
   },
+  // ↔ M14: 105 → 80, Kopf ×3, Rumpf ×1,25, 8/96 · PaP ↔ Mnesia: 200 → 150, Kopf ×6, Rumpf ×2, 16/192
   k14: {
-    name: 'K-14 Karabiner', cls: 'rifle', auto: false, damage: 120, headMult: 3, rpm: 480,
-    mag: 10, reserve: 110, reload: 2.0, spread: 0.02, adsSpread: 0.001, recoil: 0.04,
+    name: 'K-14 Karabiner', cls: 'rifle', auto: false, damage: 105, dmgMin: 80, range: [30, 60], headMult: 3, bodyMult: 1.25, rpm: 625,
+    mag: 8, reserve: 96, reload: 2.0, spread: 0.02, adsSpread: 0.001, recoil: 0.04,
     pellets: 1, cost: 500, sound: 'rifle', penetrate: 1,
-    pap: { name: 'K-14 Richter', damage: 320, mag: 15, reserve: 220 },
+    pap: { name: 'K-14 Richter', damage: 200, dmgMin: 150, headMult: 6, bodyMult: 2, mag: 16, reserve: 192 },
   },
+  // ↔ Olympia: 4 Schrot je 150 → 29, 212/min, 2/38 · PaP ↔ Hades: 600 → 135, 2/60, schneller nachladen
   dlf: {
-    name: 'Doppellauf', cls: 'shotgun2', auto: false, damage: 50, headMult: 1.5, rpm: 320,
-    mag: 2, reserve: 60, reload: 2.1, spread: 0.075, adsSpread: 0.05, recoil: 0.09,
-    pellets: 8, cost: 500, sound: 'shotgun',
-    pap: { name: 'Zwillingsdrache', damage: 160, mag: 4, reserve: 120 },
+    name: 'Doppellauf', cls: 'shotgun2', auto: false, damage: 150, dmgMin: 29, range: [4, 15], headMult: 1.5, rpm: 212,
+    mag: 2, reserve: 38, reload: 2.1, spread: 0.075, adsSpread: 0.05, recoil: 0.09,
+    pellets: 4, cost: 500, sound: 'shotgun',
+    pap: { name: 'Zwillingsdrache', damage: 600, dmgMin: 135, mag: 2, reserve: 60, reload: 1.6 },
   },
+  // ↔ MP5 (1000 Punkte): 100 → 50, 30/120 · PaP ↔ MP115 Kollider: 140 → 80, Kopf ×5, 40/200
   vmp: {
-    name: 'Vektor MP', cls: 'smg', auto: true, damage: 70, headMult: 2.2, rpm: 860,
-    mag: 30, reserve: 210, reload: 2.0, spread: 0.035, adsSpread: 0.008, recoil: 0.014,
-    pellets: 1, cost: 1200, sound: 'smg',
-    pap: { name: 'Vektor Sturmwind', damage: 150, mag: 45, reserve: 360 },
+    name: 'Vektor MP', cls: 'smg', auto: true, damage: 100, dmgMin: 50, range: [8, 25], headMult: 4, rpm: 750,
+    mag: 30, reserve: 120, reload: 2.0, spread: 0.035, adsSpread: 0.008, recoil: 0.014,
+    pellets: 1, cost: 1000, sound: 'smg',
+    pap: { name: 'Vektor Sturmwind', damage: 140, dmgMin: 80, headMult: 5, mag: 40, reserve: 200 },
   },
+  // ↔ Remington 870 MCS (1500 Punkte): im Zombie-Modus 4 Schrot je Patrone, 6 Patronen · PaP: 10 Patronen, 80 Reserve
   pump: {
-    name: 'Pumpgun 870', cls: 'shotgun', auto: false, damage: 80, headMult: 1.5, rpm: 75,
+    name: 'Pumpgun 870', cls: 'shotgun', auto: false, damage: 160, dmgMin: 40, range: [5, 16], headMult: 1.5, rpm: 75,
     mag: 6, reserve: 54, reload: 2.8, spread: 0.065, adsSpread: 0.045, recoil: 0.1,
-    pellets: 8, cost: 1500, sound: 'shotgun',
-    pap: { name: 'Donnerschlag 870', damage: 220, mag: 10, reserve: 100 },
+    pellets: 4, cost: 1500, sound: 'shotgun',
+    pap: { name: 'Donnerschlag 870', damage: 320, dmgMin: 80, mag: 10, reserve: 80 },
   },
+  // ↔ M16A1 (1200 Punkte): 100 → 70, 30/120 (bei uns vollautomatisch) · PaP ↔ Skullcrusher: 150 → 100, 30/270
   ar: {
-    name: 'AR-77', cls: 'ar', auto: true, damage: 110, headMult: 3, rpm: 650,
-    mag: 30, reserve: 270, reload: 2.4, spread: 0.03, adsSpread: 0.004, recoil: 0.02,
+    name: 'AR-77', cls: 'ar', auto: true, damage: 100, dmgMin: 70, range: [20, 45], headMult: 3, rpm: 650,
+    mag: 30, reserve: 120, reload: 2.4, spread: 0.03, adsSpread: 0.004, recoil: 0.02,
     pellets: 1, cost: 1200, sound: 'ar', penetrate: 1,
-    pap: { name: 'Glorreiche Wut', damage: 260, mag: 40, reserve: 400 },
+    pap: { name: 'Glorreiche Wut', damage: 150, dmgMin: 100, mag: 30, reserve: 270 },
   },
+  // ↔ RPD: 100/400 (Schaden nicht verlässlich dokumentiert) · PaP: 125 im Gurt
   lmg: {
     name: 'Hammer LMG', cls: 'lmg', auto: true, damage: 125, headMult: 2.5, rpm: 720,
     mag: 100, reserve: 400, reload: 4.6, spread: 0.04, adsSpread: 0.008, recoil: 0.018,
     pellets: 1, cost: 0, sound: 'lmg', penetrate: 2,
     pap: { name: 'Amboss', damage: 260, mag: 125, reserve: 625 },
   },
+  // ↔ Barrett M82A1: 600 → 500, 5/30 · PaP ↔ Macro Annihilator: 1000, 7/42
   sniper: {
-    name: 'Falke .50', cls: 'sniper', auto: false, damage: 900, headMult: 5, rpm: 55,
-    mag: 5, reserve: 40, reload: 3.2, spread: 0.06, adsSpread: 0.0, recoil: 0.12,
+    name: 'Falke .50', cls: 'sniper', auto: false, damage: 600, dmgMin: 500, range: [40, 80], headMult: 5, rpm: 120,
+    mag: 5, reserve: 30, reload: 3.2, spread: 0.06, adsSpread: 0.0, recoil: 0.12,
     pellets: 1, cost: 0, sound: 'sniper', penetrate: 4, scope: true,
-    pap: { name: 'Raubvogel', damage: 2600, mag: 8, reserve: 80 },
+    pap: { name: 'Raubvogel', damage: 1000, dmgMin: 1000, mag: 7, reserve: 42 },
   },
+  // ↔ Ray Gun: Direkttreffer 1000, Druckwelle 1500 → 300, 20/160 · PaP ↔ Porter's X2: Druckwelle 2000 → 300, 40/200
   ray: {
-    name: 'Strahlenkanone', cls: 'ray', auto: false, damage: 1400, headMult: 1, rpm: 190,
+    name: 'Strahlenkanone', cls: 'ray', auto: false, damage: 1000, headMult: 1, rpm: 181,
     mag: 20, reserve: 160, reload: 2.6, spread: 0.01, adsSpread: 0.002, recoil: 0.03,
     pellets: 1, cost: 0, sound: 'ray',
-    projectile: { speed: 38, color: 0x55ff66, splash: 1000, radius: 2.4 },
-    pap: { name: 'Neutronen-Zerstörer', damage: 2800, mag: 40, reserve: 200,
-      projectile: { speed: 45, color: 0xff3355, splash: 2200, radius: 3.0 } },
+    projectile: { speed: 38, color: 0x55ff66, splash: 1500, radius: 2.4, falloff: 0.2 },
+    pap: { name: 'Neutronen-Zerstörer', damage: 1000, mag: 40, reserve: 200,
+      projectile: { speed: 45, color: 0xff3355, splash: 2000, radius: 3.0, falloff: 0.15 } },
   },
-  // Wunderwaffe aus Bauteilen (Linie 13): Kettenblitz, tötet sofort
+  // Wunderwaffe aus Bauteilen (Linie 13): Kettenblitz, tötet sofort; Munition wie bei vergleichbaren Wunderwaffen (4/24)
   tesla: {
     name: 'Gewitter-Werfer', cls: 'tesla', auto: false, damage: 0, headMult: 1, rpm: 70,
     mag: 4, reserve: 24, reload: 3.2, spread: 0, adsSpread: 0, recoil: 0.09,
@@ -76,6 +89,11 @@ export const WEAPONS = {
     pap: { name: 'Gewitter-Zorn', mag: 8, reserve: 48, lightning: { chains: 16, range: 12, reach: 55, color: [3.4, 0.9, 4.2] } },
   },
 };
+
+// Messer: 150 (Runde 1 mit einem Stich); Jagdmesser ↔ Bowie-Messer: 1000 (mit einem Stich bis Runde 9)
+export const KNIFE_DAMAGE = 150, KNIFE_DAMAGE_UPGRADED = 1000;
+// Splittergranate: 500–1000 Schaden in der Mitte, Radius 6,5 m (2 zu Beginn, +2 je Runde, höchstens 4)
+export const GRENADE = { min: 500, max: 1000, radius: 6.5 };
 
 // Gewichtung in der Mystery-Kiste
 export const BOX_POOL = { ray: 1.2, lmg: 3, sniper: 3, ar: 4, vmp: 3, pump: 3, k14: 2, dlf: 2 };
