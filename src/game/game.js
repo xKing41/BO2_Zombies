@@ -6,7 +6,8 @@ import { nightEnvironment } from '../world/atmosphere.js';
 import { useGridLight, gridLitScene, GRID } from '../world/gridlight.js';
 import { RenderSystem, QUALITY, resolveQuality } from '../core/renderer.js';
 import { setAnisotropy, setTextureScale } from '../core/textures.js';
-import { buildMaterials } from '../core/materials.js';
+import { buildMaterials, SHARED_SLOTS } from '../core/materials.js';
+import { configureTexLib, preload as preloadTex, release as releaseTex } from '../core/texlib.js';
 import { Input } from '../core/input.js';
 import { AudioEngine } from '../audio/audio.js';
 import { GameMap } from '../world/map.js';
@@ -113,6 +114,8 @@ export class Game {
     const q = this.rs.quality;
     setAnisotropy(Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()));
     setTextureScale(q.texScale);
+    // Foto-Texturen: 1024 px auf hoch/mittel, 512 px auf niedrig/minimal (Handys)
+    configureTexLib({ size: q.texScale >= 1 ? 1024 : 512, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, this.rs.width / this.rs.height, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
     this.vmCamera = new THREE.PerspectiveCamera(54, this.rs.width / this.rs.height, 0.01, 10);
@@ -126,6 +129,11 @@ export class Game {
     // Schriften für Canvas-Texturen abwarten (max. 1.5 s)
     await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
 
+    // Gemeinsame Foto-Texturen holen (Splitscreen: schon vom ersten Spieler geladen)
+    if (!this.opts.sharedM) {
+      let got = 0;
+      await preloadTex(SHARED_SLOTS, () => { got++; progress(8 + (got / SHARED_SLOTS.length) * 22, `Texturen laden … ${got}/${SHARED_SLOTS.length}`); });
+    }
     let n = 0;
     const labels = 8;
     // Splitscreen: weitere Spieler nutzen dieselben Materialien (spart Zeit und Speicher)
@@ -176,6 +184,13 @@ export class Game {
     this.vmScene.environment = this.envMap;
     this.vmScene.environmentIntensity = 1.4;
     this.rs.setScenes(this.scene, this.camera, this.vmScene, this.vmCamera);
+    // Foto-Texturen nur für diese Karte
+    const slots = (def.texSlots || []).filter((s) => !SHARED_SLOTS.includes(s));
+    if (slots.length) {
+      let got = 0;
+      await preloadTex(slots, () => { got++; progress(3 + (got / slots.length) * 7, `${def.name}: Texturen ${got}/${slots.length} …`); });
+    }
+    this.mapTexSlots = slots;
     await step(10, `${def.name}: Gelände …`);
     this.map = new GameMap(def);
     this.map.build(this.scene, this.M, { quality: this.rs.quality, game: this });
@@ -238,6 +253,9 @@ export class Game {
     free(this.scene);
     free(this.vmScene);
     this.map = null;
+    // Kartenspezifische Foto-Texturen freigeben (der erste Spieler verwaltet sie auch im Splitscreen)
+    if (!this.opts.sharedM && this.mapTexSlots?.length) releaseTex(this.mapTexSlots);
+    this.mapTexSlots = [];
   }
 
   precompile() {

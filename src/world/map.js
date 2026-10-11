@@ -385,17 +385,20 @@ export class GameMap {
       }
     }
 
+    // Kachelgröße: Foto-Texturen bringen ihre echte Größe mit (userData.uvScale), sonst die alten Werte
+    const sc = (m, d) => m?.userData?.uvScale || d;
+    const metalFloor = M.floorMetal?.userData?.slot ? M.floorMetal : M.metal;
     const floorMat = {
-      concrete: [M.floorConcrete, 4], tiles: [M.floorTiles, 2], dirty: [M.floorDirty, 4], cobble: [M.floorCobble, 2],
-      wood: [M.wood, 2], metal: [M.metal, 2],
+      concrete: [M.floorConcrete, sc(M.floorConcrete, 4)], tiles: [M.floorTiles, sc(M.floorTiles, 2)], dirty: [M.floorDirty, sc(M.floorDirty, 4)],
+      cobble: [M.floorCobble, sc(M.floorCobble, 2)], wood: [M.wood, sc(M.wood, 2)], metal: [metalFloor, sc(metalFloor, 2)],
     };
     for (const [k, geos] of groups) {
       const [kind, key] = k.split('|');
       let mat, scale = 4;
-      if (kind === 'wall') { mat = this.mats[key] || M.wall; scale = this.mats[key]?.userData?.uvScale || 4; }
-      else if (kind === 'ceil') mat = this.mats[key] || M.ceiling;
+      if (kind === 'wall') { mat = this.mats[key] || M.wall; scale = sc(mat, 4); }
+      else if (kind === 'ceil') { mat = this.mats[key] || M.ceiling; scale = sc(mat, 4); }
       else {
-        const f = this.mats['floor_' + key] ? [this.mats['floor_' + key], this.mats['floor_' + key].userData.uvScale || 4] : floorMat[key] || floorMat.concrete;
+        const f = this.mats['floor_' + key] ? [this.mats['floor_' + key], sc(this.mats['floor_' + key], 4)] : floorMat[key] || floorMat.concrete;
         mat = f[0]; scale = f[1];
       }
       const m = new THREE.Mesh(worldUV(mergeGeometries(geos), scale), mat);
@@ -426,6 +429,8 @@ export class GameMap {
 
   buildWindows(scene, M) {
     const bgeo = new THREE.BoxGeometry(1.55, 0.17, 0.05);
+    // Foto-Holz: Maserung in echter Größe entlang des Bretts (statt einmal pro Seite gestaucht)
+    if (M.board.userData.slot) worldUV(bgeo, M.board.userData.uvScale);
     const frameMat = M.woodDark;
     // Alle Bretter als eine Instanz-Gruppe (ein Draw-Call); die Logik bewegt unsichtbare Platzhalter
     this.boardList = [];

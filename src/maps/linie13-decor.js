@@ -9,6 +9,9 @@ import { mulberry32 } from '../core/noise.js';
 import { worldUV } from '../world/map.js';
 import * as P from '../world/props.js';
 import * as T from '../core/textures.js';
+import * as X from '../core/texlib.js';
+import { surf, photoMat } from '../core/materials.js';
+import { surfaceVar } from '../world/surfacevar.js';
 import {
   W, H, wx, route, CORN, CORN_CLEAR, CORN_PATHS, MAST, MAST_PAD, TREES, LAVA_RECTS, SHELTERS, ROAD_W, STOPS,
 } from './linie13-data.js';
@@ -67,31 +70,38 @@ function signMat(tex, emissive = 0) {
 // ── Materialien nur für diese Karte ───────────────────────────
 function decorMaterials(M) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
-  const grass = T.grass(51);
-  for (const t of [grass.map, grass.normal]) t.repeat.set(76, 62);
-  const asph = T.asphalt(53);
-  const dirt = T.dirt(91);
-  const lot = T.concrete(92, [0.55, 0.55, 0.58], 1);
-  const roofR = T.roofTiles(63, [0.3, 0.13, 0.1]);
-  const roofS = T.roofTiles(64, [0.19, 0.2, 0.22]);
-  const corr = T.corrugated(65, [0.38, 0.39, 0.4], 0.8);
+  // Foto-Texturen (falls geladen), sonst prozedural wie bisher
+  const xm = (slot, o) => { const e = X.ext(slot); if (!e) return null; return photoMat(surf(e, o), slot); };
+  const xGrass = X.ext('grass');
+  const grass = xGrass ? X.repeated(xGrass, (W * C + 140) / X.TILE.grass, (H * C + 140) / X.TILE.grass) : T.grass(51);
+  if (!xGrass) for (const t of [grass.map, grass.normal]) t.repeat.set(76, 62);
+  const asph = T.asphalt(53); // Straße bleibt prozedural: Markierungen, Rollspuren und Pfützen passen genau zur Fahrbahn
+  const lazy = (f) => { let v = null; return () => v || (v = f()); };
+  const dirt = lazy(() => T.dirt(91));
+  const lot = lazy(() => T.concrete(92, [0.55, 0.55, 0.58], 1));
+  const conc = X.ext('concreteDirty');
   const lava = T.lava(61);
   lava.channel = 1;
+  const xLava = X.ext('lava');
   const mats = {
-    grass: std({ map: grass.map, normalMap: grass.normal, roughness: 0.97 }),
+    grass: xGrass ? surfaceVar(surf(grass, { roughness: 0.97, color: 0xb8b4a0 }), X.SV.grass) : surf(grass, { roughness: 0.97 }),
     road: std({ map: asph.map, normalMap: asph.normal, ...(asph.rough ? { roughnessMap: asph.rough, roughness: 1 } : { roughness: 0.82 }), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
-    dirt: std({ map: dirt.map, normalMap: dirt.normal, ...(dirt.rough ? { roughnessMap: dirt.rough, roughness: 1 } : { roughness: 0.95 }) }),
-    lot: std({ map: lot.map, normalMap: lot.normal, ...(lot.rough ? { roughnessMap: lot.rough, roughness: 1 } : { roughness: 0.85 }) }),
-    roofRed: std({ map: roofR.map, normalMap: roofR.normal, roughness: 0.85, side: THREE.DoubleSide }),
-    roofSlate: std({ map: roofS.map, normalMap: roofS.normal, roughness: 0.8, side: THREE.DoubleSide }),
-    corr: std({ map: corr.map, normalMap: corr.normal, roughness: 0.6, metalness: 0.45, side: THREE.DoubleSide }),
-    roofFlat: std({ map: lot.map, normalMap: lot.normal, color: 0x4a4744, roughness: 0.95 }),
-    fence: std({ map: T.chainLink(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6 }),
+    dirt: xm('dirt', { roughness: 0.95 }) || surf(dirt(), { roughness: 0.95 }),
+    // Parkplatz: Foto-Asphalt; ohne Fotos heller Beton wie bisher
+    lot: xm('road', { roughness: 0.85 }) || surf(lot(), { roughness: 0.85 }),
+    roofRed: xm('roofRed', { roughness: 0.85, side: THREE.DoubleSide }) || surf(T.roofTiles(63, [0.3, 0.13, 0.1]), { roughness: 0.85, side: THREE.DoubleSide }),
+    roofSlate: xm('roofSlate', { roughness: 0.8, side: THREE.DoubleSide }) || surf(T.roofTiles(64, [0.19, 0.2, 0.22]), { roughness: 0.8, side: THREE.DoubleSide }),
+    corr: xm('corrugated', { roughness: 0.6, metalness: 0.45, side: THREE.DoubleSide }) || surf(T.corrugated(65, [0.38, 0.39, 0.4], 0.8), { roughness: 0.6, metalness: 0.45, side: THREE.DoubleSide }),
+    roofFlat: conc ? photoMat(surf(conc, { color: 0x6a6662, roughness: 0.95 }), 'concreteDirty') : std({ map: lot().map, normalMap: lot().normal, color: 0x4a4744, roughness: 0.95 }),
+    fence: xm('fence', { side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6, metalMap: true, color: 0xb0a8a0 }) || std({ map: T.chainLink(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6 }),
     tree: std({ vertexColors: true, roughness: 0.95, flatShading: true }),
     corn: std({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }),
-    lava: std({ color: 0x0b0503, roughness: 0.95, emissive: 0xffffff, emissiveMap: lava, emissiveIntensity: 1.8, alphaMap: T.blobMask(67), alphaTest: 0.5 }),
-    hay: std({ color: 0x8a7034, roughness: 1 }),
-    concreteDark: std({ map: lot.map, color: 0x8a8a8a, roughness: 0.9 }),
+    // Glutfelder: Foto-Lava leuchtet aus den Rissen, die Kruste bleibt dunkel; Ränder weiter aus der Fleckenmaske
+    lava: xLava
+      ? std({ map: xLava.map, normalMap: xLava.normal, color: 0x2a1a14, roughness: 0.9, emissive: 0xffffff, emissiveMap: xLava.map, emissiveIntensity: 2.4, alphaMap: T.blobMask(67), alphaTest: 0.5 })
+      : std({ color: 0x0b0503, roughness: 0.95, emissive: 0xffffff, emissiveMap: lava, emissiveIntensity: 1.8, alphaMap: T.blobMask(67), alphaTest: 0.5 }),
+    hay: xm('hay', { roughness: 1, color: 0xd8b878 }) || std({ color: 0x8a7034, roughness: 1 }),
+    concreteDark: conc ? photoMat(surf(conc, { color: 0x8a8a8a, roughness: 0.9 }), 'concreteDirty') : std({ map: lot().map, color: 0x8a8a8a, roughness: 0.9 }),
     white: std({ color: 0xb8b4aa, roughness: 0.7 }),
     yellow: std({ color: 0xb08a1a, roughness: 0.6, metalness: 0.2 }),
     busGreen: std({ color: 0x1f5a34, roughness: 0.6, metalness: 0.3 }),
@@ -165,7 +175,8 @@ const PLAZAS = [
 ];
 function buildPlazas(D) {
   const { scene, M, mats: mt } = D;
-  const table = { concrete: [M.floorConcrete, 4], cobble: [M.floorCobble, 2], dirt: [mt.dirt, 5], lot: [mt.lot, 4] };
+  const us = (m, d) => m.userData.uvScale || d;
+  const table = { concrete: [M.floorConcrete, us(M.floorConcrete, 4)], cobble: [M.floorCobble, us(M.floorCobble, 2)], dirt: [mt.dirt, us(mt.dirt, 5)], lot: [mt.lot, us(mt.lot, 4)] };
   for (const [x0, y0, x1, y1, kind] of PLAZAS) {
     const w = edge(x1 + 1) - edge(x0), d = edge(y1 + 1) - edge(y0);
     const g = new THREE.PlaneGeometry(w, d);
@@ -357,7 +368,8 @@ function gableRoof(D, { x0, y0, x1, y1, axis = 'x', rise = 3, mat, gable, oh = 0
   const alongLen = alongB - alongA, alongMid = (alongA + alongB) / 2;
   for (const side of [-1, 1]) {
     const g = axis === 'x' ? new THREE.BoxGeometry(alongLen, 0.14, L) : new THREE.BoxGeometry(L, 0.14, alongLen);
-    if (axis === 'x') planarUV(g, 'x', 'z', 3); else planarUV(g, 'z', 'x', 3);
+    const rs = mat.userData.uvScale || 3; // Foto-Dächer: echte Ziegelgröße
+    if (axis === 'x') planarUV(g, 'x', 'z', rs); else planarUV(g, 'z', 'x', rs);
     const m = mesh(g, mat);
     const cS = mid + side * run / 2, cY = eaveY + (slope * run) / 2;
     if (axis === 'x') { m.position.set(alongMid, cY, cS); m.rotation.x = side * theta; }
@@ -371,7 +383,7 @@ function gableRoof(D, { x0, y0, x1, y1, axis = 'x', rise = 3, mat, gable, oh = 0
     const g = new THREE.ExtrudeGeometry(sh, { depth: C, bevelEnabled: false });
     if (axis === 'x') { g.rotateY(Math.PI / 2); g.translate(end ? X1 - C : X0, WALL_H, mid); }
     else g.translate(mid, WALL_H, end ? Z1 - C : Z0);
-    scene.add(mesh(worldUV(g, 4), gable));
+    scene.add(mesh(worldUV(g, gable.userData.uvScale || 4), gable));
   }
   // Traufbretter
   for (const side of [-1, 1]) {
@@ -400,7 +412,7 @@ function flatRoof(D, { x0, y0, x1, y1, wall, h = 0.6 }) {
     new THREE.BoxGeometry(t, h, d).translate(X0 + t / 2, y, Z0 + d / 2),
     new THREE.BoxGeometry(t, h, d).translate(X1 - t / 2, y, Z0 + d / 2),
   ];
-  scene.add(mesh(worldUV(mergeGeometries(pg), 4), wall));
+  scene.add(mesh(worldUV(mergeGeometries(pg), wall.userData.uvScale || 4), wall));
 }
 
 function buildRoofs(D) {

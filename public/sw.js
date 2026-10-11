@@ -21,6 +21,19 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
+  // Texturliste: immer zuerst aus dem Netz (neue Texturen tragen eine neue ?v=…-Kennung)
+  if (url.origin === self.location.origin && url.pathname.endsWith('/tex/index.json')) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(url.pathname, copy)); }
+          return res;
+        })
+        .catch(() => caches.match(url.pathname)),
+    );
+    return;
+  }
+
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req)

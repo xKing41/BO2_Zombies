@@ -1,5 +1,50 @@
 import * as THREE from 'three';
 import * as T from './textures.js';
+import * as X from './texlib.js';
+import { surfaceVar } from '../world/surfacevar.js';
+
+// Foto-Texturen, die alle Karten gemeinsam nutzen (werden vor buildMaterials geladen)
+export const SHARED_SLOTS = [
+  'wall', 'concrete', 'concreteDirty', 'tiles', 'cobble', 'ground', 'ceiling', 'wood', 'woodDark', 'board',
+  'metal', 'diamond', 'rust', 'shutter', 'paintRed', 'paintGreen', 'leather', 'gunWood', 'glove', 'papCamo',
+  'clothDetail', 'denimDetail', 'leatherDetail',
+];
+
+// Weltmaterialien: Normal-Map (Tiefe) statt Bump, Rauheit aus der Textur (nasse Stellen glänzen).
+// Foto-Sätze (t.ext) bringen eigene Metall-Karten mit; prozedurale tragen Metall im Blau-Kanal der Rauheit.
+export function surf(t, o = {}) {
+  const m = { map: t.map, ...o };
+  if (t.normal) { m.normalMap = t.normal; m.normalScale = new THREE.Vector2(o.ns ?? 1, o.ns ?? 1); }
+  else if (t.bump) { m.bumpMap = t.bump; m.bumpScale = o.bs ?? 1.5; }
+  if (t.rough) { m.roughnessMap = t.rough; m.roughness = o.rough ?? 1; }
+  if (o.metalMap) {
+    if (t.metal) { m.metalnessMap = t.metal; m.metalness = o.metalMax ?? 1; }
+    else if (!t.ext && t.rough) m.metalnessMap = t.rough; // Blau-Kanal: blankes Metall 1, Rost 0
+  }
+  if (t.alpha) { m.alphaMap = t.alpha; m.alphaTest = o.alphaTest ?? 0.5; }
+  delete m.ns; delete m.bs; delete m.rough; delete m.metalMap; delete m.metalMax;
+  return new THREE.MeshStandardMaterial(m);
+}
+
+/**
+ * Material aus Foto-Satz (falls geladen) oder prozedural.
+ * o: Einstellungen für beide, x: Abweichungen nur für den Foto-Satz (z. B. Farbton).
+ * Foto-Materialien merken sich ihre Kachelgröße (userData.uvScale, Meter je Wiederholung).
+ */
+export function slotMat(slot, make, o = {}, x = {}) {
+  const e = X.ext(slot);
+  const m = surf(e || make(), e ? { ...o, ...x } : o);
+  if (e) photoMat(m, slot);
+  return m;
+}
+
+/** Foto-Material kennzeichnen: echte Kachelgröße und Oberflächen-Variation gegen sichtbare Wiederholung */
+export function photoMat(m, slot, svSlot = slot) {
+  m.userData.uvScale = X.TILE[slot] ?? 4;
+  m.userData.slot = slot;
+  if (X.SV[svSlot]) surfaceVar(m, X.SV[svSlot]);
+  return m;
+}
 
 // Erzeugt alle gemeinsam genutzten Materialien einmalig.
 export function buildMaterials(onProgress = () => {}) {
@@ -8,59 +53,43 @@ export function buildMaterials(onProgress = () => {}) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
 
   step('Wände');
-  // Weltmaterialien: Normal-Map (Tiefe) statt Bump, Rauheit aus der Textur (nasse Stellen glänzen)
-  const surf = (t, o = {}) => {
-    const m = { map: t.map, ...o };
-    if (t.normal) { m.normalMap = t.normal; m.normalScale = new THREE.Vector2(o.ns ?? 1, o.ns ?? 1); }
-    else { m.bumpMap = t.bump; m.bumpScale = o.bs ?? 1.5; }
-    if (t.rough) { m.roughnessMap = t.rough; m.roughness = o.rough ?? 1; }
-    if (t.rough && o.metalMap) m.metalnessMap = t.rough; // Blau-Kanal: blankes Metall 1, Rost 0
-    delete m.ns; delete m.bs; delete m.rough; delete m.metalMap;
-    return std(m);
-  };
-  const wall = T.plasterWall(3);
-  M.wall = surf(wall, { roughness: 0.92 });
+  M.wall = slotMat('wall', () => T.plasterWall(3), { roughness: 0.92 }, { color: 0xd2ccb6, ns: 1.4 });
 
   step('Böden');
-  const con = T.concrete(1, [1.0, 0.98, 0.94]);
-  M.floorConcrete = surf(con, { roughness: 0.85 });
-  const dirty = T.concrete(2, [0.95, 0.92, 0.85], 1);
-  M.floorDirty = surf(dirty, { roughness: 0.7 });
-  const tiles = T.checkerTiles(11);
-  M.floorTiles = surf(tiles, { roughness: 0.35, metalness: 0.0 });
-  const cob = T.cobble(13);
-  M.floorCobble = surf(cob, { roughness: 0.8 });
-  const dt = T.dirt(17);
-  for (const t of [dt.map, dt.normal, dt.rough]) if (t) t.repeat.set(50, 50);
-  M.ground = surf(dt, { roughness: 0.95 });
+  M.floorConcrete = slotMat('concrete', () => T.concrete(1, [1.0, 0.98, 0.94]), { roughness: 0.85 });
+  M.floorDirty = slotMat('concreteDirty', () => T.concrete(2, [0.95, 0.92, 0.85], 1), { roughness: 0.7 }, { color: 0xd8d2c8 });
+  M.floorTiles = slotMat('tiles', () => T.checkerTiles(11), { roughness: 0.35, metalness: 0.0 }, { rough: 0.9 });
+  if (M.floorTiles.userData.slot) M.floorTiles.userData.uvScale = 1.1; // Diner: kleine Fliesen (gut 25 cm)
+  M.floorCobble = slotMat('cobble', () => T.cobble(13), { roughness: 0.8 });
+  M.floorMetal = slotMat('diamond', () => T.metal(19, 0.5), { roughness: 0.55, metalness: 0.75, metalMap: true }, { metalness: 0.85 });
+  // Boden draußen: große Ebene mit eigener Wiederholung (Meter je Kachel siehe texlib.TILE)
+  const dtx = X.ext('ground');
+  M.ground = surf(dtx ? X.repeated(dtx, 240 / X.TILE.ground) : (() => { const dt = T.dirt(17); for (const t of [dt.map, dt.normal, dt.rough]) if (t) t.repeat.set(50, 50); return dt; })(), { roughness: 0.95 });
+  if (dtx) surfaceVar(M.ground, X.SV.ground);
 
   step('Decken & Holz');
-  const ce = T.ceiling(5);
-  M.ceiling = surf(ce, { roughness: 0.95 });
-  const pl = T.planks(7);
-  M.wood = surf(pl, { roughness: 0.8 });
-  const pl2 = T.planks(8, [0.75, 0.8, 0.85], 6);
-  M.woodDark = surf(pl2, { roughness: 0.85 });
-  const board = T.planks(9, [1.1, 1.0, 0.9], 1);
-  M.board = surf(board, { roughness: 0.85 });
+  M.ceiling = slotMat('ceiling', () => T.ceiling(5), { roughness: 0.95 }, { color: 0x9a9a9a });
+  let pl = null;
+  const planks7 = () => pl || (pl = T.planks(7));
+  M.wood = slotMat('wood', planks7, { roughness: 0.8 });
+  M.woodDark = slotMat('woodDark', () => T.planks(8, [0.75, 0.8, 0.85], 6), { roughness: 0.85 });
+  M.board = slotMat('board', () => T.planks(9, [1.1, 1.0, 0.9], 1), { roughness: 0.85 }, { color: 0xcfc2b0 });
 
   step('Metall');
-  const mt = T.metal(19, 0.5);
-  M.metal = surf(mt, { roughness: 0.55, metalness: 0.75, metalMap: true });
-  const rust = T.metal(20, 1.2);
-  M.rust = surf(rust, { roughness: 0.8, metalness: 0.45, metalMap: true });
-  const sh = T.shutter(23);
-  M.shutter = surf(sh, { roughness: 0.6, metalness: 0.6, metalMap: true });
+  M.metal = slotMat('metal', () => T.metal(19, 0.5), { roughness: 0.55, metalness: 0.75, metalMap: true });
+  M.rust = slotMat('rust', () => T.metal(20, 1.2), { roughness: 0.8, metalness: 0.45, metalMap: true }, { metalness: 0.35 });
+  M.shutter = slotMat('shutter', () => T.shutter(23), { roughness: 0.6, metalness: 0.6, metalMap: true }, { color: 0xb0a49a, metalness: 0.15 });
   const gm = T.metal(21, 0.05, [0.12, 0.12, 0.13]);
   M.gunMetal = surf(gm, { roughness: 0.35, metalness: 0.9, ns: 0.5, metalMap: true });
   M.gunPolymer = std({ color: 0x1b1c1e, roughness: 0.7, metalness: 0.1 });
-  M.gunWood = std({ map: pl.map, color: 0xb07a4f, roughness: 0.55 });
-  M.paintRed = std({ color: 0x6d1410, roughness: 0.6, metalness: 0.3 });
-  M.paintGreen = std({ color: 0x2c3a2a, roughness: 0.7, metalness: 0.2 });
+  const gw = X.ext('gunWood');
+  M.gunWood = gw ? surf(X.repeated(gw, 2), { roughness: 0.55, rough: 0.8 }) : std({ map: planks7().map, color: 0xb07a4f, roughness: 0.55 });
+  M.paintRed = slotMat('paintRed', () => ({}), { color: 0x6d1410, roughness: 0.6, metalness: 0.3 }, { color: 0xffffff, metalMap: true });
+  M.paintGreen = slotMat('paintGreen', () => ({}), { color: 0x2c3a2a, roughness: 0.7, metalness: 0.2 }, { color: 0xffffff, metalMap: true });
   M.chrome = std({ color: 0xcfd3d6, roughness: 0.3, metalness: 1.0 });
-  M.leather = std({ color: 0x4a1612, roughness: 0.55 });
+  M.leather = slotMat('leather', () => ({}), { color: 0x4a1612, roughness: 0.55 }, { color: 0xa07a76 });
   M.cloth = std({ color: 0x1e2226, roughness: 0.95 });
-  M.glove = std({ color: 0x23201d, roughness: 0.8 });
+  M.glove = slotMat('glove', () => ({}), { color: 0x23201d, roughness: 0.8 }, { color: 0xffffff });
   M.sleeve = std({ color: 0x3a3f33, roughness: 0.95 });
   M.dark = std({ color: 0x0c0c0c, roughness: 0.9 });
   M.glass = std({ color: 0x223038, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35 });

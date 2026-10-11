@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
 import * as T from '../core/textures.js';
+import * as X from '../core/texlib.js';
+import { surf, photoMat } from '../core/materials.js';
 import { Z, STATIONS, layout, wx, route } from './linie13-data.js';
 import { buildDecor, buildLights } from './linie13-decor.js';
 import { setupLinie13 } from '../game/linie13.js';
@@ -83,25 +85,34 @@ export default {
     range: 70,
   }),
 
+  // Foto-Texturen nur für diese Karte (gemeinsame lädt materials.js)
+  texSlots: ['brick', 'brickLight', 'siding', 'corrugated', 'panels', 'grass', 'road', 'dirt', 'roofRed', 'roofSlate', 'fence', 'lava', 'hay'],
+
   materials(M) {
     const mk = (tex, opts = {}) => new THREE.MeshStandardMaterial({
       map: tex.map, normalMap: tex.normal, normalScale: new THREE.Vector2(1, 1), roughness: 0.9,
       ...(tex.rough ? { roughnessMap: tex.rough, roughness: 1 } : {}), ...opts,
     });
-    const mats = {
-      depot: mk(T.brick(90, [0.5, 0.46, 0.4])),
-      diner: mk(T.siding(81, [0.78, 0.76, 0.7], 10)),
-      garage: mk(T.corrugated(90, [0.4, 0.42, 0.43], 0.7), { roughness: 0.7, metalness: 0.35 }),
-      house: mk(T.siding(82, [0.7, 0.68, 0.6], 14)),
-      barn: mk(T.siding(83, [0.42, 0.11, 0.08], 12)),
-      hut: mk(T.siding(84, [0.3, 0.24, 0.18], 12)),
-      power: mk(T.concretePanels(85), { roughness: 0.85 }),
-      tunnel: mk(T.concretePanels(86), { roughness: 0.9 }),
-      brick: mk(T.brick(87)),
-      brick2: mk(T.brick(88, [0.36, 0.22, 0.16])),
-      bank: mk(T.brick(89, [0.5, 0.46, 0.4])),
+    // Foto-Satz mit Farbton (ein Satz für mehrere Gebäude) oder prozedural wie bisher
+    const ph = (slot, color, o, make, mo = {}) => {
+      const e = X.ext(slot);
+      if (!e) { const m = mk(make(), mo); return m; }
+      return photoMat(surf(e, { color, roughness: 0.9, ...o }), slot);
     };
-    for (const k of ['diner', 'house', 'barn', 'hut', 'garage']) mats[k].userData.uvScale = 4;
+    const mats = {
+      depot: ph('brickLight', 0xd8d0c4, {}, () => T.brick(90, [0.5, 0.46, 0.4])),
+      diner: ph('siding', 0xe6e0d2, {}, () => T.siding(81, [0.78, 0.76, 0.7], 10)),
+      garage: ph('corrugated', 0xc8ccd0, { roughness: 0.7, metalness: 0.35 }, () => T.corrugated(90, [0.4, 0.42, 0.43], 0.7), { roughness: 0.7, metalness: 0.35 }),
+      house: ph('siding', 0xcfc8b4, {}, () => T.siding(82, [0.7, 0.68, 0.6], 14)),
+      barn: ph('siding', 0xa8483c, {}, () => T.siding(83, [0.42, 0.11, 0.08], 12)),
+      hut: ph('siding', 0x6e5c4a, {}, () => T.siding(84, [0.3, 0.24, 0.18], 12)),
+      power: ph('panels', 0xc0c0c0, { roughness: 0.85 }, () => T.concretePanels(85), { roughness: 0.85 }),
+      tunnel: ph('panels', 0x9a9a98, { roughness: 0.9 }, () => T.concretePanels(86), { roughness: 0.9 }),
+      brick: ph('brick', 0xffffff, {}, () => T.brick(87)),
+      brick2: ph('brick', 0x9a8a80, {}, () => T.brick(88, [0.36, 0.22, 0.16])),
+      bank: ph('brickLight', 0xc8c0b4, {}, () => T.brick(89, [0.5, 0.46, 0.4])),
+    };
+    for (const k of ['diner', 'house', 'barn', 'hut', 'garage']) if (!mats[k].userData.slot) mats[k].userData.uvScale = 4;
     return mats;
   },
 
