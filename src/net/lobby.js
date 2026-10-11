@@ -21,7 +21,7 @@ export const DEFAULT_NAME = 'Überlebender';
 const NAME_KEY = 'nachtfall.name';
 const NAME_MAX = 16;
 const JOIN_TIMEOUT = 45000; // ohne Antwort eines Hosts: „Noch kein Spiel … gefunden“ (gesucht wird weiter)
-const REFRESH_GUEST = 8000; // Gast ohne Verbindung meldet sich so oft neu an (schnelles Finden)
+const REFRESH_GUEST = 8000; // Gast ohne Verbindung meldet sich anfangs so oft neu an (schnelles Finden)
 const REFRESH_HOST = 25000; // Host allein in der Lobby: gelegentlich neu anmelden
 const RELAY_TIMEOUT = 10000; // kein Vermittlungs-Relay erreichbar
 const HELLO_RETRY = 3000;
@@ -457,7 +457,8 @@ export class Lobby {
     const r = this.room;
     if (this.phase === 'lobby' && r && r.refresh && !r.peers.size && !this.reject) {
       const alone = this.isHost ? this.players.length <= 1 : !this.hostId;
-      const every = this.isHost ? REFRESH_HOST : REFRESH_GUEST;
+      // Gast: anfangs alle 8 s, bei langer Suche seltener (höchstens alle 30 s) – schont die Server
+      const every = this.isHost ? REFRESH_HOST : Math.min(REFRESH_GUEST + r.refreshes * 4000, 30000);
       if (alone && !r.status().linking && performance.now() - this.lastRefresh > every) {
         this.lastRefresh = performance.now();
         r.refresh();

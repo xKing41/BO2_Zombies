@@ -63,8 +63,8 @@ genau diese Koop-Logik: Jeder Bildausschnitt ist eine eigene Spielinstanz, verbu
 
 **Wenn sich keiner findet:** Unter dem Status in der Lobby steht, wie viele Vermittlungs-Server verbunden sind und
 ob schon eine Direktverbindung steht. Der Host bleibt in seiner Lobby, bis alle drin sind. Solange niemand
-verbunden ist, melden sich beide Seiten regelmäßig neu an (Gast alle 8 s, Host alle 25 s und sofort, wenn die App
-aus dem Hintergrund zurückkommt); nach 45 s ohne Antwort zeigt der Gast „Noch kein Spiel … gefunden“, sucht aber weiter.
+verbunden ist, melden sich beide Seiten regelmäßig neu an (Gast anfangs alle 8 s, Host alle 25 s und sofort, wenn
+die App aus dem Hintergrund zurückkommt); nach 45 s ohne Antwort zeigt der Gast „Noch kein Spiel … gefunden“, sucht aber weiter.
 Beide Geräte sollten dieselbe Spielversion haben (Seite neu laden bzw. aktuelle APK). Die Liste der Server steht in
 `src/net/relays.js`; der Workflow
 „Koop-Verbindungstest“ (GitHub → Actions, auch von Hand startbar) prüft jeden Server einzeln und spielt
