@@ -31,6 +31,7 @@
 //    net=local                       Lobby nutzt BroadcastChannel statt WebRTC
 // ─────────────────────────────────────────────────────────────
 import { joinRoom, selfId as p2pSelfId, getRelaySockets } from 'trystero';
+import { RELAYS } from './relays.js';
 
 export const PROTOCOL = 1; // bei inkompatiblen Änderungen erhöhen
 export const APP_ID = 'nachtfall-zombies';
@@ -265,7 +266,7 @@ class P2PRoom extends Room {
       constructor(cfg) { super(cfg); pcs.add(this); }
     }
     const config = { appId: APP_ID, rtcPolyfill: TrackedPeerConnection };
-    if (o.relays?.length) config.relayConfig = { urls: o.relays };
+    config.relayConfig = { urls: o.relays?.length ? o.relays : RELAYS };
     if (o.iceServers) config.rtcConfig = { iceServers: o.iceServers };
     if (o.turn) config.turnConfig = o.turn;
     this._t = joinRoom(config, code, {

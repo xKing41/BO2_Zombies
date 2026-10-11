@@ -1,0 +1,37 @@
+# Koop-Verbindungstest mit echtem Internet: prüft die öffentlichen Nostr-Relays
+# einzeln und spielt "Spiel erstellen" + "Beitreten" mit zwei Browsern durch.
+# Läuft bei Änderungen an der Netzwerk-Schicht und lässt sich von Hand starten.
+name: Koop-Verbindungstest
+
+on:
+  workflow_dispatch:
+    inputs:
+      extra:
+        description: 'Weitere Relays zum Prüfen (wss://…, kommagetrennt)'
+        required: false
+        default: ''
+  push:
+    paths:
+      - 'src/net/**'
+      - 'scripts/coop-check.mjs'
+      - '.github/workflows/coop-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  koop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Browser für den Test holen
+        run: npm i --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: Relays und Host/Gast prüfen
+        run: node scripts/coop-check.mjs --extra="${{ github.event.inputs.extra }}"
