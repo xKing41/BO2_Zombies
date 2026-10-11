@@ -40,6 +40,6 @@ Aufbereitet (verkleinert, komprimiert, Umgebungsverdeckung eingerechnet) von scr
 | shutter | Poly Haven | [Painted Metal Shutter](https://polyhaven.com/a/painted_metal_shutter) |
 | siding | ambientCG | [Wood Siding 009](https://ambientcg.com/view?id=WoodSiding009) |
 | tiles | ambientCG | [Tiles 074](https://ambientcg.com/view?id=Tiles074) |
-| wall | ambientCG | [Painted Plaster 016](https://ambientcg.com/view?id=PaintedPlaster016) |
+| wall | ambientCG | [Painted Plaster 017](https://ambientcg.com/view?id=PaintedPlaster017) |
 | wood | Poly Haven | [Wood Floor Worn](https://polyhaven.com/a/wood_floor_worn) |
 | woodDark | ambientCG | [Planks 037 A](https://ambientcg.com/view?id=Planks037A) |

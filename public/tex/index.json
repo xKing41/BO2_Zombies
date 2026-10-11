@@ -1,9 +1,9 @@
 {
  "wall": {
   "src": "acg",
-  "id": "PaintedPlaster016",
-  "name": "Painted Plaster 016",
-  "page": "https://ambientcg.com/view?id=PaintedPlaster016",
+  "id": "PaintedPlaster017",
+  "name": "Painted Plaster 017",
+  "page": "https://ambientcg.com/view?id=PaintedPlaster017",
   "dims": null,
   "maps": {
    "color": true,
@@ -18,18 +18,18 @@
    512
   ],
   "avg": [
-   123,
-   119,
-   108
+   190,
+   191,
+   187
   ],
-  "bytes": 978112,
+  "bytes": 475492,
   "license": "CC0 1.0",
   "opts": {
    "src": "acg",
-   "id": "PaintedPlaster016",
-   "_": "Putz mit abplatzender Farbe – Innenwände Station"
+   "id": "PaintedPlaster017",
+   "_": "gestrichener Putz mit Rissen – Wände Station (Sockel und Flecken kommen aus dem Shader)"
   },
-  "v": "50ef89558b"
+  "v": "c9808b53c2"
  },
  "concrete": {
   "src": "ph",
