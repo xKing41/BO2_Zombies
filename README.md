@@ -38,6 +38,9 @@ die Spieldaten selbst laufen über keinen Server. Wer das Spiel erstellt (Host),
 Tastatur & Maus spielt immer Spieler 1, Start legt los. Zu zweit wird das Bild wie in BO2 oben/unten geteilt,
 zu dritt oder viert in Viertel. Jeder hat sein eigenes HUD und hört die Welt aus seiner Position; die Grafikstufe
 „Automatisch“ wird dabei eine Stufe sparsamer. Pause hält hier – anders als online – alle an.
+Jeder Spieler stellt **Empfindlichkeit, Y-Achse und Zielhilfe selbst** ein: auf seiner Karte im Beitritts-Bildschirm
+mit dem eigenen Controller (LB/RB, Y, X) oder per Klick, während der Partie unter Pause → Einstellungen. Die Werte
+hängen am Eingabegerät (Tastatur & Maus, Controller 1–4) und bleiben gespeichert.
 
 **Vier eigene Überlebende:** Willi (Bergmann a. D. mit Schiebermütze und Bart), Dr. Albers (Landtierarzt im
 fleckigen Kittel), Hanne (Kfz-Mechanikerin mit Schweißerbrille) und Kai (Funkamateur mit Bomberjacke und
@@ -58,7 +61,7 @@ verteilt den Stand an alle (Zombie-Momentaufnahmen 15-mal pro Sekunde über eine
 Jedes Gerät steuert seinen eigenen Spieler, zeigt Treffer sofort an und meldet sie dem Host. Splitscreen nutzt
 genau diese Koop-Logik: Jeder Bildausschnitt ist eine eigene Spielinstanz, verbunden über einen Raum im Speicher.
 
-**Noch offen:** Projektile der Wunderwaffen anderer Spieler sind noch nicht sichtbar; man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
+**Noch offen:** Man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
 im Hintergrund-Tab, steht die Partie. Hinter sehr strengen Firewalls kann die Direktverbindung scheitern – dafür
 lässt sich ein eigener TURN-Server angeben (`#turn=turn:host:3478|nutzer|passwort`, siehe `src/net/transport.js`).
 

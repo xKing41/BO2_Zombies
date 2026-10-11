@@ -152,7 +152,7 @@
       <button id="btnSplitKbm">Tastatur &amp; Maus hinzufügen</button>
       <button id="btnSplitBack">Zurück</button>
     </div>
-    <div class="hint">Bis zu vier Spieler an einem Bildschirm. Controller: A / ✕ beitreten · B / ○ verlassen · Steuerkreuz Karte wählen · Start loslegen. Tastatur &amp; Maus spielt immer Spieler 1.</div>
+    <div class="hint">Bis zu vier Spieler an einem Bildschirm. Controller: A / ✕ beitreten · B / ○ verlassen · Steuerkreuz Karte wählen · Start loslegen · LB/RB, Y, X: eigene Einstellungen. Tastatur &amp; Maus spielt immer Spieler 1.</div>
   </div>
 
   <!-- Pause -->
@@ -169,6 +169,7 @@
   <!-- Einstellungen -->
   <div id="settings" class="screen hidden panel">
     <h2>Einstellungen</h2>
+    <div id="sPlayers" class="split-prof hidden"></div>
     <label>Empfindlichkeit (Umsehen) <input id="sSens" type="range" min="0.2" max="3" step="0.05" /><span></span></label>
     <label>Sichtfeld (FOV) <input id="sFov" type="range" min="65" max="100" step="1" /><span></span></label>
     <label>Gesamtlautstärke <input id="sVol" type="range" min="0" max="1" step="0.05" /><span></span></label>

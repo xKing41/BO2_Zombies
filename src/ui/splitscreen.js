@@ -105,6 +105,24 @@ export class SplitScreen {
     this.render();
   }
 
+  // Eigene Werte je Eingabegerät (Tastatur & Maus bzw. Controller 1–4) – bleiben gespeichert
+  profile(p) {
+    const s = this.settings;
+    if (!s.splitProfiles || typeof s.splitProfiles !== 'object') s.splitProfiles = {};
+    const key = p.dev === 'kbm' ? 'kbm' : 'pad' + p.index;
+    if (!s.splitProfiles[key]) s.splitProfiles[key] = { sensitivity: s.sensitivity, invertY: !!s.invertY, aimAssist: s.aimAssist !== false };
+    return s.splitProfiles[key];
+  }
+
+  tweak(p, what, d = 0) {
+    const pr = this.profile(p);
+    if (what === 'sens') pr.sensitivity = Math.round(Math.min(3, Math.max(0.2, pr.sensitivity + d)) * 100) / 100;
+    else if (what === 'inv') pr.invertY = !pr.invertY;
+    else if (what === 'aim') pr.aimAssist = !pr.aimAssist;
+    if (this.ui.save) this.ui.save();
+    this.render();
+  }
+
   cycleMap(d) {
     const i = MAP_ORDER.indexOf(this.map);
     this.map = MAP_ORDER[(i + d + MAP_ORDER.length) % MAP_ORDER.length];
@@ -117,7 +135,7 @@ export class SplitScreen {
       const prev = this.prev.get(p.index) || {};
       const b = (i) => !!p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.5);
       const ax = p.axes[0] || 0;
-      const now = { a: b(0), b: b(1), start: b(9), left: b(14) || ax < -0.6, right: b(15) || ax > 0.6 };
+      const now = { a: b(0), b: b(1), start: b(9), left: b(14) || ax < -0.6, right: b(15) || ax > 0.6, x: b(2), y: b(3), lb: b(4), rb: b(5) };
       const edge = (k) => now[k] && !prev[k];
       this.prev.set(p.index, now);
       const me = this.players.find((x) => x.dev === 'pad' && x.index === p.index);
@@ -125,7 +143,76 @@ export class SplitScreen {
       else if (edge('b')) { if (me) this.leave(me); else { this.back(); return; } }
       else if (edge('start') && me) { this.start(); return; }
       else if (me && (edge('left') || edge('right'))) this.cycleMap(now.left ? -1 : 1);
+      // Jeder stellt mit dem eigenen Controller seine Werte ein
+      else if (me && (edge('lb') || edge('rb'))) this.tweak(me, 'sens', now.lb ? -0.1 : 0.1);
+      else if (me && edge('y')) this.tweak(me, 'inv');
+      else if (me && edge('x')) this.tweak(me, 'aim');
     }
+  }
+
+  devLabel(p) { return p.dev === 'kbm' ? 'Tastatur & Maus' : `${p.label} ${p.index + 1}`; }
+
+  // Eigene Einstellungen auf der Platz-Karte: Empfindlichkeit −/+, Y-Achse, Zielhilfe
+  optionsFor(p) {
+    const pr = this.profile(p);
+    const box = document.createElement('div');
+    box.className = 'ss-opt';
+    const btn = (text, title, fn, cls = '') => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = text; b.title = title; b.className = cls;
+      b.onclick = (e) => { e.stopPropagation(); fn(); };
+      return b;
+    };
+    const row = document.createElement('div');
+    row.className = 'ss-sens';
+    const val = document.createElement('b');
+    val.textContent = pr.sensitivity.toFixed(1);
+    row.append('Empfindlichkeit', btn('−', 'Weniger', () => this.tweak(p, 'sens', -0.1), 'ss-step'), val, btn('+', 'Mehr', () => this.tweak(p, 'sens', 0.1), 'ss-step'));
+    const pad = p.dev === 'pad';
+    box.append(row,
+      btn(`Y-Achse: ${pr.invertY ? 'invertiert' : 'normal'}`, 'Y-Achse umschalten', () => this.tweak(p, 'inv'), 'ss-tog'),
+      btn(`Zielhilfe: ${pr.aimAssist ? 'an' : 'aus'}`, 'Zielhilfe umschalten', () => this.tweak(p, 'aim'), 'ss-tog'));
+    if (pad) {
+      const hint = document.createElement('small');
+      hint.textContent = 'LB/RB Empfindlichkeit · Y Y-Achse · X Zielhilfe';
+      box.append(hint);
+    }
+    return box;
+  }
+
+  // Pausenmenü → Einstellungen: eine Zeile je Spieler
+  renderProfiles(el) {
+    el.innerHTML = '';
+    const h = document.createElement('h3');
+    h.textContent = 'Jeder Spieler für sich';
+    el.appendChild(h);
+    this.players.forEach((p, i) => {
+      const pr = this.profile(p);
+      const sec = document.createElement('div');
+      sec.className = 'sp-row';
+      sec.style.setProperty('--pc', SLOT_COLORS[i]);
+      const head = document.createElement('div');
+      head.className = 'sp-head';
+      head.textContent = `Spieler ${i + 1} · ${this.devLabel(p)}`;
+      const lab = document.createElement('label');
+      const r = document.createElement('input');
+      r.type = 'range'; r.min = '0.2'; r.max = '3'; r.step = '0.05'; r.value = String(pr.sensitivity);
+      const out = document.createElement('span');
+      out.textContent = pr.sensitivity.toFixed(2);
+      r.oninput = () => { pr.sensitivity = +r.value; out.textContent = pr.sensitivity.toFixed(2); };
+      lab.append('Empfindlichkeit ', r, out);
+      const chk = (text, key) => {
+        const l = document.createElement('label');
+        l.className = 'check';
+        const c = document.createElement('input');
+        c.type = 'checkbox'; c.checked = !!pr[key];
+        c.onchange = () => { pr[key] = c.checked; };
+        l.append(text + ' ', c);
+        return l;
+      };
+      sec.append(head, lab, chk('Y-Achse invertieren', 'invertY'), chk('Zielhilfe', 'aimAssist'));
+      el.appendChild(sec);
+    });
   }
 
   render() {
@@ -139,14 +226,15 @@ export class SplitScreen {
       const num = document.createElement('span'); num.className = 'ss-num'; num.textContent = i + 1;
       const name = document.createElement('span'); name.className = 'ss-name';
       const dev = document.createElement('span'); dev.className = 'ss-dev';
+      li.append(num, name, dev);
       if (p) {
         name.textContent = `Spieler ${i + 1}`;
-        dev.textContent = p.dev === 'kbm' ? 'Tastatur & Maus' : `${p.label} ${p.index + 1}`;
+        dev.textContent = this.devLabel(p);
+        li.append(this.optionsFor(p));
       } else {
         name.textContent = 'Frei';
         dev.textContent = 'Drücke A / ✕ auf einem Controller';
       }
-      li.append(num, name, dev);
       list.appendChild(li);
     }
     const maps = $('splitMaps');
@@ -191,6 +279,7 @@ export class SplitScreen {
       placeHud(g.hud.el.hud, views[0]);
       if (!g.mapDef || g.mapDef.id !== map) await g.loadMap(map, (p, t) => progress(p * 0.3, t));
       this.games = [g];
+      g.profile = this.profile(this.players[0]);
       for (let i = 1; i < n; i++) {
         const cv = document.createElement('canvas');
         cv.className = 'split-cv';
@@ -204,6 +293,7 @@ export class SplitScreen {
           input: this.devs[i], hudRoot: hud, view: views[i], sharedM: g.M, audioFrom: g.audio, split: true, secondary: true, quality: q,
         });
         gi.hudRoot = hud;
+        gi.profile = this.profile(this.players[i]);
         gi.onPauseRequest = () => this.ui.paused();
         gi.onNetEnd = () => {};
         this.games.push(gi);
@@ -255,6 +345,7 @@ export class SplitScreen {
     this.games = [];
     const g = this.game;
     g.split = false;
+    g.profile = null;
     if (g.touch) g.touch.blocked = false;
     if (g.qualityOverride) g.setQualityOverride(null);
     g.input.assign({ kbm: true, pad: null });
@@ -265,7 +356,8 @@ export class SplitScreen {
     this.devs = null;
   }
 
-  // Geänderte Einstellungen (Pausenmenü) gelten für alle Spieler am Gerät
+  // Geänderte Einstellungen (Pausenmenü) gelten für alle Spieler am Gerät –
+  // außer Empfindlichkeit, Y-Achse und Zielhilfe: die hat jeder selbst (profile)
   applySettings() {
     for (const gi of this.games) {
       if (gi === this.game) continue;

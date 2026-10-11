@@ -157,6 +157,22 @@ button:disabled { cursor: default; }
 .ss.empty .ss-num { color: rgba(255, 255, 255, 0.22); }
 .ss.empty .ss-name { color: rgba(233, 227, 214, 0.45); }
 .ss.empty .ss-dev { color: var(--dim); animation: statusPulse 1.6s ease-in-out infinite; }
+/* Eigene Werte je Spieler auf der Platz-Karte */
+.ss-opt { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; font: 13px 'Special Elite', monospace; color: #cfc6b3; }
+.ss-sens { display: flex; align-items: center; gap: 6px; }
+.ss-sens b { min-width: 28px; text-align: center; color: #f2ede0; font: 600 16px Oswald, sans-serif; }
+.ss-opt button { padding: 2px 8px; font: 13px Oswald, sans-serif; letter-spacing: 0.5px; color: #e9e3d6; cursor: pointer;
+  background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.18); }
+.ss-opt button:hover, .ss-opt button:focus-visible { border-color: var(--pc); }
+.ss-opt .ss-step { width: 26px; padding: 2px 0; font-size: 16px; line-height: 1; }
+.ss-opt .ss-tog { text-align: left; }
+.ss-opt small { font-size: 11px; color: var(--dim); }
+/* Pausenmenü: Einstellungen je Spieler */
+.split-prof { display: flex; flex-direction: column; gap: 10px; width: min(520px, 100%); }
+.split-prof h3 { margin: 0; font-size: 16px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+.sp-row { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-left: 4px solid var(--pc); background: rgba(0, 0, 0, 0.35); }
+.sp-head { font: 600 17px Oswald, sans-serif; letter-spacing: 1px; color: #f2ede0; }
+.split-prof label { width: 100%; }
 .split-maps { display: flex; flex-direction: column; gap: 8px; width: min(1000px, 100%); }
 .split-btns { width: min(360px, 100%); }
 @media (max-width: 680px) { .split-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

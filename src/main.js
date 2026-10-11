@@ -214,6 +214,7 @@ window.__net = { openRoom, makeCode, PROTOCOL };
 // ── Splitscreen (src/ui/splitscreen.js) ──────────────────────
 const split = new SplitScreen(game, settings, HUD_TEMPLATE, {
   show,
+  save: () => saveSettings(settings),
   current: () => current,
   progress: (pct, text) => { $('loadbar').style.width = pct + '%'; if (text) $('loadtext').textContent = text; },
   paused: () => pauseGame(),
@@ -257,8 +258,17 @@ $('btnResume').onclick = play;
 $('btnAgain').onclick = () => (split.active ? split.restart() : play());
 $('btnQuit').onclick = quitToMenu;
 $('btnMenu').onclick = quitToMenu;
-$('btnSettings').onclick = () => { backTo = 'menu'; show('settings'); };
-$('btnSettings2').onclick = () => { backTo = 'pause'; show('settings'); };
+// Im Splitscreen stellt jeder Spieler Empfindlichkeit, Y-Achse und Zielhilfe selbst ein
+const openSettings = (from) => {
+  backTo = from;
+  const sp = split.active;
+  for (const id of ['sSens', 'sInv', 'sAim']) $(id).closest('label').classList.toggle('hidden', sp);
+  $('sPlayers').classList.toggle('hidden', !sp);
+  if (sp) split.renderProfiles($('sPlayers'));
+  show('settings');
+};
+$('btnSettings').onclick = () => openSettings('menu');
+$('btnSettings2').onclick = () => openSettings('pause');
 $('btnControls').onclick = () => { backTo = 'menu'; show('controls'); };
 $('btnControls2').onclick = () => { backTo = 'pause'; show('controls'); };
 document.querySelectorAll('.back').forEach((b) => (b.onclick = () => { saveSettings(settings); game.applySettings(); split.applySettings(); show(backTo); }));
@@ -302,6 +312,7 @@ const padNav = {
     const i = it.indexOf(document.activeElement);
     this.idx = ((i < 0 ? 0 : i + d) + it.length) % it.length;
     it[this.idx].focus({ preventScroll: true });
+    it[this.idx].scrollIntoView({ block: 'nearest' }); // lange Listen (Einstellungen je Spieler) mitscrollen
   },
   adjust(d) {
     const el = document.activeElement;

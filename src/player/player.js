@@ -178,10 +178,12 @@ export class Player {
     const g = this.g, map = g.map;
     this.time += dt;
     if (g.state === 'playing') {
-      let s = g.settings.sensitivity * (g.weapons.ads > 0.5 ? 0.65 : 1) * (g.camera.fov / 75);
-      if (input.device !== 'kbm' && g.settings.aimAssist && !this.downed) s = this.aimAssist(dt, s);
+      // Splitscreen: jeder Spieler hat eigene Werte (g.profile), sonst die normalen Einstellungen
+      const pr = g.profile || g.settings;
+      let s = pr.sensitivity * (g.weapons.ads > 0.5 ? 0.65 : 1) * (g.camera.fov / 75);
+      if (input.device !== 'kbm' && pr.aimAssist && !this.downed) s = this.aimAssist(dt, s);
       this.yaw -= input.lookX * s;
-      this.pitch -= input.lookY * s * (g.settings.invertY ? -1 : 1);
+      this.pitch -= input.lookY * s * (pr.invertY ? -1 : 1);
     }
     this.pitch = clamp(this.pitch, -1.5, 1.5);
     this.recoilP = damp(this.recoilP, 0, 7, dt);

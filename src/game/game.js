@@ -39,6 +39,7 @@ export class Game {
   constructor(canvas, settings, opts = {}) {
     this.canvas = canvas;
     this.settings = settings;
+    this.profile = null; // Splitscreen: eigene Empfindlichkeit, Y-Achse und Zielhilfe dieses Spielers
     this.opts = opts;
     this.split = !!opts.split; // Teil einer Splitscreen-Partie
     this.secondary = !!opts.secondary; // weitere Instanz (Spieler 2–4): keine Menüs, Musik, Sprachausgabe
