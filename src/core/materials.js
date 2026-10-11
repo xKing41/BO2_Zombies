@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as T from './textures.js';
 import * as X from './texlib.js';
 import { surfaceVar } from '../world/surfacevar.js';
+import { detailImage, weaveTextures } from './detail.js';
 
 // Foto-Texturen, die alle Karten gemeinsam nutzen (werden vor buildMaterials geladen)
 export const SHARED_SLOTS = [
@@ -101,12 +102,15 @@ export function buildMaterials(onProgress = () => {}) {
     hole: T.bulletHole(),
     glow: T.glow(),
     flash: T.muzzleFlash(31),
-    papCamo: T.papCamo(41),
+    // Aufgerüstete Waffen: wirbelndes Onyx-Muster (Foto), sonst das gemalte Tarnmuster
+    papCamo: X.ext('papCamo') ? X.repeated(X.ext('papCamo'), 1).map : T.papCamo(41),
     boxSide: T.boxSide(),
     moon: T.moon(),
   };
   M.tex.papCamo.repeat.set(2, 2);
-  M.papGun = std({ map: M.tex.papCamo, color: 0x8070a0, emissive: 0x5020d0, emissiveMap: M.tex.papCamo, emissiveIntensity: 0.3, roughness: 0.3, metalness: 0.8 });
+  M.papGun = X.ext('papCamo')
+    ? std({ map: M.tex.papCamo, color: 0xa898d8, emissive: 0x7038ff, emissiveMap: M.tex.papCamo, emissiveIntensity: 0.4, roughness: 0.22, metalness: 0.75 })
+    : std({ map: M.tex.papCamo, color: 0x8070a0, emissive: 0x5020d0, emissiveMap: M.tex.papCamo, emissiveIntensity: 0.3, roughness: 0.3, metalness: 0.8 });
 
   step('Zombies');
   // Neutrale Texturen + Farbton pro Instanz (spart Speicher und Draw-Calls).
@@ -129,6 +133,13 @@ export function buildMaterials(onProgress = () => {}) {
   const zs = T.zombieSkin(60), zh = T.zombieHead(62);
   const zsh = T.zombieCloth(86, 'shirt'), zp = T.zombieCloth(87, 'pants');
   const za = T.zombieApron(66), hh = T.hardhatTex(68);
+  // Echte Stoff-, Jeans- und Lederstruktur (Foto-Höhenkarten) in die gemalten Texturen weben
+  const cloth = detailImage('clothDetail'), denim = detailImage('denimDetail'), leather = detailImage('leatherDetail');
+  weaveTextures(zsh, cloth, { repeat: 9, colorAlpha: 0.4, bumpAlpha: 0.75 });
+  weaveTextures(zp, denim || cloth, { repeat: 7, colorAlpha: 0.3, bumpAlpha: 0.6 });
+  weaveTextures(za, cloth, { repeat: 6, colorAlpha: 0.22, bumpAlpha: 0.5 });
+  weaveTextures(zs, leather, { repeat: 5, colorAlpha: 0.16, bumpAlpha: 0.45 });
+  weaveTextures(zh, leather, { repeat: 4, colorAlpha: 0.1, bumpAlpha: 0.3 });
   M.zombie = {
     skin: masked(std({ map: zs.map, bumpMap: zs.bump, bumpScale: 1.6, roughness: 0.62 })),
     head: masked(std({ map: zh.map, bumpMap: zh.bump, bumpScale: 1.6, roughness: 0.6 })),

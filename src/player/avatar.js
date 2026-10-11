@@ -351,7 +351,7 @@ function kit(id, color) {
   if (!geos) { geos = buildGeos(id); GEOS.set(id, geos); }
   const tex = paintSurvivor(id, CHAR_IDS.indexOf(id) + 1);
   tintBand(tex.map, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex.map, roughnessMap: tex.rough, roughness: 1, metalness: 0 });
+  const mat = new THREE.MeshStandardMaterial({ map: tex.map, roughnessMap: tex.rough, roughness: 1, metalness: 0, ...(tex.bump ? { bumpMap: tex.bump, bumpScale: 0.9 } : {}) });
   const matDS = mat.clone(); matDS.side = THREE.DoubleSide;
   k = { def: DEFS[id], geos, mat, matDS };
   KITS.set(key, k);

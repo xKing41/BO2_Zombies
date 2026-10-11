@@ -9,6 +9,7 @@ import { ValueNoise, mulberry32 } from '../core/noise.js';
 import { toTexture } from '../core/textures.js';
 import { IS_MOBILE } from '../core/platform.js';
 import { clamp, smoothstep } from '../core/utils.js';
+import { detailImage, weave } from '../core/detail.js';
 
 const RES = IS_MOBILE ? 256 : 512;
 
@@ -289,6 +290,9 @@ function armsMaterial() {
     for (const x of [0.25, 0.75]) { ctx.beginPath(); ctx.moveTo(half + x * half, 6 * k); ctx.lineTo(half + x * half, half - 6 * k); ctx.stroke(); }
     ctx.setLineDash([]);
   }
+  // Foto-Struktur: Gewebe im Ärmel, Ledernarbung im Handschuh (Kanal G = Rauheit variiert leicht mit)
+  weave(detailImage('clothDetail'), { color: cc, bump: dc, rect: [0, 0, half, half], tile: half / 4, colorAlpha: 0.3, bumpAlpha: 0.6 });
+  weave(detailImage('leatherDetail'), { color: cc, bump: dc, rect: [half, 0, half, half], tile: half / 2.5, colorAlpha: 0.22, bumpAlpha: 0.55 });
   // Schmutzspritzer auf der Haut
   for (let i = 0; i < 40; i++) {
     cc.fillStyle = `rgba(40,28,18,${0.1 + r() * 0.25})`;

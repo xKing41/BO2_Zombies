@@ -61,11 +61,11 @@ const FRAG = /* glsl */`
 		// Wände: aufsteigende Nässe unten etwas dunkler
 		diffuseColor.rgb *= 1.0 - svWall * uSv.x * 0.5 * ( 1.0 - smoothstep( 0.0, 0.9 + svN1.g * 0.6, vSvWorld.y ) );
 		// Böden: Pfützen – dunkler, glatt, spiegelnd, Normale flach
-		float svWet = smoothstep( 0.8, 0.95, svN.y ) * smoothstep( 0.66, 0.74, svN1.b + ( svN2.g - 0.5 ) * 0.18 ) * uSv.z;
+		float svWet = smoothstep( 0.8, 0.95, svN.y ) * smoothstep( 0.7, 0.78, svN1.b + ( svN2.g - 0.5 ) * 0.18 ) * uSv.z;
 		float svDamp = smoothstep( 0.8, 0.95, svN.y ) * smoothstep( 0.55, 0.68, svN1.b ) * uSv.z;
 		diffuseColor.rgb *= 1.0 - svDamp * 0.25 - svWet * 0.3;
 		roughnessFactor = mix( roughnessFactor, roughnessFactor * 0.55, svDamp );
-		roughnessFactor = mix( roughnessFactor, 0.04, svWet );
+		roughnessFactor = mix( roughnessFactor, 0.12, svWet );
 		normal = normalize( mix( normal, nonPerturbedNormal, svWet * 0.92 ) );
 		// Sockelanstrich (nur senkrechte Flächen)
 		if ( uSvBand.w > 0.5 ) {

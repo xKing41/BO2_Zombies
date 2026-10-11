@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { ValueNoise, mulberry32 } from '../core/noise.js';
 import { toTexture } from '../core/textures.js';
+import { detailImage, weave } from '../core/detail.js';
 import { IS_MOBILE } from '../core/platform.js';
 
 export const REG = {
@@ -241,11 +242,25 @@ class Painter {
     this.r.fillStyle = gray(rough); this.r.fillRect(px, py, 32 * k, 32 * k);
   }
 
-  textures() {
+  textures(id) {
+    // Foto-Struktur in der Kleidung: Farbe (weiches Licht) und eine Bump-Karte nur für die Stoffbereiche
+    const img = { cloth: detailImage('clothDetail'), leather: detailImage('leatherDetail') };
+    img.denim = detailImage('denimDetail') || img.cloth;
+    let bump = null;
+    if (img.cloth || img.leather) {
+      this.bmp = cv(SIZE);
+      const b = this.bmp.getContext('2d');
+      b.fillStyle = '#808080'; b.fillRect(0, 0, SIZE, SIZE);
+      for (const [reg, kind, rep] of DETAIL_PLAN[id] || DETAIL_PLAN.default) {
+        const [x, y, w, h] = REG[reg].map((v) => v * this.k);
+        weave(img[kind], { color: this.c, bump: b, rect: [x, y, w, h], tile: Math.max(w, h) / rep, colorAlpha: kind === 'leather' ? 0.2 : 0.26, bumpAlpha: 0.9 });
+      }
+      bump = toTexture(this.bmp, { srgb: false, repeat: false });
+    }
     const map = toTexture(this.col, { repeat: false });
     const rough = toTexture(this.rgh, { srgb: false, repeat: false });
-    for (const t of [map, rough]) { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; }
-    return { map, rough };
+    for (const t of [map, rough, bump]) if (t) { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; }
+    return { map, rough, bump };
   }
 }
 
@@ -676,9 +691,16 @@ function paintKai(P) {
 
 const PAINTERS = { hanne: paintHanne, willi: paintWilli, albers: paintAlbers, kai: paintKai };
 
+// Welche Atlas-Bereiche welche Foto-Struktur bekommen: [Bereich, Art, Wiederholungen]
+const DETAIL_PLAN = {
+  default: [['torso', 'cloth', 5], ['armUL', 'cloth', 3], ['armUR', 'cloth', 3], ['thigh', 'cloth', 3], ['shin', 'cloth', 3], ['foot', 'leather', 2]],
+  // Kai: Bomberjacke (Leder) und Jeans
+  kai: [['torso', 'leather', 4], ['armUL', 'leather', 2], ['armUR', 'leather', 2], ['thigh', 'denim', 3], ['shin', 'denim', 3], ['foot', 'leather', 2]],
+};
+
 // Atlas einer Figur malen → { map, rough }
 export function paintSurvivor(id, seed = 1) {
   const P = new Painter(seed * 131 + 7);
   (PAINTERS[id] || paintKai)(P);
-  return P.textures();
+  return P.textures(id);
 }
