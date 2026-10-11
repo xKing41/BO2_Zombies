@@ -18,7 +18,7 @@
     "shutter":       { "src": "ph",  "id": "painted_metal_shutter", "_": "Rolltore" },
     "paintRed":      { "src": "acg", "id": "PaintedMetal004", "metal": true, "_": "rot lackiertes Metall mit Macken" },
     "paintGreen":    { "src": "acg", "id": "PaintedMetal006", "metal": true, "_": "grün lackiertes Metall mit Rost" },
-    "leather":       { "src": "ph",  "id": "leather_red_03", "_": "rotes Leder (Sitze)" },
+    "leather":       { "src": "acg", "id": "Leather037", "_": "rotes Leder (Sitze)" },
     "gunMetal":      { "src": "acg", "id": "Metal046B", "metal": true, "_": "brünierter Waffenstahl" },
     "gunPolymer":    { "src": "acg", "id": "Plastic012A", "_": "Kunststoff der Waffen" },
     "gunWood":       { "src": "acg", "id": "Wood027", "_": "Nussbaum-Schaft" },

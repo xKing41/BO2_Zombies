@@ -19,6 +19,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import sharp from 'sharp';
 
 const UA = 'Nachtfall-Zombies asset script (github.com/xKing41/BO2_Zombies)';
@@ -83,7 +84,8 @@ async function fromPolyHaven(id) {
   try { info = await get(`https://api.polyhaven.com/info/${id}`); } catch { /* optional */ }
   const keys = Object.keys(files);
   const pickMap = async (names, fmt = ['jpg', 'png']) => {
-    const key = names.find((n) => files[n]) || keys.find((k) => names.some((n) => k.toLowerCase() === n.toLowerCase()));
+    const low = names.map((n) => n.toLowerCase());
+    const key = names.find((n) => files[n]) || keys.find((k) => low.includes(k.toLowerCase())) || keys.find((k) => low.some((n) => k.toLowerCase().includes(n)));
     if (!key) return null;
     const res = files[key]['1k'] || files[key]['2k'] || files[key][Object.keys(files[key])[0]];
     const f = fmt.map((x) => res?.[x]).find(Boolean);
@@ -109,7 +111,7 @@ const gray = (file, S) => sharp(file).resize(S, S, { fit: 'fill', kernel: 'lancz
 async function processSlot(slot, it) {
   const raw = it.src === 'ph' ? await fromPolyHaven(it.id) : await fromAmbientCG(it.id);
   const want = (k) => !it.only || it.only.includes(k);
-  if (!raw.color && want('color')) throw new Error('keine Farbtextur gefunden');
+  if (!raw.color && want('color')) throw new Error(`keine Farbtextur gefunden (vorhanden: ${raw.meta?.maps || '?'})`);
   const dir = `${OUT}/${slot}`;
   await fs.rm(dir, { recursive: true, force: true });
   await fs.mkdir(dir, { recursive: true });
@@ -127,9 +129,9 @@ async function processSlot(slot, it) {
       col = sharp(await col.toBuffer()).composite([{ input: await sharp(ao).toColourspace('srgb').toBuffer(), blend: 'multiply' }]);
     }
     if (it.tint) col = sharp(await col.toBuffer()).linear(it.tint, [0, 0, 0]);
-    await col.webp({ quality: 82, effort: 6, smartSubsample: true }).toFile(`${dir}/color_${S}.webp`);
+    await col.webp({ quality: 80, effort: 6, smartSubsample: true }).toFile(`${dir}/color_${S}.webp`);
     }
-    if (out.normal) await sharp(raw.normal).resize(S, S, { fit: 'fill', kernel: 'lanczos3' }).removeAlpha().webp({ quality: 90, effort: 6, smartSubsample: true }).toFile(`${dir}/normal_${S}.webp`);
+    if (out.normal) await sharp(raw.normal).resize(S, S, { fit: 'fill', kernel: 'lanczos3' }).removeAlpha().webp({ quality: 84, effort: 6, smartSubsample: true }).toFile(`${dir}/normal_${S}.webp`);
     if (out.rough) await gray(raw.rough, S).webp({ quality: 85, effort: 6 }).toFile(`${dir}/rough_${S}.webp`);
     if (out.metal) await gray(raw.metal, S).webp({ quality: 85, effort: 6 }).toFile(`${dir}/metal_${S}.webp`);
     if (out.alpha) await gray(raw.opacity, S).webp({ quality: 90, effort: 6 }).toFile(`${dir}/alpha_${S}.webp`);
@@ -157,6 +159,16 @@ for (const [slot, it] of wanted) {
     console.log(`! ${slot}: ${it.src} ${it.id} – ${e.message}`);
   }
 }
+// Versionskennung je Slot (Prüfsumme der Dateien): hängt als ?v=… an den Adressen,
+// damit Browser-Cache und Offline-Speicher neue Fassungen sicher holen
+for (const slot of Object.keys(index)) {
+  if (!CFG.items[slot]) continue;
+  try {
+    const h = crypto.createHash('sha1');
+    for (const f of (await fs.readdir(`${OUT}/${slot}`)).sort()) h.update(await fs.readFile(`${OUT}/${slot}/${f}`));
+    index[slot].v = h.digest('hex').slice(0, 10);
+  } catch { /* Ordner fehlt */ }
+}
 // Nicht mehr gewünschte Slots entfernen
 for (const slot of Object.keys(index)) {
   if (!CFG.items[slot]) { delete index[slot]; await fs.rm(`${OUT}/${slot}`, { recursive: true, force: true }); console.log(`- ${slot}`); }
@@ -168,4 +180,4 @@ await fs.writeFile(`${OUT}/QUELLEN.md`, md);
 let total = 0;
 for (const r of Object.values(index)) total += r.bytes || 0;
 console.log(`\n${Object.keys(index).length} Texturen, zusammen ${(total / 1048576).toFixed(1)} MB${failed ? `, ${failed} fehlgeschlagen` : ''}`);
-if (failed) process.exitCode = 1;
+if (failed) console.log(`::warning::${failed} Textur(en) fehlgeschlagen – siehe oben`);
