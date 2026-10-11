@@ -15,6 +15,6 @@ export const RELAYS = [
   'wss://cdn.satellite.earth',
   'wss://nostr.mom',
   'wss://relay.primal.net',
-  'wss://offchain.pub',
   'wss://nostr-pub.wellorder.net',
+  // nicht: offchain.pub – lehnt Spiel-Nachrichten zeitweise ab („nicht im Web of Trust“)
 ];
