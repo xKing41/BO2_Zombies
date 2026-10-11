@@ -1,0 +1,1282 @@
+{
+ "wall": {
+  "src": "acg",
+  "id": "PaintedPlaster016",
+  "name": "Painted Plaster 016",
+  "page": "https://ambientcg.com/view?id=PaintedPlaster016",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   123,
+   119,
+   108
+  ],
+  "bytes": 978112,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "PaintedPlaster016",
+   "_": "Putz mit abplatzender Farbe – Innenwände Station"
+  },
+  "v": "50ef89558b"
+ },
+ "concrete": {
+  "src": "ph",
+  "id": "concrete_floor_worn_001",
+  "name": "Concrete Floor Worn 001",
+  "page": "https://polyhaven.com/a/concrete_floor_worn_001",
+  "dims": [
+   3000,
+   3000.000238418579
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   83,
+   84,
+   81
+  ],
+  "bytes": 254640,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "concrete_floor_worn_001",
+   "_": "abgenutzter Industrieboden"
+  },
+  "v": "4d4101a13d"
+ },
+ "concreteDirty": {
+  "src": "ph",
+  "id": "concrete_floor_02",
+  "name": "Concrete Floor 02",
+  "page": "https://polyhaven.com/a/concrete_floor_02",
+  "dims": [
+   2000,
+   2000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   106,
+   98,
+   81
+  ],
+  "bytes": 714716,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "concrete_floor_02",
+   "_": "schmutziger Beton, auch Parkplatz/Flachdach"
+  },
+  "v": "1f528bcd65"
+ },
+ "tiles": {
+  "src": "acg",
+  "id": "Tiles074",
+  "name": "Tiles 074",
+  "page": "https://ambientcg.com/view?id=Tiles074",
+  "dims": [
+   210,
+   210
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   85,
+   75,
+   67
+  ],
+  "bytes": 193834,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Tiles074",
+   "_": "Schachbrett-Fliesen (Diner)"
+  },
+  "v": "840d0bdc57"
+ },
+ "cobble": {
+  "src": "ph",
+  "id": "cobblestone_floor_04",
+  "name": "Cobblestone Floor 04",
+  "page": "https://polyhaven.com/a/cobblestone_floor_04",
+  "dims": [
+   1500,
+   1500
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   115,
+   105,
+   82
+  ],
+  "bytes": 743300,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "cobblestone_floor_04",
+   "_": "Kopfsteinpflaster (Hof)"
+  },
+  "v": "2eacb2973e"
+ },
+ "ground": {
+  "src": "acg",
+  "id": "Ground110",
+  "name": "Ground 110",
+  "page": "https://ambientcg.com/view?id=Ground110",
+  "dims": [
+   210,
+   210
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   86,
+   78,
+   68
+  ],
+  "bytes": 1335186,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Ground110",
+   "_": "Schotter-Erde draußen (Güterbahnhof)"
+  },
+  "v": "9988a5c5e1"
+ },
+ "ceiling": {
+  "src": "acg",
+  "id": "Concrete031",
+  "name": "Concrete 031",
+  "page": "https://ambientcg.com/view?id=Concrete031",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   92,
+   89,
+   84
+  ],
+  "bytes": 571780,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Concrete031",
+   "_": "Betondecke"
+  },
+  "v": "9041d0b8d3"
+ },
+ "wood": {
+  "src": "ph",
+  "id": "wood_floor_worn",
+  "name": "Wood Floor Worn",
+  "page": "https://polyhaven.com/a/wood_floor_worn",
+  "dims": [
+   1999.9996423721313,
+   1999.9996423721313
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   125,
+   81,
+   42
+  ],
+  "bytes": 162352,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "wood_floor_worn",
+   "_": "Dielenboden, Holz allgemein"
+  },
+  "v": "b84c4ec414"
+ },
+ "woodDark": {
+  "src": "acg",
+  "id": "Planks037A",
+  "name": "Planks 037 A",
+  "page": "https://ambientcg.com/view?id=Planks037A",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   77,
+   60,
+   44
+  ],
+  "bytes": 291754,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Planks037A",
+   "_": "dunkle verwitterte Bretter"
+  },
+  "v": "93aae79fa8"
+ },
+ "board": {
+  "src": "ph",
+  "id": "rough_wood",
+  "name": "Rough Wood",
+  "page": "https://polyhaven.com/a/rough_wood",
+  "dims": [
+   500,
+   500
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   92,
+   85,
+   75
+  ],
+  "bytes": 533204,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "rough_wood",
+   "_": "Bretter der Barrikaden"
+  },
+  "v": "3425f42587"
+ },
+ "metal": {
+  "src": "ph",
+  "id": "metal_plate_02",
+  "name": "Metal Plate 02",
+  "page": "https://polyhaven.com/a/metal_plate_02",
+  "dims": [
+   2000,
+   2000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   81,
+   71,
+   59
+  ],
+  "bytes": 537054,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "metal_plate_02",
+   "_": "Metallplatten"
+  },
+  "v": "f4beef1a53"
+ },
+ "diamond": {
+  "src": "ph",
+  "id": "metal_plate",
+  "name": "Metal Plate",
+  "page": "https://polyhaven.com/a/metal_plate",
+  "dims": [
+   500,
+   500
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   56,
+   46,
+   25
+  ],
+  "bytes": 556776,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "metal_plate",
+   "_": "Riffelblech-Boden"
+  },
+  "v": "6c260d489a"
+ },
+ "rust": {
+  "src": "ph",
+  "id": "rust_coarse_01",
+  "name": "Rust Coarse 01",
+  "page": "https://polyhaven.com/a/rust_coarse_01",
+  "dims": [
+   2199.9998092651367,
+   2200.000286102295
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   94,
+   55,
+   30
+  ],
+  "bytes": 531256,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "rust_coarse_01",
+   "_": "Rost"
+  },
+  "v": "51e3860682"
+ },
+ "shutter": {
+  "src": "ph",
+  "id": "painted_metal_shutter",
+  "name": "Painted Metal Shutter",
+  "page": "https://polyhaven.com/a/painted_metal_shutter",
+  "dims": [
+   2000,
+   2000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   118,
+   122,
+   125
+  ],
+  "bytes": 263784,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "painted_metal_shutter",
+   "_": "Rolltore"
+  },
+  "v": "91a950d4e2"
+ },
+ "paintRed": {
+  "src": "acg",
+  "id": "PaintedMetal004",
+  "name": "Painted Metal 004",
+  "page": "https://ambientcg.com/view?id=PaintedMetal004",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": true,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   247,
+   62,
+   61
+  ],
+  "bytes": 744220,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "PaintedMetal004",
+   "metal": true,
+   "_": "rot lackiertes Metall mit Macken"
+  },
+  "v": "5f98f12446"
+ },
+ "paintGreen": {
+  "src": "acg",
+  "id": "PaintedMetal006",
+  "name": "Painted Metal 006",
+  "page": "https://ambientcg.com/view?id=PaintedMetal006",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": true,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   52,
+   94,
+   70
+  ],
+  "bytes": 941524,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "PaintedMetal006",
+   "metal": true,
+   "_": "grün lackiertes Metall mit Rost"
+  },
+  "v": "cb97aa13e5"
+ },
+ "leather": {
+  "src": "acg",
+  "id": "Leather037",
+  "name": "Leather 037",
+  "page": "https://ambientcg.com/view?id=Leather037",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   99,
+   56,
+   41
+  ],
+  "bytes": 644812,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leather037",
+   "_": "rotes Leder (Sitze)"
+  },
+  "v": "41e0c37867"
+ },
+ "gunMetal": {
+  "src": "acg",
+  "id": "Metal046B",
+  "name": "Metal 046 B",
+  "page": "https://ambientcg.com/view?id=Metal046B",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": true,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   63,
+   63,
+   63
+  ],
+  "bytes": 861108,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Metal046B",
+   "metal": true,
+   "_": "brünierter Waffenstahl"
+  },
+  "v": "99c3ca1a14"
+ },
+ "gunPolymer": {
+  "src": "acg",
+  "id": "Plastic012A",
+  "name": "Plastic 012 A",
+  "page": "https://ambientcg.com/view?id=Plastic012A",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   45,
+   43,
+   41
+  ],
+  "bytes": 227304,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Plastic012A",
+   "_": "Kunststoff der Waffen"
+  },
+  "v": "14329dcdc1"
+ },
+ "gunWood": {
+  "src": "acg",
+  "id": "Wood027",
+  "name": "Wood 027",
+  "page": "https://ambientcg.com/view?id=Wood027",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   63,
+   34,
+   15
+  ],
+  "bytes": 294128,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Wood027",
+   "_": "Nussbaum-Schaft"
+  },
+  "v": "90a4c9f605"
+ },
+ "glove": {
+  "src": "acg",
+  "id": "Leather026",
+  "name": "Leather 026",
+  "page": "https://ambientcg.com/view?id=Leather026",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   25,
+   25,
+   25
+  ],
+  "bytes": 349618,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leather026",
+   "_": "schwarzes Leder (Handschuhe)"
+  },
+  "v": "56d80de759"
+ },
+ "papCamo": {
+  "src": "acg",
+  "id": "Onyx006",
+  "name": "Onyx 006",
+  "page": "https://ambientcg.com/view?id=Onyx006",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   118,
+   123,
+   123
+  ],
+  "bytes": 329130,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Onyx006",
+   "ao": 0,
+   "_": "Muster für aufgerüstete Waffen"
+  },
+  "v": "a0f1424447"
+ },
+ "brick": {
+  "src": "ph",
+  "id": "red_brick_03",
+  "name": "Red Brick 03",
+  "page": "https://polyhaven.com/a/red_brick_03",
+  "dims": [
+   1000,
+   1000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   92,
+   71,
+   64
+  ],
+  "bytes": 744198,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "red_brick_03",
+   "_": "rote Ziegel (Altstadt)"
+  },
+  "v": "052fe8183d"
+ },
+ "brickLight": {
+  "src": "acg",
+  "id": "Bricks093",
+  "name": "Bricks 093",
+  "page": "https://ambientcg.com/view?id=Bricks093",
+  "dims": [
+   210,
+   105
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   177,
+   159,
+   123
+  ],
+  "bytes": 315206,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Bricks093",
+   "_": "helle Klinker (Busbahnhof, Bank)"
+  },
+  "v": "e1350e53be"
+ },
+ "siding": {
+  "src": "acg",
+  "id": "WoodSiding009",
+  "name": "Wood Siding 009",
+  "page": "https://ambientcg.com/view?id=WoodSiding009",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   199,
+   190,
+   155
+  ],
+  "bytes": 267364,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "WoodSiding009",
+   "_": "lackierte Holzverkleidung (Diner, Häuser, Scheune)"
+  },
+  "v": "521b0b93b7"
+ },
+ "corrugated": {
+  "src": "ph",
+  "id": "worn_corrugated_iron",
+  "name": "Worn Corrugated Iron",
+  "page": "https://polyhaven.com/a/worn_corrugated_iron",
+  "dims": [
+   1799.9995946884155,
+   1799.9995946884155
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   111,
+   110,
+   107
+  ],
+  "bytes": 616452,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "worn_corrugated_iron",
+   "_": "Wellblech"
+  },
+  "v": "5e08b1f04d"
+ },
+ "panels": {
+  "src": "acg",
+  "id": "Concrete028",
+  "name": "Concrete 028",
+  "page": "https://ambientcg.com/view?id=Concrete028",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   96,
+   93,
+   89
+  ],
+  "bytes": 535972,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Concrete028",
+   "_": "Betonwände Kraftwerk/Tunnel"
+  },
+  "v": "51c05121be"
+ },
+ "grass": {
+  "src": "ph",
+  "id": "sparse_grass",
+  "name": "Sparse Grass",
+  "page": "https://polyhaven.com/a/sparse_grass",
+  "dims": [
+   2000,
+   2000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   72,
+   56,
+   19
+  ],
+  "bytes": 931252,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "sparse_grass",
+   "_": "trockenes Gras"
+  },
+  "v": "09cbd1f00b"
+ },
+ "road": {
+  "src": "acg",
+  "id": "Asphalt026C",
+  "name": "Asphalt 026 C",
+  "page": "https://ambientcg.com/view?id=Asphalt026C",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   46,
+   46,
+   41
+  ],
+  "bytes": 782480,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Asphalt026C",
+   "_": "rissiger Asphalt"
+  },
+  "v": "e24794074b"
+ },
+ "dirt": {
+  "src": "acg",
+  "id": "Ground103",
+  "name": "Ground 103",
+  "page": "https://ambientcg.com/view?id=Ground103",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   101,
+   86,
+   66
+  ],
+  "bytes": 1244004,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Ground103",
+   "_": "Feldweg"
+  },
+  "v": "c77f8ebb26"
+ },
+ "roofRed": {
+  "src": "ph",
+  "id": "ceramic_roof_01",
+  "name": "Ceramic Roof 01",
+  "page": "https://polyhaven.com/a/ceramic_roof_01",
+  "dims": [
+   3500.000238418579,
+   3500.000238418579
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   92,
+   76,
+   53
+  ],
+  "bytes": 509998,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "ceramic_roof_01",
+   "_": "alte Tonziegel"
+  },
+  "v": "7880fa4952"
+ },
+ "roofSlate": {
+  "src": "ph",
+  "id": "roof_slates_03",
+  "name": "Roof Slates 03",
+  "page": "https://polyhaven.com/a/roof_slates_03",
+  "dims": [
+   3000,
+   3000
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   101,
+   99,
+   93
+  ],
+  "bytes": 304450,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "ph",
+   "id": "roof_slates_03",
+   "_": "Schieferdach"
+  },
+  "v": "7f40f4d92d"
+ },
+ "fence": {
+  "src": "acg",
+  "id": "Fence006",
+  "name": "Fence 006",
+  "page": "https://ambientcg.com/view?id=Fence006",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": true,
+   "alpha": true,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   149,
+   150,
+   151
+  ],
+  "bytes": 1265330,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Fence006",
+   "opacity": true,
+   "metal": true,
+   "ao": 0,
+   "_": "Maschendrahtzaun"
+  },
+  "v": "94e508dacf"
+ },
+ "lava": {
+  "src": "acg",
+  "id": "Lava001",
+  "name": "Lava 001",
+  "page": "https://ambientcg.com/view?id=Lava001",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   75,
+   56,
+   59
+  ],
+  "bytes": 912400,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Lava001",
+   "ao": 0,
+   "_": "Glutfelder"
+  },
+  "v": "6e13278676"
+ },
+ "hay": {
+  "src": "acg",
+  "id": "ThatchedRoof001A",
+  "name": "Thatched Roof 001 A",
+  "page": "https://ambientcg.com/view?id=ThatchedRoof001A",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   84,
+   75,
+   63
+  ],
+  "bytes": 749504,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "ThatchedRoof001A",
+   "_": "Stroh/Heu"
+  },
+  "v": "c02130c7a5"
+ },
+ "clothDetail": {
+  "src": "acg",
+  "id": "Fabric031",
+  "name": "Fabric 031",
+  "page": "https://ambientcg.com/view?id=Fabric031",
+  "dims": null,
+  "maps": {
+   "color": false,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": true
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": null,
+  "bytes": 1036628,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Fabric031",
+   "only": [
+    "normal",
+    "rough",
+    "height"
+   ],
+   "_": "Gewebe-Struktur für Kleidung"
+  },
+  "v": "d979244704"
+ },
+ "denimDetail": {
+  "src": "acg",
+  "id": "Fabric069",
+  "name": "Fabric 069",
+  "page": "https://ambientcg.com/view?id=Fabric069",
+  "dims": null,
+  "maps": {
+   "color": false,
+   "normal": true,
+   "rough": false,
+   "metal": false,
+   "alpha": false,
+   "height": true
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": null,
+  "bytes": 1117946,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Fabric069",
+   "only": [
+    "normal",
+    "height"
+   ],
+   "_": "Jeans-Struktur"
+  },
+  "v": "4c2f67db25"
+ },
+ "leatherDetail": {
+  "src": "acg",
+  "id": "Leather033A",
+  "name": "Leather 033 A",
+  "page": "https://ambientcg.com/view?id=Leather033A",
+  "dims": [
+   30,
+   30
+  ],
+  "maps": {
+   "color": false,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": true
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": null,
+  "bytes": 920382,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leather033A",
+   "only": [
+    "normal",
+    "rough",
+    "height"
+   ],
+   "_": "Leder-/Haut-Struktur"
+  },
+  "v": "a30a3d8b29"
+ }
+}
