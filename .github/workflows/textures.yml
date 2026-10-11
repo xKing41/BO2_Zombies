@@ -1,0 +1,84 @@
+# Texturen aus freien CC0-Sammlungen (ambientCG, Poly Haven):
+#  1. Katalog: Übersichtsbilder je Kategorie → Release „textur-auswahl“ (nur zum Aussuchen)
+#  2. Laden: die in scripts/assets/textures.json gewählten Texturen herunterladen,
+#     verkleinern, komprimieren und nach public/tex/ committen
+# Läuft bei Änderungen in scripts/assets/ und lässt sich von Hand starten.
+name: Texturen
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/assets/**'
+      - '.github/workflows/textures.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: textures-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  textures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bildwerkzeug holen
+        run: npm i --no-save --no-audit --no-fund sharp@0.35.5
+
+      - name: Was ist zu tun?
+        id: what
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" != "push" ] || [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            CH="scripts/assets/catalog-request.json scripts/assets/textures.json"
+          else
+            CH="$(git diff --name-only "$BEFORE" "${{ github.sha }}" || echo scripts/assets/catalog-request.json)"
+          fi
+          echo "$CH"
+          if echo "$CH" | grep -qE 'scripts/assets/catalog|workflows/textures'; then echo "catalog=1" >> "$GITHUB_OUTPUT"; fi
+          if [ -f scripts/assets/textures.json ] && echo "$CH" | grep -qE 'scripts/assets/(textures\.json|fetch\.mjs)|workflows/textures'; then echo "fetch=1" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Katalog und Übersichtsbilder
+        if: steps.what.outputs.catalog == '1'
+        run: node scripts/assets/catalog.mjs
+
+      - name: Übersicht bereitstellen (Release „textur-auswahl“)
+        if: steps.what.outputs.catalog == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=textur-auswahl
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Textur-Auswahl (Arbeitsstand)" \
+              --notes "Übersichtsbilder freier CC0-Texturen (ambientCG, Poly Haven) zum Aussuchen. Kein Spiel-Download."
+          fi
+          gh release upload "$TAG" out/review/* --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Gewählte Texturen laden und aufbereiten
+        if: steps.what.outputs.fetch == '1'
+        run: node scripts/assets/fetch.mjs
+
+      - name: Ergebnis committen
+        if: steps.what.outputs.fetch == '1'
+        run: |
+          git add -A public/tex
+          if git diff --cached --quiet; then echo "Keine Änderungen an public/tex"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Texturen: CC0-Texturen geladen und aufbereitet (automatisch)"
+          for i in 1 2 3; do
+            git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
