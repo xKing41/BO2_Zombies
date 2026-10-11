@@ -61,6 +61,11 @@ verteilt den Stand an alle (Zombie-Momentaufnahmen 15-mal pro Sekunde über eine
 Jedes Gerät steuert seinen eigenen Spieler, zeigt Treffer sofort an und meldet sie dem Host. Splitscreen nutzt
 genau diese Koop-Logik: Jeder Bildausschnitt ist eine eigene Spielinstanz, verbunden über einen Raum im Speicher.
 
+**Wenn sich keiner findet:** Unter dem Status in der Lobby steht, wie viele Vermittlungs-Server verbunden sind und
+ob schon eine Direktverbindung steht. Die Liste der Server steht in `src/net/relays.js`; der Workflow
+„Koop-Verbindungstest“ (GitHub → Actions, auch von Hand startbar) prüft jeden Server einzeln und spielt
+„Spiel erstellen“ + „Beitreten“ mit zwei Browsern durch.
+
 **Noch offen:** Man kann einer laufenden Partie nicht nachträglich beitreten; liegt das Spiel des Hosts
 im Hintergrund-Tab, steht die Partie. Hinter sehr strengen Firewalls kann die Direktverbindung scheitern – dafür
 lässt sich ein eigener TURN-Server angeben (`#turn=turn:host:3478|nutzer|passwort`, siehe `src/net/transport.js`).

@@ -109,7 +109,7 @@ export class Lobby {
     const $ = (id) => document.getElementById(id);
     this.el = {
       name: $('coopName'), code: $('coopCode'), msg: $('coopMsg'),
-      lobbyCode: $('lobbyCode'), status: $('lobbyStatus'), players: $('lobbyPlayers'),
+      lobbyCode: $('lobbyCode'), status: $('lobbyStatus'), net: $('lobbyNet'), players: $('lobbyPlayers'),
       maps: $('lobbyMaps'), mapHint: $('lobbyMapHint'),
       start: $('btnStartNet'), copy: $('btnCopyCode'), share: $('btnShareCode'), leave: $('btnLeaveLobby'),
     };
@@ -532,6 +532,18 @@ export class Lobby {
     const el = this.el.status;
     if (el.textContent !== text) el.textContent = text;
     el.className = 'lobby-status ' + kind;
+    // Kleine Verbindungsanzeige: hilft beim Eingrenzen, woran es hängt
+    const net = this.el.net;
+    if (!net) return;
+    let info = '';
+    if (this.room && this.phase !== 'game') {
+      const st = this.room.status();
+      if (st.relays.total) info = `Vermittlung: ${st.relays.open} von ${st.relays.total} Servern verbunden`;
+      const n = this.room.peers.size;
+      if (n) info += (info ? ' · ' : '') + `${n} Direktverbindung${n === 1 ? '' : 'en'}`;
+      else if (st.linking) info += (info ? ' · ' : '') + 'Direktverbindung wird aufgebaut …';
+    }
+    if (net.textContent !== info) net.textContent = info;
   }
 
   // ── Code weitergeben ───────────────────────────────────────

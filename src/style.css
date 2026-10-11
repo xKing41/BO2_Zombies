@@ -116,6 +116,7 @@ button:disabled { cursor: default; }
 .lobby-status.ok { border-left-color: #6ee06a; }
 .lobby-status.note { border-left-color: #ffd84a; color: #ffe9a8; }
 .lobby-status.err { border-left-color: #ff2a1a; color: #ff8a6a; }
+.lobby-net { min-height: 1.2em; font: 12px 'Special Elite', monospace; color: var(--dim); }
 @keyframes statusPulse { 50% { border-left-color: #ffb36a; color: #fff; } }
 .lobby-players { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .lp { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 6px 14px 6px 10px; border-left: 3px solid var(--pc);
