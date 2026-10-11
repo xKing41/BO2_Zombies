@@ -141,7 +141,8 @@ const matchPh = (a, words) => {
 };
 let index = '# Textur-Auswahl\n\nNummern wie auf den Übersichtsbildern. acg = ambientCG, PH = Poly Haven (beide CC0).\n';
 for (const s of REQ.sheets) {
-  const fromAcg = acg.filter((a) => s.acg.includes(a.prefix)).slice(0, REQ.perSheetAcg ?? 24);
+  const skip = s.skip || 0;
+  const fromAcg = acg.filter((a) => s.acg.includes(a.prefix)).slice(skip, skip + (REQ.perSheetAcg ?? 24));
   const fromPh = ph.filter((a) => matchPh(a, s.ph)).slice(0, REQ.perSheetPh ?? 12);
   const items = [...fromAcg, ...fromPh];
   console.log(`${s.name}: ${fromAcg.length} ambientCG + ${fromPh.length} Poly Haven`);

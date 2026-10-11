@@ -1,27 +1,12 @@
 {
-  "_info": "Welche Kategorien der Katalog-Lauf als Übersichtsbild zeigt. acg = Präfixe der ambientCG-IDs, ph = Stichworte für Poly Haven (ID, Name, Tags, Kategorien).",
-  "perSheetAcg": 24,
-  "perSheetPh": 12,
+  "_info": "Welche Kategorien der Katalog-Lauf als Übersichtsbild zeigt. acg = Präfixe der ambientCG-IDs, ph = Stichworte für Poly Haven (ID, Name, Tags, Kategorien). Lauf 2: gezielte Nachfragen.",
+  "perSheetAcg": 36,
+  "perSheetPh": 0,
   "sheets": [
-    { "name": "01-putz-wand", "acg": ["Plaster", "PaintedPlaster", "Wallpaper", "PaintedWood"], "ph": ["plaster", "painted wall", "wall paint"] },
-    { "name": "02-beton", "acg": ["Concrete"], "ph": ["concrete"] },
-    { "name": "03-fliesen", "acg": ["Tiles"], "ph": ["tiles", "tile"] },
-    { "name": "04-pflaster", "acg": ["PavingStones", "Cobblestone"], "ph": ["cobblestone", "cobble", "paving", "pavement"] },
-    { "name": "05-erde-kies", "acg": ["Ground", "Gravel"], "ph": ["forest ground", "forrest", "dirt", "mud", "soil", "gravel"] },
-    { "name": "06-decke", "acg": ["OfficeCeiling", "AcousticFoam", "Ceiling"], "ph": ["ceiling"] },
-    { "name": "07-holzboden", "acg": ["WoodFloor", "Planks"], "ph": ["wood floor", "floor planks", "wood planks", "parquet"] },
-    { "name": "08-holz", "acg": ["Wood", "WoodSiding"], "ph": ["weathered", "old planks", "wood siding", "barn", "plywood", "bark"] },
-    { "name": "09-metall", "acg": ["Metal", "MetalPlates", "DiamondPlate", "SheetMetal", "MetalWalkway"], "ph": ["metal plate", "metal", "steel"] },
-    { "name": "10-rost-lack", "acg": ["Rust", "PaintedMetal"], "ph": ["rust", "painted metal"] },
-    { "name": "11-wellblech", "acg": ["CorrugatedSteel"], "ph": ["corrugated"] },
-    { "name": "12-ziegel", "acg": ["Bricks"], "ph": ["brick"] },
-    { "name": "13-gras", "acg": ["Grass"], "ph": ["grass", "meadow", "lawn"] },
-    { "name": "14-asphalt", "acg": ["Asphalt", "Road"], "ph": ["asphalt", "road"] },
-    { "name": "15-dach", "acg": ["RoofingTiles", "Roofing"], "ph": ["roof", "slate", "shingle"] },
-    { "name": "16-zaun-gitter", "acg": ["Fence", "Chainmail", "MetalGrate", "Grate"], "ph": ["fence", "grate", "mesh"] },
-    { "name": "17-stoff", "acg": ["Fabric", "Carpet"], "ph": ["fabric", "denim", "cloth", "carpet", "wool"] },
-    { "name": "18-leder-gummi-plastik", "acg": ["Leather", "Rubber", "Plastic"], "ph": ["leather", "rubber", "plastic"] },
-    { "name": "19-lava-glut", "acg": ["Lava", "Rock"], "ph": ["lava", "volcanic", "rock"] },
-    { "name": "20-tarnung-glanz", "acg": ["Marble", "Onyx", "Ice", "Foil", "Terrazzo", "Granite"], "ph": ["marble", "terrazzo", "granite"] }
+    { "name": "21-holzverkleidung", "acg": ["WoodSiding", "PaintedWood", "Chipboard"], "ph": [] },
+    { "name": "22-lava-rinde", "acg": ["Lava", "Bark", "TreeEnd", "Moss", "ThatchedRoof", "Wicker"], "ph": [] },
+    { "name": "23-kratzer-flecken", "acg": ["Scratches", "SurfaceImperfections", "Smear", "Fingerprints"], "ph": [] },
+    { "name": "24-ziegel-bemalt-fassade", "acg": ["PaintedBricks", "Facade", "Pipe", "Rails", "Cardboard", "Paper"], "ph": [] },
+    { "name": "25-stoff-leder-mehr", "acg": ["Fabric", "Leather"], "ph": [], "skip": 24 }
   ]
 }
