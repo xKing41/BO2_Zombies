@@ -32,12 +32,12 @@ export const TILE = {
 // Pfützen auf Böden, Fleckengröße in m, Sockelanstrich
 export const SV = {
   wall: { stain: 0.48, rough: 0.3, size: 7, band: { h: 1.15, color: 0x5d7356, strength: 1, line: 0.035 } },
-  concrete: { stain: 0.38, rough: 0.5, wet: 0.75, size: 9 },
-  concreteDirty: { stain: 0.38, rough: 0.5, wet: 0.8, size: 8 },
+  concrete: { stain: 0.5, rough: 0.5, wet: 0.75, size: 9 },
+  concreteDirty: { stain: 0.5, rough: 0.5, wet: 0.8, size: 8 },
   tiles: { stain: 0.2, rough: 0.4, wet: 0.6, size: 7 },
   cobble: { stain: 0.3, rough: 0.4, wet: 1, size: 8 },
   ground: { stain: 0.32, rough: 0.3, wet: 0.7, size: 11 },
-  ceiling: { stain: 0.35, rough: 0.2, size: 8 },
+  ceiling: { stain: 0.45, rough: 0.2, size: 6 },
   wood: { stain: 0.25, rough: 0.3, wet: 0.4, size: 6 },
   woodDark: { stain: 0.2, size: 5 },
   board: { stain: 0.15, size: 3 },

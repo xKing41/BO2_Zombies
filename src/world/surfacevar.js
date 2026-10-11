@@ -42,41 +42,48 @@ const PARS = /* glsl */`
 	uniform vec3 uSvBandColor;
 	varying vec3 vSvWorld;`;
 
-// Vor der Beleuchtung: Farbe, Rauheit und Normale sind fertig gerechnet
-const FRAG = /* glsl */`
+// Vor der Beleuchtung: Farbe, Rauheit und Normale sind fertig gerechnet.
+// Je nach Material nur die nötigen Teile (Schlieren nur an Wänden, Pfützen nur auf Böden,
+// Sockel nur wo vorhanden); in der Sparstufe nur ein Rausch-Abruf.
+function frag({ lite, streaks, wet, band }) {
+  return /* glsl */`
 	{
 		vec3 svN = transformDirectionByInverseViewMatrix( nonPerturbedNormal, viewMatrix );
 		vec3 svA = abs( svN );
 		float svWall = 1.0 - smoothstep( 0.4, 0.7, svA.y );
 		vec2 svP = svA.y > 0.6 ? vSvWorld.xz : ( svA.x > svA.z ? vSvWorld.zy : vSvWorld.xy );
 		vec4 svN1 = texture2D( uSvNoise, svP / uSv.w );
-		vec4 svN2 = texture2D( uSvNoise, svP / ( uSv.w * 0.31 ) + vec2( 0.37, 0.71 ) );
+		${lite ? 'vec4 svN2 = svN1.gbra;' : 'vec4 svN2 = texture2D( uSvNoise, svP / ( uSv.w * 0.31 ) + vec2( 0.37, 0.71 ) );'}
 		float svStain = ( svN1.r - 0.5 ) * 1.3 + ( svN2.g - 0.5 ) * 0.7;
-		// Wände: senkrechte Schlieren (herablaufendes Wasser, Ruß) – Rauschen stark gestreckt
+		${streaks && !lite ? `// Wände: senkrechte Schlieren (herablaufendes Wasser, Ruß) – Rauschen stark gestreckt
 		vec4 svN3 = texture2D( uSvNoise, vec2( svP.x / ( uSv.w * 0.4 ), svP.y / ( uSv.w * 2.2 ) ) + vec2( 0.11, 0.53 ) );
 		float svRun = smoothstep( 0.58, 0.92, svN3.g ) * smoothstep( 0.35, 0.65, svN1.r );
-		svStain -= svWall * svRun * ( 0.35 + 0.35 * smoothstep( 1.0, 3.5, vSvWorld.y ) );
+		svStain -= svWall * svRun * ( 0.35 + 0.35 * smoothstep( 1.0, 3.5, vSvWorld.y ) );` : ''}
 		diffuseColor.rgb *= clamp( 1.0 + svStain * uSv.x, 0.35, 1.6 );
 		roughnessFactor = clamp( roughnessFactor * ( 1.0 + ( svN2.r - 0.5 ) * uSv.y ), 0.03, 1.0 );
 		// Wände: aufsteigende Nässe unten etwas dunkler
 		diffuseColor.rgb *= 1.0 - svWall * uSv.x * 0.5 * ( 1.0 - smoothstep( 0.0, 0.9 + svN1.g * 0.6, vSvWorld.y ) );
-		// Böden: Pfützen – dunkler, glatt, spiegelnd, Normale flach
-		float svWet = smoothstep( 0.8, 0.95, svN.y ) * smoothstep( 0.7, 0.78, svN1.b + ( svN2.g - 0.5 ) * 0.18 ) * uSv.z;
-		float svDamp = smoothstep( 0.8, 0.95, svN.y ) * smoothstep( 0.55, 0.68, svN1.b ) * uSv.z;
-		diffuseColor.rgb *= 1.0 - svDamp * 0.25 - svWet * 0.3;
+		${wet ? `// Böden: Pfützen – dunkler, glatt, spiegelnd, Normale flach
+		float svUp = smoothstep( 0.8, 0.95, svN.y ) * uSv.z;
+		float svWet = svUp * smoothstep( 0.7, 0.78, svN1.b + ( svN2.g - 0.5 ) * 0.18 );
+		float svDamp = svUp * smoothstep( 0.55, 0.68, svN1.b );
+		diffuseColor.rgb *= 1.0 - svDamp * 0.35 - svWet * 0.3;
 		roughnessFactor = mix( roughnessFactor, roughnessFactor * 0.55, svDamp );
 		roughnessFactor = mix( roughnessFactor, 0.12, svWet );
-		normal = normalize( mix( normal, nonPerturbedNormal, svWet * 0.92 ) );
-		// Sockelanstrich (nur senkrechte Flächen)
-		if ( uSvBand.w > 0.5 ) {
-			float svH = vSvWorld.y;
-			float svBelow = ( 1.0 - smoothstep( uSvBand.x - 0.005, uSvBand.x + 0.005, svH ) ) * svWall;
-			float svLine = ( 1.0 - smoothstep( uSvBand.z * 0.5, uSvBand.z, abs( svH - uSvBand.x - uSvBand.z ) ) ) * svWall;
-			diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * uSvBandColor, svBelow * uSvBand.y );
-			roughnessFactor = mix( roughnessFactor, roughnessFactor * 0.75, svBelow );
-			diffuseColor.rgb *= 1.0 - svLine * 0.55;
-		}
+		normal = normalize( mix( normal, nonPerturbedNormal, svWet * 0.92 ) );` : ''}
+		${band ? `// Sockelanstrich (nur senkrechte Flächen)
+		float svH = vSvWorld.y;
+		float svBelow = ( 1.0 - smoothstep( uSvBand.x - 0.005, uSvBand.x + 0.005, svH ) ) * svWall;
+		float svLine = ( 1.0 - smoothstep( uSvBand.z * 0.5, uSvBand.z, abs( svH - uSvBand.x - uSvBand.z ) ) ) * svWall;
+		diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * uSvBandColor, svBelow * uSvBand.y );
+		roughnessFactor = mix( roughnessFactor, roughnessFactor * 0.75, svBelow );
+		diffuseColor.rgb *= 1.0 - svLine * 0.55;` : ''}
 	}`;
+}
+
+let LITE = false, OFF = false;
+/** Sparstufe (niedrig): ein Rausch-Abruf statt bis zu drei, keine Schlieren; minimal: ganz aus */
+export function setSurfaceLite(on, off = false) { LITE = !!on; OFF = !!off; }
 
 /**
  * Variation an ein (Foto-)Material hängen.
@@ -84,7 +91,7 @@ const FRAG = /* glsl */`
  * o.band { h, color, strength, line } Sockelanstrich.
  */
 export function surfaceVar(m, o = {}) {
-  if (!m || m.userData.surfaceVar) return m;
+  if (!m || m.userData.surfaceVar || OFF) return m;
   const b = o.band;
   const u = {
     uSvNoise: { value: noiseTex() },
@@ -93,6 +100,8 @@ export function surfaceVar(m, o = {}) {
     uSvBandColor: { value: new THREE.Color(b?.color ?? 0x666666) },
   };
   m.userData.surfaceVar = u;
+  const opts = { lite: LITE, streaks: o.streaks ?? !o.wet, wet: (o.wet ?? 0) > 0, band: !!b };
+  const key = `|sv${opts.lite ? 'L' : ''}${opts.streaks ? 'S' : ''}${opts.wet ? 'W' : ''}${opts.band ? 'B' : ''}`;
   const prev = m.onBeforeCompile;
   const prevKey = m.customProgramCacheKey.call(m);
   m.onBeforeCompile = (sh, r) => {
@@ -103,9 +112,9 @@ export function surfaceVar(m, o = {}) {
       .replace('#include <project_vertex>', '#include <project_vertex>\n\tvSvWorld = ( mvPosition.xyz - viewMatrix[ 3 ].xyz ) * mat3( viewMatrix );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\n' + PARS)
-      .replace('#include <lights_physical_fragment>', FRAG + '\n#include <lights_physical_fragment>');
+      .replace('#include <lights_physical_fragment>', frag(opts) + '\n#include <lights_physical_fragment>');
   };
-  m.customProgramCacheKey = () => prevKey + '|sv';
+  m.customProgramCacheKey = () => prevKey + key;
   m.needsUpdate = true;
   return m;
 }

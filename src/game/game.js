@@ -8,6 +8,7 @@ import { RenderSystem, QUALITY, resolveQuality } from '../core/renderer.js';
 import { setAnisotropy, setTextureScale } from '../core/textures.js';
 import { buildMaterials, SHARED_SLOTS } from '../core/materials.js';
 import { configureTexLib, preload as preloadTex, release as releaseTex } from '../core/texlib.js';
+import { setSurfaceLite } from '../world/surfacevar.js';
 import { Input } from '../core/input.js';
 import { AudioEngine } from '../audio/audio.js';
 import { GameMap } from '../world/map.js';
@@ -116,6 +117,7 @@ export class Game {
     setTextureScale(q.texScale);
     // Foto-Texturen: 1024 px auf hoch/mittel, 512 px auf niedrig/minimal (Handys)
     configureTexLib({ size: q.texScale >= 1 ? 1024 : 512, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
+    setSurfaceLite(q.texScale < 1, q.gridLight === false);
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, this.rs.width / this.rs.height, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
     this.vmCamera = new THREE.PerspectiveCamera(54, this.rs.width / this.rs.height, 0.01, 10);

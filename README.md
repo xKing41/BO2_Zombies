@@ -2,8 +2,9 @@
 
 Ein rundenbasierter 3D-Zombie-Survival-Shooter im Geist von *Call of Duty: Black Ops 2 – Zombies*,
 komplett neu entwickelt: eigene Karten, eigene Waffen, eigene Perks, eigener Sound.
-Läuft direkt im Browser (Three.js / WebGL2), ohne externe Assets – alle Texturen, Modelle,
-Animationen und Sounds werden prozedural im Code erzeugt.
+Läuft direkt im Browser (Three.js / WebGL2). Modelle, Animationen und Sounds werden prozedural im
+Code erzeugt; die Oberflächen nutzen freie Foto-Texturen (CC0, siehe „Texturen“) und fallen ohne
+sie auf eigene, im Code gemalte Texturen zurück.
 
 > **Rechtlicher Hinweis:** Dies ist ein eigenständiges Fan-Projekt. Es verwendet **keine**
 > Inhalte, Namen, Modelle, Sounds oder Musik von Activision/Treyarch. Perks, Waffen, Karten, Figuren
@@ -213,12 +214,37 @@ die Menüs.
 - **Lichtkegel** im Staub unter jeder Lampe und Lichthöfe im Nebel – flackern und gehen mit dem Strom an und aus
 - **Bodennebel** mit treibenden Schwaden, Mondschein im Dunst, Himmel mit ziehenden Wolken, Mond, Sternen und dunkler Baumlinie am Horizont; drinnen dunkler Staub statt blauem Nebel
 - Weiche Kontaktschatten unter den Zombies, eigene Nacht-Umgebung für Spiegelungen (Metall, nasse Böden)
-- Prozedurale PBR-Texturen mit Normal- und Rauheits-Karten: abblätternder Putz über Ziegeln mit Ölsockel, Schalungsbeton-Decke, Beton mit Sägefugen, Ölflecken und Pfützen, alte Diner-Fliesen, Kopfsteinpflaster mit Moos, Ziegelmauern mit Ausblühungen, Stülpschalung aus Holz, Asphalt mit Spurrinnen
+- **Foto-Texturen** (CC0) mit Normal- und Rauheits-Karten in echter Größe: Putzwände mit Sockelanstrich wie in alten Bahnhofshallen, abgenutzter Industrieboden, Marmor-Schachbrett im Diner, Kopfsteinpflaster, Schotter, Ziegel und Klinker, lackierte Holzverkleidung, Wellblech, Ton- und Schieferdächer, Riffelblech, lackiertes Metall mit Rost, Glutfelder aus Lava
+- **Keine sichtbare Wiederholung:** großräumige Flecken, Wasserschlieren an Wänden und nasse, spiegelnde Pfützen auf Böden liegen in Weltkoordinaten über den Fotos
+- **Stoff, Jeans und Leder** aus echten Höhenkarten in Kleidung und Haut der Zombies, in Handschuhen und Ärmeln der Ich-Sicht und in der Kleidung der Überlebenden; aufgerüstete Waffen tragen ein fließendes Onyx-Muster
+- Ohne Foto-Texturen (Einzeldatei-Build) springen die prozeduralen PBR-Texturen ein: abblätternder Putz, Schalungsbeton, Beton mit Ölflecken und Pfützen, Diner-Fliesen, Moos-Pflaster, Asphalt mit Spurrinnen
 - Echtzeit-Schatten (Mond + Hängelampen), flackernde Lichter, Feuer, Neon
 - HDR-Pipeline: MSAA, Bloom, ACES-Tonemapping, Color-Grading, dezente chromatische Aberration, Filmkorn, Vignette
 - Leuchtende Zombie-Augen, Blut-Partikel und -Decals, Einschusslöcher, Funken, Rauch, Mündungsfeuer, Tracer
 - Eigene Viewmodel-Pipeline (Waffe clippt nie in Wände)
-- Qualitätsstufen: Handys behalten ihre Bildrate (Schwaden nur ab „mittel“, auf „minimal“ ohne Lichtkegel und Raster-Licht)
+- Qualitätsstufen: Handys behalten ihre Bildrate (Foto-Texturen in 512 statt 1024 Pixeln und sparsamere Oberflächen-Variation ab „niedrig“, Schwaden nur ab „mittel“, auf „minimal“ ohne Lichtkegel, Raster-Licht und Variation)
+
+## Texturen
+
+Alle Foto-Texturen stammen von **[ambientCG](https://ambientcg.com)** und **[Poly Haven](https://polyhaven.com)**
+und stehen unter **CC0** (gemeinfrei: frei nutzbar, auch kommerziell, ohne Namensnennung) – die
+vollständige Liste mit Links steht in [`public/tex/QUELLEN.md`](public/tex/QUELLEN.md). Nichts davon
+stammt aus Black Ops oder anderen Spielen.
+
+So kommen sie ins Spiel – komplett über GitHub, ohne eigenen Rechner:
+1. **Aussuchen:** `scripts/assets/catalog-request.json` nennt Kategorien. Der Workflow „Texturen“
+   (GitHub → Actions) lädt die Kataloge beider Sammlungen und legt nummerierte Übersichtsbilder als
+   Release **„textur-auswahl“** ab (nur zum Aussuchen, kein Spiel-Download).
+2. **Festlegen:** In `scripts/assets/textures.json` steht je Oberfläche, welche Textur sie bekommt
+   (`acg` = ambientCG, `ph` = Poly Haven).
+3. **Laden & aufbereiten:** Nach einem Push lädt derselbe Workflow die gewählten Texturen, rechnet die
+   Umgebungsverdeckung ein, erzeugt WebP-Dateien in 1024 und 512 Pixeln (Farbe, Normal, Rauheit, bei
+   Bedarf Metall, Deckkraft, Höhe) und committet sie nach `public/tex/`.
+4. **Im Spiel:** `src/core/texlib.js` holt beim Laden die passende Größe (hoch/mittel 1024, niedrig/minimal 512),
+   `TILE` legt die echte Kachelgröße fest, `SV` die Oberflächen-Variation (`src/world/surfacevar.js`).
+   Stoff- und Lederstrukturen webt `src/core/detail.js` in die gemalten Texturen der Figuren.
+
+Zusammen etwa 23 MB (PC lädt rund 18 MB, Handy rund 5 MB); der Offline-Speicher hält sie danach vor.
 
 **Animation**
 - Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung
@@ -236,9 +262,9 @@ die Menüs.
 src/
   config.js            Waffen, Perks, Balancing – alles an einem Ort
   maps/                Kartendefinitionen (Nachtfall, Linie 13 inkl. Daten und Deko)
-  core/                Renderer + Post-FX, Input, Noise, prozedurale Texturen, Materialien
+  core/                Renderer + Post-FX, Input, Noise, prozedurale Texturen, Foto-Texturen (texlib), Stoff-/Lederdetail, Materialien
   world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten;
-                       Atmosphäre (Himmel, Bodennebel), Raster-Licht, Lichtkegel
+                       Atmosphäre (Himmel, Bodennebel), Raster-Licht, Lichtkegel, Oberflächen-Variation
   zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
   player/              Bewegung, Kamera, Gesundheit, Perks; Spielfiguren der Mitspieler (Modell, Atlas, Animation)
@@ -246,9 +272,9 @@ src/
   net/                 Koop: Verbindung (WebRTC über Trystero, BroadcastChannel, Speicher), Lobby, Sitzung mit Host-Autorität
   audio/               Prozedurales Sound-Design
   ui/                  HUD, Touch-Steuerung, Splitscreen
-public/                App-Manifest, Service Worker (offline), Icons
+public/                App-Manifest, Service Worker (offline), Icons, tex/ (aufbereitete CC0-Texturen + QUELLEN.md)
 android/               Android-App (WebView-Hülle, Gradle-Projekt, fester Signaturschlüssel)
-scripts/               Einzeldatei-Build
+scripts/               Einzeldatei-Build, Koop-Verbindungstest, assets/ (Textur-Katalog und -Download für GitHub Actions)
 ```
 
 Neue Waffen und Perks lassen sich größtenteils über `src/config.js` hinzufügen. Eine Karte ist eine
@@ -275,15 +301,16 @@ Entwickler-Modus: `http://localhost:5173/#dev` → 50 000 Punkte, unverwundbar, 
 
 Ein Spiel, das BO2 Zombies wirklich *ersetzt*, ist ein Mehrjahresprojekt für ein Team
 (Artists, Animatoren mit Motion-Capture, Sounddesigner, Level-Designer). Dieses Repository ist das
-**spielbare Fundament**: Kernmechaniken, Systeme und Atmosphäre stehen, alles ist prozedural und
-damit sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
+**spielbare Fundament**: Kernmechaniken, Systeme und Atmosphäre stehen, Modelle und Sounds sind
+prozedural, die Oberflächen nutzen freie Foto-Texturen – alles ist sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
 
 1. **Engine-Entscheidung für AAA-Optik:** Für fotorealistische Grafik (Lumen, Nanite, MetaHuman,
    Motion-Matching) ist **Unreal Engine 5** der realistische Weg. Die Spiellogik hier (Rundenformeln,
    Balancing, Zustandsautomaten) lässt sich 1:1 übertragen. Alternativ im Browser bleiben und
    Three.js mit WebGPU + echten Assets ausbauen.
 2. **Echte Assets:** gescannte/handmodellierte Zombies mit Skinning und Motion-Capture-Animationen
-   (z. B. glTF-Import), PBR-Texturen aus Substance, aufgenommene Foley-Sounds und komponierte Musik.
+   (z. B. glTF-Import), aufgenommene Foley-Sounds und komponierte Musik. Foto-Texturen gibt es schon
+   (siehe „Texturen“); als Nächstes freie Requisiten-Modelle (Fässer, Möbel) im selben Ablauf.
 3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes:
    Gesichtsanimation und eigene Sprüche der Figuren, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),

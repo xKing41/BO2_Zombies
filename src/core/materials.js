@@ -54,7 +54,7 @@ export function buildMaterials(onProgress = () => {}) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
 
   step('Wände');
-  M.wall = slotMat('wall', () => T.plasterWall(3), { roughness: 0.92 }, { color: 0xd2ccb6, ns: 1.4 });
+  M.wall = slotMat('wall', () => T.plasterWall(3), { roughness: 0.92 }, { color: 0xd2ccb6, ns: 0.7 });
 
   step('Böden');
   M.floorConcrete = slotMat('concrete', () => T.concrete(1, [1.0, 0.98, 0.94]), { roughness: 0.85 });
@@ -69,7 +69,7 @@ export function buildMaterials(onProgress = () => {}) {
   if (dtx) surfaceVar(M.ground, X.SV.ground);
 
   step('Decken & Holz');
-  M.ceiling = slotMat('ceiling', () => T.ceiling(5), { roughness: 0.95 }, { color: 0x9a9a9a });
+  M.ceiling = slotMat('ceiling', () => T.ceiling(5), { roughness: 0.95 }, { color: 0xfff6ea, ns: 1.2 });
   let pl = null;
   const planks7 = () => pl || (pl = T.planks(7));
   M.wood = slotMat('wood', planks7, { roughness: 0.8 });
