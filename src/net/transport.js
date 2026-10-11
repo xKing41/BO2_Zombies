@@ -42,6 +42,7 @@ export const CODE_LENGTH = 5;
 const PING_EVERY = 2000; // ms – hält room.peers[…].ping aktuell
 const PING_TIMEOUT = 5000;
 const LOCAL_TIMEOUT = 8000; // lokaler Mitspieler ohne Lebenszeichen gilt als weg
+const LOCAL_LOCK = 'nachtfall-net-offen-'; // Web Lock je Seite: belegt, solange die Seite offen ist
 const U_MAX_BUFFER = 64 * 1024; // unzuverlässiger Kanal: darüber wird verworfen statt gestaut
 const U_MAX_SIZE = 60 * 1024;
 
@@ -269,20 +270,44 @@ class P2PRoom extends Room {
     config.relayConfig = { urls: o.relays?.length ? o.relays : RELAYS };
     if (o.iceServers) config.rtcConfig = { iceServers: o.iceServers };
     if (o.turn) config.turnConfig = o.turn;
-    this._t = joinRoom(config, code, {
+    this._config = config;
+    // Zusätzlicher Datenkanal ohne Reihenfolge und Neuübertragung (opts.unreliable).
+    // „negotiated“: beide Seiten legen ihn mit derselben Nummer an, ohne neue Aushandlung.
+    this._u = new Map(); // peerId → { ch, remote }
+    this._uRemote = new Set(); // Gegenseite hat ihren Kanal schon gemeldet
+    this._uId = 512 + ([...code].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 480);
+    this.refreshes = 0;
+    this._join();
+  }
+
+  _join() {
+    this._t = joinRoom(this._config, this.code, {
       onJoinError: (e) => this._emitError({ peerId: e?.peerId || null, error: String(e?.error || 'Verbindungsfehler') }),
     });
     // Alle Nachrichtentypen teilen sich eine Trystero-Aktion: der Typ reist als Metadatum
     // mit, Binärdaten bleiben roh (Trystero erkennt JSON, Text und Bytes selbst).
     this._action = this._t.makeAction('nf');
     this._action.onMessage = (data, ctx) => this._receive(data, ctx);
-    // Zusätzlicher Datenkanal ohne Reihenfolge und Neuübertragung (opts.unreliable).
-    // „negotiated“: beide Seiten legen ihn mit derselben Nummer an, ohne neue Aushandlung.
-    this._u = new Map(); // peerId → { ch, remote }
-    this._uRemote = new Set(); // Gegenseite hat ihren Kanal schon gemeldet
-    this._uId = 512 + ([...code].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 480);
     this._t.onPeerJoin = (id) => { this._addPeer(id); this._openU(id); };
     this._t.onPeerLeave = (id) => { this._closeU(id); this._removePeer(id); };
+  }
+
+  /**
+   * Neu anmelden, solange noch niemand verbunden ist: Trystero kündigt ein Gerät nur in den
+   * ersten Sekunden mehrfach an, danach nur noch jede Minute. Geht der erste Versuch
+   * verloren (Relay drosselt, Abo noch nicht aktiv), findet man sich so trotzdem schnell.
+   */
+  async refresh() {
+    if (this.left || this._refreshing || this.peers.size) return false;
+    this._refreshing = true;
+    const old = this._t;
+    old.onPeerJoin = null;
+    old.onPeerLeave = null;
+    this._action.onMessage = null;
+    try { await old.leave(); } catch { /* schon weg */ }
+    if (!this.left) { this._join(); this.refreshes++; }
+    this._refreshing = false;
+    return true;
   }
 
   _send(type, data, targets, opts) {
@@ -400,6 +425,9 @@ class LocalRoom extends Room {
     addEventListener('pagehide', this._bye);
     addEventListener('beforeunload', this._bye);
     this._hb = setInterval(() => this._tick(), 1000);
+    this._lastTick = performance.now();
+    // Solange diese Seite offen ist, hält sie ein Schloss – auch wenn sie gerade beim Laden hängt
+    if (navigator.locks) navigator.locks.request(LOCAL_LOCK + this.selfId, () => (this.left ? null : new Promise((r) => { this._unlock = r; }))).catch(noop);
     this._post({ k: 'hi' });
   }
 
@@ -410,9 +438,26 @@ class LocalRoom extends Room {
   }
 
   _tick() {
-    this._post({ k: 'hb' });
     const now = performance.now();
-    for (const [id, t] of this._seen) if (now - t > LOCAL_TIMEOUT) { this._seen.delete(id); this._removePeer(id); }
+    // Hing diese Seite selbst (Shader übersetzen, Karte laden), bekommen alle anderen eine neue Frist
+    if (now - this._lastTick > 3000) for (const id of this._seen.keys()) this._seen.set(id, now);
+    this._lastTick = now;
+    this._post({ k: 'hb' });
+    const late = [];
+    for (const [id, t] of this._seen) if (now - t > LOCAL_TIMEOUT) late.push(id);
+    if (!late.length) return;
+    // Stumm, aber noch offen (Schloss belegt) → hängt nur gerade; erst eine geschlossene Seite gilt als weg
+    const drop = (open) => {
+      if (this.left) return;
+      for (const id of late) {
+        const t = this._seen.get(id);
+        if (t == null || performance.now() - t <= LOCAL_TIMEOUT) continue;
+        if (open.has(LOCAL_LOCK + id)) this._seen.set(id, performance.now());
+        else { this._seen.delete(id); this._removePeer(id); }
+      }
+    };
+    if (!navigator.locks) { drop(new Set()); return; }
+    navigator.locks.query().then((q) => drop(new Set(q.held.map((l) => l.name))), () => drop(new Set()));
   }
 
   _onMsg(m) {
@@ -458,6 +503,7 @@ class LocalRoom extends Room {
     if (!this.left) {
       this._post({ k: 'bye' });
       clearInterval(this._hb);
+      if (this._unlock) this._unlock();
       removeEventListener('pagehide', this._bye);
       removeEventListener('beforeunload', this._bye);
       this._close();

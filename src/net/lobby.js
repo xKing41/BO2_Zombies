@@ -20,7 +20,9 @@ export const slotColor = (slot) => SLOT_COLORS[(slot - 1) % SLOT_COLORS.length] 
 export const DEFAULT_NAME = 'Überlebender';
 const NAME_KEY = 'nachtfall.name';
 const NAME_MAX = 16;
-const JOIN_TIMEOUT = 15000; // ohne Antwort eines Hosts: „Kein Spiel mit diesem Code gefunden“
+const JOIN_TIMEOUT = 45000; // ohne Antwort eines Hosts: „Noch kein Spiel … gefunden“ (gesucht wird weiter)
+const REFRESH_GUEST = 8000; // Gast ohne Verbindung meldet sich so oft neu an (schnelles Finden)
+const REFRESH_HOST = 25000; // Host allein in der Lobby: gelegentlich neu anmelden
 const RELAY_TIMEOUT = 10000; // kein Vermittlungs-Relay erreichbar
 const HELLO_RETRY = 3000;
 const REJECT_TEXT = { full: 'Spiel ist voll', started: 'Spiel läuft bereits', version: 'Andere Spielversion' };
@@ -114,6 +116,11 @@ export class Lobby {
       start: $('btnStartNet'), copy: $('btnCopyCode'), share: $('btnShareCode'), leave: $('btnLeaveLobby'),
     };
     this.bind($);
+    // Zurück aus dem Hintergrund (z. B. Code per Messenger verschickt) oder wieder online:
+    // sofort neu anmelden – im Hintergrund schläft die App oft und verpasst die Mitspieler
+    const wake = () => { if (!document.hidden) this.lastRefresh = 0; };
+    document.addEventListener('visibilitychange', wake);
+    addEventListener('online', wake);
   }
 
   // ── Bedienelemente ─────────────────────────────────────────
@@ -122,6 +129,7 @@ export class Lobby {
     e.name.maxLength = NAME_MAX;
     e.name.value = this.name;
     e.name.addEventListener('change', () => this.takeName());
+    e.name.addEventListener('focus', () => { try { e.name.select(); } catch { /* */ } });
     e.name.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); e.name.blur(); } });
     const fixCode = () => { const v = normalizeCode(e.code.value); if (v !== e.code.value) e.code.value = v; };
     e.code.maxLength = CODE_LENGTH;
@@ -271,6 +279,7 @@ export class Lobby {
       room.onPeerLeave((id) => this.onPeerLeave(id)),
       room.onError((e) => this.onNetError(e)),
     );
+    this.lastRefresh = performance.now();
     this.timer = setInterval(() => this.tick(), 500);
     this.render();
   }
@@ -444,6 +453,16 @@ export class Lobby {
     // Gast: Gruß wiederholen, bis ein Host antwortet
     if (this.phase === 'lobby' && !this.isHost && !this.hostId && !this.reject && this.room?.peers.size
       && performance.now() - this.lastHello > HELLO_RETRY) this.hello();
+    // Noch niemand verbunden: neu anmelden, statt bis zur nächsten Ankündigung zu warten
+    const r = this.room;
+    if (this.phase === 'lobby' && r && r.refresh && !r.peers.size && !this.reject) {
+      const alone = this.isHost ? this.players.length <= 1 : !this.hostId;
+      const every = this.isHost ? REFRESH_HOST : REFRESH_GUEST;
+      if (alone && !r.status().linking && performance.now() - this.lastRefresh > every) {
+        this.lastRefresh = performance.now();
+        r.refresh();
+      }
+    }
     this.renderPlayers();
     this.renderStatus();
   }
@@ -467,8 +486,9 @@ export class Lobby {
     if (this.hostId) return { text: 'Warte auf den Host …', kind: 'ok' };
     if (this.netError) return { text: this.netError, kind: 'err' };
     if (relaysDown && t > RELAY_TIMEOUT) return { text: 'Keine Verbindung zum Vermittlungsnetz – Internet prüfen', kind: 'err' };
-    if (t < JOIN_TIMEOUT || st.linking > 0) return { text: 'Verbinde …', kind: 'wait' };
-    return { text: 'Kein Spiel mit diesem Code gefunden', kind: 'err' };
+    if (st.linking > 0 || this.room.peers.size) return { text: 'Spiel gefunden – Direktverbindung wird aufgebaut …', kind: 'wait' };
+    if (t < JOIN_TIMEOUT) return { text: `Suche Spiel ${this.code} …`, kind: 'wait' };
+    return { text: 'Noch kein Spiel mit diesem Code gefunden – Code prüfen; der Host muss in seiner Lobby warten', kind: 'err' };
   }
 
   render() {

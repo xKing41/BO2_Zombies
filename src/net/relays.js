@@ -5,10 +5,16 @@
 //  der Auswahl der Bibliothek. Geprüft mit scripts/coop-check.mjs.
 // ─────────────────────────────────────────────────────────────
 export const RELAYS = [
-  // bisherige Auswahl (ältere Spielversionen benutzen genau diese)
+  // bisherige Auswahl (ältere Spielversionen benutzen genau diese – so finden sich alt und neu)
   'wss://nostrcity-club.fly.dev',
   'wss://nos.lol',
   'wss://relay.layer.systems',
   'wss://relay.piazza.today',
   'wss://relay.nostr.dev.br',
+  // zusätzlich: schnell und zuverlässig im Test (Oktober 2026)
+  'wss://cdn.satellite.earth',
+  'wss://nostr.mom',
+  'wss://relay.primal.net',
+  'wss://offchain.pub',
+  'wss://nostr-pub.wellorder.net',
 ];

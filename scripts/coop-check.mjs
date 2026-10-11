@@ -55,7 +55,10 @@ async function probe(url) {
   let a, b;
   try {
     const t0 = Date.now();
-    [a, b] = await Promise.all([openSocket(url, 7000), openSocket(url, 7000)]);
+    // Beide Sockets einzeln merken, damit auch bei einem Fehlschlag alles geschlossen wird
+    const [sa, sb] = await Promise.allSettled([openSocket(url, 7000), openSocket(url, 7000)]);
+    a = sa.value; b = sb.value;
+    if (!a || !b) throw (sa.reason || sb.reason || new Error('Verbindungsfehler'));
     r.open = true;
     r.openMs = Date.now() - t0;
     const topic = 'nfprobe-' + rid();
@@ -127,16 +130,20 @@ async function browserCheck(configs) {
       for (const [p, tag] of [[H, 'H'], [G, 'G']]) {
         p.on('console', (m) => { const t = m.text(); if (/Koop|Netz|relay|trystero/i.test(t)) log.push(`${tag}: ${t.slice(0, 200)}`); });
         p.on('pageerror', (e) => log.push(`${tag} Fehler: ${e.message}`));
-        await p.goto('http://localhost:4173/' + cfg.hash, { waitUntil: 'load' });
       }
-      for (const p of [H, G]) await p.waitForFunction(() => window.__game && window.__game.state === 'menu', null, { timeout: 180000 });
+      // Beide Seiten gleichzeitig laden (spart Zeit)
+      await Promise.all([H, G].map(async (p) => {
+        await p.goto('http://localhost:4173/' + cfg.hash, { waitUntil: 'load' });
+        await p.waitForFunction(() => window.__game && window.__game.state === 'menu', null, { timeout: 240000 });
+      }));
+      console.log('beide Seiten geladen');
       const t0 = Date.now();
       await H.click('#btnCoop'); await H.fill('#coopName', 'Host'); await H.click('#btnCreate');
       await H.waitForFunction(() => /^[A-Z0-9]{5}$/.test(document.getElementById('lobbyCode').textContent.trim()), null, { timeout: 30000 });
       const code = (await H.textContent('#lobbyCode')).trim();
       await G.click('#btnCoop'); await G.fill('#coopName', 'Gast'); await G.fill('#coopCode', code); await G.click('#btnJoin');
       let ok = false;
-      for (let s = 0; s < 18 && !ok; s++) {
+      for (let s = 0; s < 14 && !ok; s++) {
         await H.waitForTimeout(5000);
         const st = await Promise.all([H, G].map((p) => p.evaluate(() => {
           const l = window.__lobby, r = l.room;
@@ -168,3 +175,5 @@ if (!RELAYS_ONLY) {
   for (const r of results) console.log(`${r.ok ? 'OK  ' : 'FEHL'} ${r.name}${r.ok ? ` (${(r.ms / 1000).toFixed(1)} s)` : ''}`);
   if (!results[0].ok) process.exitCode = 1;
 }
+// Offene Verbindungen (z. B. hängende Relays) sollen den Lauf nicht festhalten
+process.exit(process.exitCode ?? 0);
