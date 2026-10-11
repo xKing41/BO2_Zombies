@@ -2,7 +2,7 @@
   "_info": "Gewählte CC0-Texturen (ambientCG = acg, Poly Haven = ph). Der Workflow „Texturen“ lädt sie, bereitet sie auf (WebP 1024/512) und legt sie nach public/tex/<slot>/. Ändern → committen → der Workflow erledigt den Rest.",
   "sizes": [1024, 512],
   "items": {
-    "wall":          { "src": "acg", "id": "PaintedPlaster016", "_": "Putz mit abplatzender Farbe – Innenwände Station" },
+    "wall":          { "src": "acg", "id": "PaintedPlaster017", "_": "gestrichener Putz mit Rissen – Wände Station (Sockel und Flecken kommen aus dem Shader)" },
     "concrete":      { "src": "ph",  "id": "concrete_floor_worn_001", "_": "abgenutzter Industrieboden" },
     "concreteDirty": { "src": "ph",  "id": "concrete_floor_02", "_": "schmutziger Beton, auch Parkplatz/Flachdach" },
     "tiles":         { "src": "acg", "id": "Tiles074", "_": "Schachbrett-Fliesen (Diner)" },
