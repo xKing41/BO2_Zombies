@@ -1,0 +1,83 @@
+# Figuren aus MakeHuman/MPFB (CC0): Blender (Hintergrund) + MPFB-Erweiterung + das
+# CC0-Paket „makehuman_system_assets“ (Häute, Kleidung, Haare, Low-Poly-Körper).
+# scripts/chars/make_chars.py baut die in scripts/chars/chars.json beschriebenen Figuren,
+# exportiert sie als GLB mit Skelett und rendert Vorschaubilder. Rohdaten landen im
+# Release „figuren-roh“ (zum Prüfen, kein Spiel-Download).
+name: Figuren
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/chars/**'
+      - '.github/workflows/characters.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chars-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  chars:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Blender holen
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libxi6 libxkbcommon0 libxrender1 libxxf86vm1 libxfixes3 libsm6 libgl1 libegl1 > /dev/null
+          V=$(curl -s https://download.blender.org/release/Blender4.2/ | grep -oE 'blender-4\.2\.[0-9]+-linux-x64\.tar\.xz' | sort -V | tail -1)
+          echo "Blender-Archiv: $V"
+          curl -sSL -o /tmp/blender.tar.xz "https://download.blender.org/release/Blender4.2/$V"
+          mkdir -p "$HOME/blender"
+          tar -xf /tmp/blender.tar.xz -C "$HOME/blender" --strip-components=1
+          echo "$HOME/blender" >> "$GITHUB_PATH"
+          "$HOME/blender/blender" --version | head -1
+
+      - name: MPFB-Erweiterung bauen und installieren
+        run: |
+          git clone --depth 1 https://github.com/makehumancommunity/mpfb2 /tmp/mpfb2
+          mkdir -p /tmp/mpfbzip
+          blender -b --command extension build --source-dir /tmp/mpfb2/src/mpfb --output-dir /tmp/mpfbzip
+          ls -la /tmp/mpfbzip
+          blender -b --command extension install-file -r user_default -e /tmp/mpfbzip/*.zip
+
+      - name: CC0-Asset-Paket holen
+        run: |
+          python3 - <<'PY'
+          import urllib.request, re
+          page = 'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html'
+          req = urllib.request.Request(page, headers={'User-Agent': 'Mozilla/5.0 (Nachtfall-Zombies asset script)'})
+          html = urllib.request.urlopen(req, timeout=60).read().decode('utf8', 'replace')
+          links = re.findall(r'href="([^"]+\.zip)"', html)
+          print('Zip-Links:', links)
+          from urllib.parse import urljoin
+          links = [urljoin(page, l) for l in links]
+          pick = next((l for l in links if 'cc0' in l.lower()), links[0] if links else '')
+          print('Gewählt:', pick)
+          open('/tmp/pack_url.txt', 'w').write(pick)
+          PY
+          curl -sSL -A "Mozilla/5.0" -o /tmp/system_assets.zip "$(cat /tmp/pack_url.txt)"
+          ls -la /tmp/system_assets.zip
+          unzip -l /tmp/system_assets.zip | tail -3
+
+      - name: Figuren bauen
+        run: blender -b -P scripts/chars/make_chars.py -- out/chars scripts/chars/chars.json /tmp/system_assets.zip
+
+      - name: Rohdaten bereitstellen (Release „figuren-roh“)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la out/chars || exit 0
+          TAG=figuren-roh
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Figuren (Rohdaten, Arbeitsstand)" \
+              --notes "MakeHuman/MPFB-Figuren (CC0) als GLB mit Skelett und Vorschaubilder – zum Prüfen, kein Spiel-Download."
+          fi
+          gh release upload "$TAG" out/chars/* --clobber --repo "$GITHUB_REPOSITORY"
