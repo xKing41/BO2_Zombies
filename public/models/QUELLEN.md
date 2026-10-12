@@ -20,8 +20,6 @@ Aufbereitet (vereinfacht, Texturen verkleinert und als WebP, Meshopt-komprimiert
 | coveredCar | [Covered Car](https://polyhaven.com/a/covered_car) | 12592 / 5595 |
 | crateMilitary | [Old Military Crate](https://polyhaven.com/a/old_military_crate) | 3995 / 1588 |
 | crateOpen | [CheeseBox_01](https://polyhaven.com/a/CheeseBox_01) | 884 / 884 |
-| cratePlastic | [Plastic Crate 01](https://polyhaven.com/a/plastic_crate_01) | 10270 / 10270 |
-| cratePlastic2 | [Plastic Crate 03](https://polyhaven.com/a/plastic_crate_03) | 10732 / 10728 |
 | crateRifle | [Wooden Military Crate](https://polyhaven.com/a/wooden_military_crate) | 3997 / 1672 |
 | crateWood | [Wooden Crate 02](https://polyhaven.com/a/wooden_crate_02) | 3998 / 1598 |
 | deskMetal | [Metal Office Desk](https://polyhaven.com/a/metal_office_desk) | 4993 / 1993 |
@@ -62,7 +60,6 @@ Aufbereitet (vereinfacht, Texturen verkleinert und als WebP, Meshopt-komprimiert
 | shelfSteel | [Steel Frame Shelves 01](https://polyhaven.com/a/steel_frame_shelves_01) | 4348 / 2000 |
 | shelfSteel3 | [Steel Frame Shelves 03](https://polyhaven.com/a/steel_frame_shelves_03) | 4993 / 1994 |
 | sprayCans | [Spray Paint Bottles](https://polyhaven.com/a/spray_paint_bottles) | 2000 / 798 |
-| stoolBar | [Bar Chair Round 01](https://polyhaven.com/a/bar_chair_round_01) | 14372 / 14372 |
 | stoolMetal | [Metal Stool 01](https://polyhaven.com/a/metal_stool_01) | 2999 / 1200 |
 | streetLamp | [Street Lamp 02](https://polyhaven.com/a/street_lamp_02) | 4179 / 1727 |
 | tablePlank | [Wooden Table 01](https://polyhaven.com/a/WoodenTable_01) | 952 / 952 |

@@ -639,84 +639,6 @@
   },
   "v": "e998094f16"
  },
- "cratePlastic": {
-  "id": "plastic_crate_01",
-  "name": "Plastic Crate 01",
-  "page": "https://polyhaven.com/a/plastic_crate_01",
-  "license": "CC0 1.0",
-  "size": [
-   0.298,
-   0.264,
-   0.408
-  ],
-  "nodes": [
-   {
-    "name": "plastic_crate_01",
-    "size": [
-     0.298,
-     0.264,
-     0.408
-    ],
-    "center": [
-     0,
-     0.132,
-     0
-    ]
-   }
-  ],
-  "srcTris": 18320,
-  "tris": 10270,
-  "trisLo": 10270,
-  "bytes": 317412,
-  "bytesLo": 195144,
-  "tex": 512,
-  "opts": {
-   "tex": 512,
-   "tris": 3000,
-   "id": "plastic_crate_01",
-   "error": 0.05
-  },
-  "v": "93f257f9a5"
- },
- "cratePlastic2": {
-  "id": "plastic_crate_03",
-  "name": "Plastic Crate 03",
-  "page": "https://polyhaven.com/a/plastic_crate_03",
-  "license": "CC0 1.0",
-  "size": [
-   0.481,
-   0.265,
-   0.265
-  ],
-  "nodes": [
-   {
-    "name": "plastic_crate_03",
-    "size": [
-     0.481,
-     0.265,
-     0.265
-    ],
-    "center": [
-     0,
-     0.133,
-     0
-    ]
-   }
-  ],
-  "srcTris": 21740,
-  "tris": 10732,
-  "trisLo": 10728,
-  "bytes": 318740,
-  "bytesLo": 199396,
-  "tex": 512,
-  "opts": {
-   "tex": 512,
-   "tris": 3000,
-   "id": "plastic_crate_03",
-   "error": 0.05
-  },
-  "v": "667344abb9"
- },
  "tableWood": {
   "id": "wooden_table_02",
   "name": "Wooden Table 02",
@@ -1086,45 +1008,6 @@
    "id": "plastic_monobloc_chair_01"
   },
   "v": "854f80ded0"
- },
- "stoolBar": {
-  "id": "bar_chair_round_01",
-  "name": "Bar Chair Round 01",
-  "page": "https://polyhaven.com/a/bar_chair_round_01",
-  "license": "CC0 1.0",
-  "size": [
-   0.483,
-   0.751,
-   0.486
-  ],
-  "nodes": [
-   {
-    "name": "bar_chair_round_01",
-    "size": [
-     0.483,
-     0.751,
-     0.486
-    ],
-    "center": [
-     0,
-     0.375,
-     0
-    ]
-   }
-  ],
-  "srcTris": 14373,
-  "tris": 14372,
-  "trisLo": 14372,
-  "bytes": 505608,
-  "bytesLo": 438956,
-  "tex": 512,
-  "opts": {
-   "tex": 512,
-   "tris": 3000,
-   "id": "bar_chair_round_01",
-   "error": 0.05
-  },
-  "v": "4a035b3e5d"
  },
  "stoolMetal": {
   "id": "metal_stool_01",
