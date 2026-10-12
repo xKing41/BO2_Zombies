@@ -147,6 +147,8 @@ def build(spec):
     if 'race' in spec:
         macro['race'] = spec['race']
     basemesh = HumanService.create_human(macro_detail_dict=macro)
+    # Skelett zuerst: alles, was danach dazukommt, wird automatisch angebunden
+    HumanService.add_builtin_rig(basemesh, CFG.get('rig', 'game_engine'))
     proxy = None
     pp = find('proxymeshes', spec.get('proxy'))
     if pp:
@@ -159,7 +161,6 @@ def build(spec):
     if sk:
         HumanService.set_character_skin(sk, basemesh, bodyproxy=proxy, skin_type='GAMEENGINE')
         info['assets']['skin'] = os.path.basename(sk)
-    HumanService.add_builtin_rig(basemesh, CFG.get('rig', 'game_engine'))
     for sub, atype in (('eyes', 'Eyes'), ('eyebrows', 'Eyebrows'), ('eyelashes', 'Eyelashes'), ('hair', 'Hair')):
         p = find(sub, spec.get(sub))
         if p:
@@ -177,19 +178,33 @@ def build(spec):
     export_root = ExportService.create_character_copy(basemesh, name_suffix='_x')
     export_basemesh = ObjectService.find_object_of_type_amongst_nearest_relatives(export_root, 'Basemesh')
     ExportService.bake_modifiers_remove_helpers(export_basemesh, bake_masks=True, bake_subdiv=True, remove_helpers=True, also_proxy=True)
-    objs = [export_root] + ObjectService.get_list_of_children(export_root)
+    # Nach dem Backen neu einsammeln (MPFB ersetzt den Grundkörper durch den Low-Poly-Körper)
+    objs = [export_root] + list(export_root.children_recursive)
     for o in objs:
         apply_shape_keys(o)
-    # Mit Low-Poly-Körper wird der Grundkörper nicht gebraucht
-    if proxy:
-        for o in list(objs):
-            if o.type == 'MESH' and o.name.startswith(export_basemesh.name.split('_x')[0]) and o is export_basemesh:
-                objs.remove(o)
-                bpy.data.objects.remove(o, do_unlink=True)
     # Original ausblenden (nicht exportieren, nicht rendern)
-    for o in [basemesh] + ObjectService.get_list_of_children(basemesh.parent or basemesh):
+    orig_root = basemesh.parent or basemesh
+    for o in [orig_root] + list(orig_root.children_recursive):
         o.hide_render = True
         o.hide_set(True)
+    # Rolle je Mesh (für die Aufbereitung: Haut, Kleidung, Haare, Augen …)
+    roles = {}
+    for o in objs:
+        if o.type != 'MESH':
+            continue
+        n = o.name.lower()
+        role = 'clothes'
+        a = info['assets']
+        if a.get('proxy') and a['proxy'].rsplit('.', 1)[0].lower() in n: role = 'skin'
+        elif 'body' in n or n.startswith('human_x') or n == 'human_x': role = 'skin'
+        elif a.get('eyes') and a['eyes'].rsplit('.', 1)[0].lower() in n: role = 'eyes'
+        elif a.get('eyebrows') and a['eyebrows'].rsplit('.', 1)[0].lower() in n: role = 'eyebrows'
+        elif a.get('eyelashes') and a['eyelashes'].rsplit('.', 1)[0].lower() in n: role = 'eyelashes'
+        elif a.get('hair') and a['hair'].rsplit('.', 1)[0].lower() in n: role = 'hair'
+        elif 'shoes' in n: role = 'shoes'
+        elif 'fedora' in n or 'hat' in n: role = 'hat'
+        roles[o.name] = role
+    info['roles'] = roles
     stats = {'meshes': [], 'tris': 0}
     for o in objs:
         if o.type == 'MESH':
