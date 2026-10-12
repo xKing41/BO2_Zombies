@@ -8,7 +8,6 @@ Aufbereitet (vereinfacht, Texturen verkleinert und als WebP, Meshopt-komprimiert
 | aircon | [Exterior Aircon Unit](https://polyhaven.com/a/exterior_aircon_unit) | 4024 / 1614 |
 | bookshelf | [Wooden Bookshelf Worn](https://polyhaven.com/a/wooden_bookshelf_worn) | 4999 / 2000 |
 | bottles | [Wine Bottles 01](https://polyhaven.com/a/wine_bottles_01) | 2834 / 1080 |
-| boulder | [Boulder 01](https://polyhaven.com/a/boulder_01) | 54146 / 54122 |
 | branches | [Dry Branches Medium 01](https://polyhaven.com/a/dry_branches_medium_01) | 3201 / 2681 |
 | broom | [Plastic Broom](https://polyhaven.com/a/plastic_broom) | 3915 / 599 |
 | canRusted | [Can Rusted](https://polyhaven.com/a/can_rusted) | 800 / 320 |
@@ -16,13 +15,13 @@ Aufbereitet (vereinfacht, Texturen verkleinert und als WebP, Meshopt-komprimiert
 | cementBag | [Cement Bag](https://polyhaven.com/a/cement_bag) | 844 / 800 |
 | chairPlastic | [Plastic Monobloc Chair 01](https://polyhaven.com/a/plastic_monobloc_chair_01) | 3000 / 1200 |
 | chairSchool | [School Chair 01](https://polyhaven.com/a/SchoolChair_01) | 4000 / 1600 |
-| chairWood | [Wooden Chair 01](https://polyhaven.com/a/WoodenChair_01) | 4000 / 1599 |
+| chairWood | [Dining Chair 02](https://polyhaven.com/a/dining_chair_02) | 4000 / 1599 |
 | compressor | [Old Military Compressor](https://polyhaven.com/a/old_military_compressor) | 6207 / 5395 |
 | coveredCar | [Covered Car](https://polyhaven.com/a/covered_car) | 12592 / 5595 |
 | crateMilitary | [Old Military Crate](https://polyhaven.com/a/old_military_crate) | 3995 / 1588 |
 | crateOpen | [CheeseBox_01](https://polyhaven.com/a/CheeseBox_01) | 884 / 884 |
-| cratePlastic | [Plastic Crate 01](https://polyhaven.com/a/plastic_crate_01) | 10350 / 10272 |
-| cratePlastic2 | [Plastic Crate 03](https://polyhaven.com/a/plastic_crate_03) | 10776 / 10732 |
+| cratePlastic | [Plastic Crate 01](https://polyhaven.com/a/plastic_crate_01) | 10270 / 10270 |
+| cratePlastic2 | [Plastic Crate 03](https://polyhaven.com/a/plastic_crate_03) | 10732 / 10728 |
 | crateRifle | [Wooden Military Crate](https://polyhaven.com/a/wooden_military_crate) | 3997 / 1672 |
 | crateWood | [Wooden Crate 02](https://polyhaven.com/a/wooden_crate_02) | 3998 / 1598 |
 | deskMetal | [Metal Office Desk](https://polyhaven.com/a/metal_office_desk) | 4993 / 1993 |
@@ -36,7 +35,8 @@ Aufbereitet (vereinfacht, Texturen verkleinert und als WebP, Meshopt-komprimiert
 | foodCans | [Russian Food Cans 01](https://polyhaven.com/a/russian_food_cans_01) | 1348 / 598 |
 | gasMask | [Old Gas Mask](https://polyhaven.com/a/old_gas_mask) | 2499 / 1314 |
 | generator | [Portable Generator](https://polyhaven.com/a/portable_generator) | 6077 / 4534 |
-| handTruck | [Hand Truck](https://polyhaven.com/a/hand_truck) | 5500 / 5300 |
+| grassTuft | [Grass Medium 01](https://polyhaven.com/a/grass_medium_01) | 3010 / 1192 |
+| handTruck | [Hand Truck](https://polyhaven.com/a/hand_truck) | 5264 / 5260 |
 | hydrant | [Fire Hydrant](https://polyhaven.com/a/fire_hydrant) | 5378 / 2604 |
 | jerrycan | [Metal Jerrycan](https://polyhaven.com/a/metal_jerrycan) | 2499 / 996 |
 | jerrycanPlastic | [Plastic Jerrycan](https://polyhaven.com/a/plastic_jerrycan) | 2500 / 1000 |

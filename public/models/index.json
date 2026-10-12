@@ -665,17 +665,18 @@
    }
   ],
   "srcTris": 18320,
-  "tris": 10350,
-  "trisLo": 10272,
-  "bytes": 318344,
-  "bytesLo": 195388,
+  "tris": 10270,
+  "trisLo": 10270,
+  "bytes": 317412,
+  "bytesLo": 195144,
   "tex": 512,
   "opts": {
    "tex": 512,
    "tris": 3000,
-   "id": "plastic_crate_01"
+   "id": "plastic_crate_01",
+   "error": 0.05
   },
-  "v": "221aa3d0ab"
+  "v": "93f257f9a5"
  },
  "cratePlastic2": {
   "id": "plastic_crate_03",
@@ -703,17 +704,18 @@
    }
   ],
   "srcTris": 21740,
-  "tris": 10776,
-  "trisLo": 10732,
-  "bytes": 319248,
-  "bytesLo": 199556,
+  "tris": 10732,
+  "trisLo": 10728,
+  "bytes": 318740,
+  "bytesLo": 199396,
   "tex": 512,
   "opts": {
    "tex": 512,
    "tris": 3000,
-   "id": "plastic_crate_03"
+   "id": "plastic_crate_03",
+   "error": 0.05
   },
-  "v": "991d884a79"
+  "v": "667344abb9"
  },
  "tableWood": {
   "id": "wooden_table_02",
@@ -1010,42 +1012,42 @@
   "v": "f379a1b782"
  },
  "chairWood": {
-  "id": "WoodenChair_01",
-  "name": "Wooden Chair 01",
-  "page": "https://polyhaven.com/a/WoodenChair_01",
+  "id": "dining_chair_02",
+  "name": "Dining Chair 02",
+  "page": "https://polyhaven.com/a/dining_chair_02",
   "license": "CC0 1.0",
   "size": [
-   0.687,
-   2.274,
-   0.657
+   0.434,
+   0.973,
+   0.576
   ],
   "nodes": [
    {
-    "name": "WoodenChair_01",
+    "name": "dining_chair_02",
     "size": [
-     0.687,
-     2.274,
-     0.657
+     0.434,
+     0.973,
+     0.576
     ],
     "center": [
      0,
-     1.137,
+     0.486,
      0
     ]
    }
   ],
-  "srcTris": 19992,
+  "srcTris": 22013,
   "tris": 4000,
   "trisLo": 1599,
-  "bytes": 173248,
-  "bytesLo": 71116,
+  "bytes": 113132,
+  "bytesLo": 48172,
   "tex": 512,
   "opts": {
    "tex": 512,
    "tris": 4000,
-   "id": "WoodenChair_01"
+   "id": "dining_chair_02"
   },
-  "v": "51926e879b"
+  "v": "22e2ae61b7"
  },
  "chairPlastic": {
   "id": "plastic_monobloc_chair_01",
@@ -1118,8 +1120,9 @@
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
-   "id": "bar_chair_round_01"
+   "tris": 3000,
+   "id": "bar_chair_round_01",
+   "error": 0.05
   },
   "v": "4a035b3e5d"
  },
@@ -1932,7 +1935,7 @@
   "page": "https://polyhaven.com/a/hand_truck",
   "license": "CC0 1.0",
   "size": [
-   0.593,
+   0.579,
    1.402,
    0.692
   ],
@@ -1940,7 +1943,7 @@
    {
     "name": "hand_truck",
     "size": [
-     0.593,
+     0.579,
      1.402,
      0.692
     ],
@@ -1952,17 +1955,18 @@
    }
   ],
   "srcTris": 13220,
-  "tris": 5500,
-  "trisLo": 5300,
-  "bytes": 272600,
-  "bytesLo": 155648,
+  "tris": 5264,
+  "trisLo": 5260,
+  "bytes": 269456,
+  "bytesLo": 155188,
   "tex": 512,
   "opts": {
    "tex": 512,
    "tris": 3000,
-   "id": "hand_truck"
+   "id": "hand_truck",
+   "error": 0.04
   },
-  "v": "387f7c49e7"
+  "v": "bea0015a1f"
  },
  "cementBag": {
   "id": "cement_bag",
@@ -3930,44 +3934,6 @@
   },
   "v": "f6aae5235c"
  },
- "boulder": {
-  "id": "boulder_01",
-  "name": "Boulder 01",
-  "page": "https://polyhaven.com/a/boulder_01",
-  "license": "CC0 1.0",
-  "size": [
-   1.272,
-   1.004,
-   1.828
-  ],
-  "nodes": [
-   {
-    "name": "boulder_01",
-    "size": [
-     1.272,
-     1.004,
-     1.828
-    ],
-    "center": [
-     0,
-     0.502,
-     0
-    ]
-   }
-  ],
-  "srcTris": 66122,
-  "tris": 54146,
-  "trisLo": 54122,
-  "bytes": 1099060,
-  "bytesLo": 941736,
-  "tex": 512,
-  "opts": {
-   "tex": 512,
-   "tris": 3000,
-   "id": "boulder_01"
-  },
-  "v": "409b8c117e"
- },
  "nettle": {
   "id": "nettle_plant",
   "name": "Nettle Plant",
@@ -4160,5 +4126,252 @@
    "id": "weed_plant_02"
   },
   "v": "e7de059feb"
+ },
+ "grassTuft": {
+  "id": "grass_medium_01",
+  "name": "Grass Medium 01",
+  "page": "https://polyhaven.com/a/grass_medium_01",
+  "license": "CC0 1.0",
+  "size": [
+   5.603,
+   0.339,
+   0.327
+  ],
+  "nodes": [
+   {
+    "name": "grass_medium_01_small_a_LOD0",
+    "size": [
+     0.138,
+     0.139,
+     0.142
+    ],
+    "center": [
+     -0.26,
+     0.09,
+     -0.017
+    ]
+   },
+   {
+    "name": "grass_medium_01_large_b_LOD0",
+    "size": [
+     0.248,
+     0.143,
+     0.248
+    ],
+    "center": [
+     -2.239,
+     0.076,
+     -0.008
+    ]
+   },
+   {
+    "name": "grass_medium_01_mid_b_LOD0",
+    "size": [
+     0.176,
+     0.173,
+     0.2
+    ],
+    "center": [
+     -1.026,
+     0.106,
+     0.008
+    ]
+   },
+   {
+    "name": "grass_medium_01_tall_b_LOD0",
+    "size": [
+     0.132,
+     0.285,
+     0.118
+    ],
+    "center": [
+     0.937,
+     0.163,
+     0.003
+    ]
+   },
+   {
+    "name": "grass_medium_01_tall_a_LOD0",
+    "size": [
+     0.161,
+     0.321,
+     0.154
+    ],
+    "center": [
+     0.552,
+     0.178,
+     0.001
+    ]
+   },
+   {
+    "name": "grass_medium_01_tall_c_LOD0",
+    "size": [
+     0.142,
+     0.234,
+     0.11
+    ],
+    "center": [
+     1.366,
+     0.136,
+     0.017
+    ]
+   },
+   {
+    "name": "grass_medium_01_small_b_LOD0",
+    "size": [
+     0.152,
+     0.087,
+     0.155
+    ],
+    "center": [
+     0.135,
+     0.06,
+     -0.026
+    ]
+   },
+   {
+    "name": "grass_medium_01_mid_c_LOD0",
+    "size": [
+     0.191,
+     0.144,
+     0.203
+    ],
+    "center": [
+     -0.633,
+     0.073,
+     -0.012
+    ]
+   },
+   {
+    "name": "grass_medium_01_mid_a_LOD0",
+    "size": [
+     0.216,
+     0.217,
+     0.221
+    ],
+    "center": [
+     -1.453,
+     0.108,
+     -0.007
+    ]
+   },
+   {
+    "name": "grass_medium_01_large_a_LOD0",
+    "size": [
+     0.317,
+     0.145,
+     0.327
+    ],
+    "center": [
+     -2.643,
+     0.089,
+     0
+    ]
+   },
+   {
+    "name": "grass_medium_01_large_c_LOD0",
+    "size": [
+     0.279,
+     0.142,
+     0.249
+    ],
+    "center": [
+     -1.855,
+     0.072,
+     -0.016
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_c_LOD0",
+    "size": [
+     0.011,
+     0.08,
+     0.029
+    ],
+    "center": [
+     2.156,
+     0.061,
+     0.008
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_a_LOD0",
+    "size": [
+     0.067,
+     0.111,
+     0.072
+    ],
+    "center": [
+     1.761,
+     0.076,
+     -0.02
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_b_LOD0",
+    "size": [
+     0.008,
+     0.053,
+     0.034
+    ],
+    "center": [
+     1.951,
+     0.046,
+     -0.022
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_d_LOD0",
+    "size": [
+     0.043,
+     0.041,
+     0.057
+    ],
+    "center": [
+     2.371,
+     0.04,
+     -0.031
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_e_LOD0",
+    "size": [
+     0.076,
+     0.046,
+     0.051
+    ],
+    "center": [
+     2.571,
+     0.041,
+     -0.002
+    ]
+   },
+   {
+    "name": "grass_medium_01_tiny_f_LOD0",
+    "size": [
+     0.053,
+     0.047,
+     0.068
+    ],
+    "center": [
+     2.775,
+     0.043,
+     -0.017
+    ]
+   }
+  ],
+  "srcTris": 24730,
+  "tris": 3010,
+  "trisLo": 1192,
+  "bytes": 276700,
+  "bytesLo": 115408,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "grass_medium_01",
+   "error": 0.05
+  },
+  "v": "3a41c9e43d"
  }
 }
