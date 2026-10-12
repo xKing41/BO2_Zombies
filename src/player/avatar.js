@@ -11,6 +11,7 @@
 //  Maße für eine 1,82 m große Standardfigur (je Figur skaliert).
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
+import { attachRealBody } from './survivorbody.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { paintSurvivor, REG, uvRect, swatchUV, torsoT, limbT } from './survivorTex.js';
 import { buildGun, buildKnife, buildGrenade, buildBottle } from '../weapons/guns.js';
@@ -407,7 +408,8 @@ class SurvivorAvatar {
     this.id = CHAR_IDS[((char | 0) % 4 + 4) % 4];
     this.color = color;
     const K = (this.kit = kit(this.id, color)), G = K.geos, def = K.def, mat = K.mat;
-    const mesh = (geo, parent, m = mat) => { const o = new THREE.Mesh(geo, m); o.castShadow = true; parent.add(o); return o; };
+    this.parts = [];
+    const mesh = (geo, parent, m = mat) => { const o = new THREE.Mesh(geo, m); o.castShadow = true; parent.add(o); this.parts.push(o); return o; };
     const grp = (parent, x = 0, y = 0, z = 0) => { const o = new THREE.Group(); o.position.set(x, y, z); parent.add(o); return o; };
 
     const root = (this.group = new THREE.Group());
@@ -488,6 +490,12 @@ class SurvivorAvatar {
     if (this.tag.material.map) this.tag.material.map.dispose();
     this.tag.material.map = tagTexture(text, color);
     this.tag.material.needsUpdate = true;
+  }
+
+  // Echter Körper (survivorbody.js): Bauteile der Figur ausblenden, der Körper folgt ihrer Animation
+  setRealBody(body) {
+    this.real = body;
+    for (const o of this.parts) o.visible = false;
   }
 
   setReviveIcon(on, progress = 0) { this.icon.visible = on; this.icon.material.color.setRGB(1, 0.2 + progress * 0.8, 0.1 + progress * 0.4); }
@@ -669,6 +677,7 @@ class SurvivorAvatar {
     this.tag.scale.set(h * 4, h, 1);
     this.tag.position.y = 2.02 * this.body.scale.y * (upright + 0.25 * (1 - upright)) - cr * 0.45;
     this.icon.scale.set(h * 1.4, h * 1.4, 1);
+    if (this.real && this.group.visible) this.real.update();
   }
 
   // Hand: an einem Griffanker (Finger -z, Handrücken +y) oder locker in Verlängerung des Unterarms
@@ -683,6 +692,8 @@ class SurvivorAvatar {
   }
 
   dispose() {
+    this.disposed = true;
+    if (this.real) { this.real.dispose(); this.real = null; }
     this.group.removeFromParent();
     if (this.tag.material.map) this.tag.material.map.dispose();
     this.tag.material.dispose();
@@ -691,5 +702,7 @@ class SurvivorAvatar {
 }
 
 export function makeSurvivorAvatar(game, char, name, color) {
-  return new SurvivorAvatar(game, char, name, color);
+  const av = new SurvivorAvatar(game, char, name, color);
+  attachRealBody(av, HIP_Y);
+  return av;
 }

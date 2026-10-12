@@ -25,7 +25,7 @@ export class ZombieManager {
     this.skinned = bodies.length ? new SkinnedZombies(this.scene, bodies, MAX_ALIVE + 8, this.renderer.types.gibStump) : null;
     if (this.skinned && !this.skinned.active) this.skinned = null;
     this.eyes = new EyeGlow(this.scene, MAX_ALIVE);
-    if (this.skinned) this.eyes.setSize(0.06);
+    if (this.skinned) this.eyes.setSize(0.032);
     this.stepBudget = 0;
     this.dist = new Int32Array(this.map.w * this.map.h);
     this.flowT = 0;

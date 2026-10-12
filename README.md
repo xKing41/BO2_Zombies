@@ -2,9 +2,10 @@
 
 Ein rundenbasierter 3D-Zombie-Survival-Shooter im Geist von *Call of Duty: Black Ops 2 – Zombies*,
 komplett neu entwickelt: eigene Karten, eigene Waffen, eigene Perks, eigener Sound.
-Läuft direkt im Browser (Three.js / WebGL2). Figuren, Waffen, Animationen und Sounds werden prozedural im
-Code erzeugt; die Oberflächen nutzen freie Foto-Texturen, die Einrichtung freie 3D-Modelle (beides CC0,
-siehe „Texturen und 3D-Modelle“). Ohne sie fällt alles auf eigene, im Code gebaute Formen und Texturen zurück.
+Läuft direkt im Browser (Three.js / WebGL2). Waffen, Animationen und Sounds werden prozedural im Code
+erzeugt; Zombies und Überlebende haben echte menschliche Körper (MakeHuman/MPFB), die Oberflächen nutzen
+freie Foto-Texturen, die Einrichtung freie 3D-Modelle (alles CC0, siehe „Texturen und 3D-Modelle“ und
+„Figuren“). Ohne sie fällt alles auf eigene, im Code gebaute Formen und Texturen zurück.
 
 > **Rechtlicher Hinweis:** Dies ist ein eigenständiges Fan-Projekt. Es verwendet **keine**
 > Inhalte, Namen, Modelle, Sounds oder Musik von Activision/Treyarch. Perks, Waffen, Karten, Figuren
@@ -43,9 +44,9 @@ Jeder Spieler stellt **Empfindlichkeit, Y-Achse und Zielhilfe selbst** ein: auf 
 mit dem eigenen Controller (LB/RB, Y, X) oder per Klick, während der Partie unter Pause → Einstellungen. Die Werte
 hängen am Eingabegerät (Tastatur & Maus, Controller 1–4) und bleiben gespeichert.
 
-**Vier eigene Überlebende:** Willi (Bergmann a. D. mit Schiebermütze und Bart), Dr. Albers (Landtierarzt im
-fleckigen Kittel), Hanne (Kfz-Mechanikerin mit Schweißerbrille) und Kai (Funkamateur mit Bomberjacke und
-Kopfhörern). Modelle und Texturen sind prozedural, die Bewegungen auch: Gehen und Rennen in alle Richtungen, Ducken,
+**Vier eigene Überlebende:** Willi (Bergmann a. D. im Blaumann mit Mütze), Dr. Albers (Landtierarzt im
+Anzug), Hanne (Kfz-Mechanikerin mit Pferdeschwanz) und Kai (Funkamateur im Jeanshemd). Sie haben echte
+menschliche Körper (MakeHuman/MPFB, siehe „Figuren“), die Bewegungen sind prozedural: Gehen und Rennen in alle Richtungen, Ducken,
 Springen, Hechtsprung, Liegen, am Boden mit Pistole, Nachladen, Messer, Granate, Trinken und Wiederbeleben.
 In den Händen liegt immer die echte Waffe des Spielers, gegriffen per IK. Name und Wiederbelebungs-Symbol
 stehen in fester Größe über der Figur, das Armband zeigt die Spielerfarbe.
@@ -153,8 +154,8 @@ die Menüs.
 ## Was schon drin ist
 
 **Im Stil von Black Ops 2**
-- Zombies als verrottete Menschen: gebeugt, mit eingefallenem Schädel, leuchtenden Augen (mit Leuchtspur), offenem Mund, Krallenhänden und zerrissener, blutiger Kleidung; Varianten wie Koch, Büroangestellter, Bauarbeiter
-- Zerstückelung: Köpfe platzen, Unterarme lassen sich abschießen, Explosionen reißen Beine ab – die Zombies kriechen weiter („Kriecher“). Explosionen und der Bus schleudern Körper durch die Luft, der Gewitter-Werfer lässt sie unter Strom zucken
+- Zombies als verrottete Menschen mit echten Körpern: acht Körpertypen (Männer und Frauen verschiedener Herkunft, Statur und Alter – im Shirt, Blaumann, Anzug, Hemd, Sportzeug, Kostüm), dazu je Zombie andere Verwesung: fahle grau-grüne Haut, Flecken, Adern, eingefallene Augenhöhlen, milchige Augen, Blut von Mund und Kinn, an Brust und Händen, Laufspuren, verdreckte und ausgeblichene Kleidung in leicht anderer Farbe; leuchtende Augen mit Leuchtspur
+- Zerstückelung: Köpfe platzen, Unterarme lassen sich abschießen, Explosionen reißen Beine ab – die Zombies kriechen weiter („Kriecher“). Am Körper bleibt ein Stumpf, das abgetrennte Stück fliegt mit Ärmel, Hand, Hosenbein und Schuh davon. Explosionen und der Bus schleudern Körper durch die Luft, der Gewitter-Werfer lässt sie unter Strom zucken
 - HUD wie im Original: Kreide-Strichliste und handgemalte rote Rundenzahlen, die beim Rundenende weiß-rot pulsieren; Intro mit Ort und Uhrzeit auf der Schreibmaschine; Perk-Kronkorken; Blut am Bildschirmrand; keine Trefferanzeige (in den Einstellungen zuschaltbar)
 - Waffen in der Hand wie im Original: detaillierte Modelle (abgegriffene Kanten, Holzmaserung, Kratzer), schmutzige Hände mit fingerlosen Handschuhen und hochgekrempelten Ärmeln, Waffe groß unten rechts im Bild
 - Nachladen mit echten Handgriffen: Magazin raus/rein, Schlitten oder Spannhebel bei leerem Magazin, Pumpgun Patrone für Patrone, Doppellauf abkippen, MG-Deckel und Trommel; beim ersten Ziehen jeder Waffe eine kurze Vorführ-Animation
@@ -260,8 +261,31 @@ Texturen, ~40 % der Dreiecke). Im Spiel lädt `src/core/modellib.js` nur die Mod
 `src/world/props.js` und `src/world/dressing.js` (Einrichtung je Raum-Thema, Feld `dress` der
 Kartendefinition) stellen sie auf. Rund 73 Modelle, zusammen etwa 14 MB (PC lädt je Karte höchstens rund 9 MB, Handy rund 4 MB).
 
+## Figuren (Zombies und Überlebende)
+
+Zombies und Überlebende sind echte menschliche Körper aus **[MakeHuman](http://www.makehumancommunity.org)
+/ [MPFB](https://static.makehumancommunity.org/mpfb.html)** – Körper, Häute, Kleidung, Haare und Augen aus dem
+Paket *makehuman_system_assets* stehen unter **CC0**. Gebaut wird komplett auf GitHub:
+1. **Festlegen:** `scripts/chars/chars.json` beschreibt jede Figur: Geschlecht, Alter, Statur, Größe,
+   Herkunft, Haut, Low-Poly-Körper, Augen, Brauen, Haare und Kleidung. Unter `retouch` stehen Bereiche, in
+   denen Aufdrucke (MakeHuman-Logo) automatisch wegretuschiert werden.
+2. **Bauen:** Der Workflow „Figuren“ lädt Blender 4.2, baut daraus die MPFB-Erweiterung, holt das CC0-Paket
+   und lässt `scripts/chars/make_chars.py` jede Figur mit Spiel-Skelett (53 Knochen) als GLB exportieren und
+   ein Vorschaubild rendern (Release **„figuren-roh“**, nur zum Prüfen).
+3. **Packen:** `scripts/chars/pack-chars.mjs` legt alle Teile einer Figur in **ein** Mesh mit **einem**
+   Textur-Atlas (Haut, Kleidung, Schuhe, Haare, Augen, Brauen), vereinfacht auf 9000 Dreiecke (Handy 4000),
+   wandelt in WebP und Meshopt und committet nach `public/chars/` (je Figur rund 200 KB, Handy 100 KB).
+4. **Im Spiel:** `src/zombies/skinned.js` zeichnet alle Zombies eines Körpertyps mit **einem Draw-Call**
+   (instanziertes Skinning: die Knochen jedes Zombies liegen als Zeile in einer Float-Textur). Die bewährte
+   prozedurale Animation bleibt der Antrieb und wird je Bild auf das menschliche Skelett übertragen;
+   Trefferzonen und Leuchtaugen sitzen am echten Körper. Bei 24 Zombies im Bild sind das weniger Draw-Calls
+   und Dreiecke als mit den alten Bauteil-Zombies. `src/player/survivorbody.js` macht dasselbe für die
+   Überlebenden im Koop; ihre Hände greifen per IK genau an Waffengriff und Handschutz.
+
+Ohne die Dateien (z. B. im Einzeldatei-Build) laufen die prozeduralen Zombies und Figuren wie bisher.
+
 **Animation**
-- Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung
+- Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung – übertragen auf echte menschliche Skelette
 - Viewmodel: Arme mit IK an der Waffe, Animations-Zeitachsen je Waffe, Laufen, Atmen, Sway, Sprint-Haltung, Rückstoß, Nachladen, Ziehen, Messer, Granate, Perk-Trinken
 
 **Sound** (vollständig synthetisiert, Web Audio API, HRTF-3D)
@@ -281,16 +305,17 @@ src/
   world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten;
                        Einrichtung (dressing), Abziehbilder und Graffiti (decals);
                        Atmosphäre (Himmel, Bodennebel), Raster-Licht, Lichtkegel, Oberflächen-Variation
-  zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
+  zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation; echte Körper mit instanziertem Skinning (skinned)
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
-  player/              Bewegung, Kamera, Gesundheit, Perks; Spielfiguren der Mitspieler (Modell, Atlas, Animation)
+  player/              Bewegung, Kamera, Gesundheit, Perks; Spielfiguren der Mitspieler (Modell, Atlas, Animation, echter Körper)
   game/                Spiel-Loop, Runden, Interaktionen, Power-Ups, Überlebende (Koop); Linie 13: Bus, Baupläne, Gefahren, Quest, Bank
   net/                 Koop: Verbindung (WebRTC über Trystero, BroadcastChannel, Speicher), Lobby, Sitzung mit Host-Autorität
   audio/               Prozedurales Sound-Design
   ui/                  HUD, Touch-Steuerung, Splitscreen
-public/                App-Manifest, Service Worker (offline), Icons, tex/ und models/ (aufbereitete CC0-Texturen und -Modelle + QUELLEN.md)
+public/                App-Manifest, Service Worker (offline), Icons, tex/, models/ und chars/ (aufbereitete CC0-Texturen, -Modelle und -Figuren + QUELLEN.md)
 android/               Android-App (WebView-Hülle, Gradle-Projekt, fester Signaturschlüssel)
-scripts/               Einzeldatei-Build, Koop-Verbindungstest, assets/ (Katalog sowie Textur- und Modell-Download für GitHub Actions)
+scripts/               Einzeldatei-Build, Koop-Verbindungstest, assets/ (Katalog sowie Textur- und Modell-Download für GitHub Actions),
+                       chars/ (Figuren mit Blender + MPFB bauen und fürs Spiel packen)
 ```
 
 Neue Waffen und Perks lassen sich größtenteils über `src/config.js` hinzufügen. Eine Karte ist eine
@@ -317,17 +342,17 @@ Entwickler-Modus: `http://localhost:5173/#dev` → 50 000 Punkte, unverwundbar, 
 
 Ein Spiel, das BO2 Zombies wirklich *ersetzt*, ist ein Mehrjahresprojekt für ein Team
 (Artists, Animatoren mit Motion-Capture, Sounddesigner, Level-Designer). Dieses Repository ist das
-**spielbare Fundament**: Kernmechaniken, Systeme und Atmosphäre stehen, Modelle und Sounds sind
-prozedural, Oberflächen und Einrichtung nutzen freie Foto-Texturen und 3D-Modelle – alles ist sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
+**spielbare Fundament**: Kernmechaniken, Systeme und Atmosphäre stehen, Waffen und Sounds sind
+prozedural, Figuren, Oberflächen und Einrichtung nutzen freie CC0-Körper, Foto-Texturen und 3D-Modelle – alles ist sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
 
 1. **Engine-Entscheidung für AAA-Optik:** Für fotorealistische Grafik (Lumen, Nanite, MetaHuman,
    Motion-Matching) ist **Unreal Engine 5** der realistische Weg. Die Spiellogik hier (Rundenformeln,
    Balancing, Zustandsautomaten) lässt sich 1:1 übertragen. Alternativ im Browser bleiben und
    Three.js mit WebGPU + echten Assets ausbauen.
-2. **Echte Assets:** gescannte/handmodellierte Zombies mit Skinning und Motion-Capture-Animationen
-   (z. B. glTF-Import), aufgenommene Foley-Sounds und komponierte Musik. Foto-Texturen und
-   Requisiten-Modelle gibt es schon (siehe „Texturen und 3D-Modelle“); als Nächstes realistischere
-   Zombies und Spielfiguren (z. B. freie CC0-Grundkörper mit eigenen Texturen).
+2. **Echte Assets:** Foto-Texturen, Requisiten-Modelle und echte menschliche Körper für Zombies und
+   Überlebende gibt es schon (siehe „Texturen und 3D-Modelle“ und „Figuren“). Als Nächstes:
+   Motion-Capture-Animationen, Gesichtsanimation (offener Kiefer, Mimik), zerrissene Kleidung und
+   sichtbare Wunden, aufgenommene Foley-Sounds und komponierte Musik.
 3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes:
    Gesichtsanimation und eigene Sprüche der Figuren, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),
