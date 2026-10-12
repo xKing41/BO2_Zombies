@@ -220,6 +220,83 @@ export function graffitiMaterial() {
   return GRAF;
 }
 
+// ── Fenster für Außenfassaden (4 × 2 Felder) ─────────────────
+// 0 dunkles Glas · 1 Jalousie · 2 vernagelt · 3 zerbrochen · 4 warm beleuchtet · 5 Vorhänge · 6 Rollladen · 7 vernagelt (hell)
+export const WINDOW_VARIANTS = 8;
+let FACADE = null;
+export function facadeMaterial() {
+  if (FACADE) return FACADE;
+  const W = 1024, H = 512, S = 256;
+  const cv = canvas(W, H), c = cv.getContext('2d');
+  const ev = canvas(W, H), e = ev.getContext('2d');
+  e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
+  const rnd = mulberry32(31337);
+  for (let i = 0; i < 8; i++) {
+    const ox = (i % 4) * S, oy = Math.floor(i / 4) * S;
+    c.save(); c.translate(ox, oy);
+    const fr = ['#d8d2c4', '#5a4030', '#8a8c88', '#e8e4da'][i % 4];
+    c.fillStyle = fr; c.fillRect(0, 0, S, S); // Rahmen
+    const g0 = 18, gx = g0, gy = g0, gw = S - g0 * 2, gh = S - g0 * 2;
+    // Glas: dunkel mit Spiegelung
+    const gl = c.createLinearGradient(0, gy, 0, gy + gh);
+    gl.addColorStop(0, '#2a3440'); gl.addColorStop(1, '#0c1016');
+    c.fillStyle = gl; c.fillRect(gx, gy, gw, gh);
+    c.save(); c.beginPath(); c.rect(gx, gy, gw, gh); c.clip();
+    c.globalAlpha = 0.18; c.fillStyle = '#9fb4c8';
+    c.beginPath(); c.moveTo(gx + gw * 0.15, gy); c.lineTo(gx + gw * 0.45, gy); c.lineTo(gx + gw * 0.1, gy + gh); c.lineTo(gx - gw * 0.2, gy + gh); c.fill();
+    c.globalAlpha = 1;
+    if (i === 1) { // Jalousie
+      for (let y = gy; y < gy + gh * (0.6 + rnd() * 0.4); y += 9) { c.fillStyle = '#b8b4a8'; c.fillRect(gx, y, gw, 6); c.fillStyle = '#8c887e'; c.fillRect(gx, y + 6, gw, 1); }
+    } else if (i === 2 || i === 7) { // Bretter
+      for (let k = 0; k < 4; k++) {
+        c.save(); c.translate(S / 2, gy + 20 + k * (gh - 40) / 3); c.rotate((rnd() - 0.5) * 0.35);
+        c.fillStyle = i === 2 ? `hsl(28,${30 + rnd() * 15}%,${22 + rnd() * 10}%)` : `hsl(35,${25 + rnd() * 10}%,${45 + rnd() * 10}%)`;
+        c.fillRect(-S * 0.55, -14, S * 1.1, 28);
+        c.fillStyle = 'rgba(0,0,0,0.35)'; for (let n = 0; n < 4; n++) c.fillRect(-S * 0.55 + rnd() * S * 1.1, -14, 2, 28);
+        c.fillStyle = '#222'; c.beginPath(); c.arc(-S * 0.4, 0, 3, 0, 6.28); c.arc(S * 0.4, 0, 3, 0, 6.28); c.fill();
+        c.restore();
+      }
+    } else if (i === 3) { // zerbrochen
+      c.fillStyle = '#05070a';
+      c.beginPath(); c.moveTo(gx + gw * 0.35, gy + gh * 0.3);
+      for (let k = 0; k < 9; k++) { const a = k / 9 * 6.28; c.lineTo(gx + gw * (0.42 + Math.cos(a) * (0.12 + rnd() * 0.14)), gy + gh * (0.45 + Math.sin(a) * (0.12 + rnd() * 0.16))); }
+      c.fill();
+      c.strokeStyle = 'rgba(200,210,220,0.45)'; c.lineWidth = 1.5;
+      for (let k = 0; k < 10; k++) { c.beginPath(); c.moveTo(gx + gw * 0.42, gy + gh * 0.45); const a = rnd() * 6.28; c.lineTo(gx + gw * 0.42 + Math.cos(a) * gw * 0.6, gy + gh * 0.45 + Math.sin(a) * gh * 0.6); c.stroke(); }
+    } else if (i === 4) { // warm beleuchtet, mit Vorhang-Schatten
+      const wl = c.createRadialGradient(gx + gw * 0.5, gy + gh * 0.4, 10, gx + gw * 0.5, gy + gh * 0.5, gw * 0.8);
+      wl.addColorStop(0, '#ffd690'); wl.addColorStop(1, '#a8601c');
+      c.fillStyle = wl; c.fillRect(gx, gy, gw, gh);
+      c.fillStyle = 'rgba(60,20,10,0.75)'; c.fillRect(gx, gy, gw * 0.18, gh); c.fillRect(gx + gw * 0.82, gy, gw * 0.18, gh);
+      e.save(); e.translate(ox, oy);
+      const el = e.createRadialGradient(gx + gw * 0.5, gy + gh * 0.4, 10, gx + gw * 0.5, gy + gh * 0.5, gw * 0.8);
+      el.addColorStop(0, '#ffcc80'); el.addColorStop(1, '#6a3810');
+      e.fillStyle = el; e.fillRect(gx + gw * 0.18, gy, gw * 0.64, gh);
+      e.restore();
+    } else if (i === 5) { // Vorhänge
+      c.fillStyle = '#5a1e1e'; c.fillRect(gx, gy, gw * 0.3, gh); c.fillRect(gx + gw * 0.7, gy, gw * 0.3, gh);
+      c.fillStyle = 'rgba(0,0,0,0.25)'; for (let k = 0; k < 8; k++) { c.fillRect(gx + k * gw * 0.04, gy, 3, gh); c.fillRect(gx + gw * 0.7 + k * gw * 0.04, gy, 3, gh); }
+    } else if (i === 6) { // Rollladen
+      for (let y = gy; y < gy + gh; y += 12) { c.fillStyle = '#7c7f80'; c.fillRect(gx, y, gw, 10); c.fillStyle = '#4c4e50'; c.fillRect(gx, y + 10, gw, 2); }
+    }
+    c.restore();
+    // Sprossen und Schmutz
+    if (i !== 6) { c.fillStyle = fr; c.fillRect(S / 2 - 5, gy, 10, gh); c.fillRect(gx, S * 0.42, gw, 8); }
+    const dirt = c.createLinearGradient(0, S * 0.6, 0, S);
+    dirt.addColorStop(0, 'rgba(40,32,24,0)'); dirt.addColorStop(1, 'rgba(40,32,24,0.35)');
+    c.fillStyle = dirt; c.fillRect(0, 0, S, S);
+    c.restore();
+  }
+  const map = new THREE.CanvasTexture(cv); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
+  const emi = new THREE.CanvasTexture(ev); emi.colorSpace = THREE.SRGBColorSpace;
+  FACADE = new THREE.MeshStandardMaterial({
+    map, emissiveMap: emi, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 2.2, roughness: 0.35, metalness: 0,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+  });
+  FACADE.userData.shared = true;
+  return FACADE;
+}
+
 /**
  * Sammelt Abziehbilder und baut daraus ein Mesh.
  * add(feld, x, y, z, breite, höhe, drehung, normale) – normale 'up' (Boden) oder [nx, nz] (Wand)

@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { CELL, WALL_H } from '../config.js';
 import { mulberry32 } from '../core/noise.js';
 import { model, hasModel, worldBox } from '../core/modellib.js';
-import { DecalBatch, decalMaterial, graffitiMaterial, DECAL, GRAFFITI_COUNT } from './decals.js';
+import { DecalBatch, decalMaterial, graffitiMaterial, facadeMaterial, DECAL, GRAFFITI_COUNT, WINDOW_VARIANTS } from './decals.js';
 import * as P from './props.js';
 import * as T from '../core/textures.js';
 
@@ -133,7 +133,7 @@ const THEMES = {
   tunnel: { wallP: 0.5, wall: [['drums', 2], ['tyreLean', 2], ['trash', 2], ['trashCanRust', 1], ['cement', 1], ['branches', 1]],
     mount: [['lamp', 0.05]], decals: [['dirt', 0.45], ['crack', 0.12], ['oil', 0.08], ['ring', 0.06], ['leaves2', 0.05]] , pipes: 0.5, pipeMat: 'rust', scatter: [['can', 0.03], ['bag', 0.02], ['bottle', 0.02], ['rock', 0.02]] },
   yard: { wallP: 0.6, wall: [['weeds', 3], ['weeds2', 3], ['grass', 2], ['trashCanRust', 1], ['trashCan', 1], ['trash', 2], ['drums', 1], ['tyreLean', 1], ['boxes2', 1], ['rocks', 1]],
-    mount: [['airconRust', 0.04], ['secLight', 0.03], ['aircon', 0.02]], decals: [['leaves1', 0.07], ['leaves2', 0.06], ['dirt', 0.1], ['paper', 0.02], ['crack', 0.03]], graffiti: 0.06 , posters: 0.02, scatter: [['weed', 0.08], ['grass', 0.06], ['can', 0.02], ['rock', 0.02], ['branch', 0.02]] },
+    mount: [['airconRust', 0.04], ['secLight', 0.03], ['aircon', 0.02]], decals: [['leaves1', 0.07], ['leaves2', 0.06], ['dirt', 0.1], ['paper', 0.02], ['crack', 0.03]], graffiti: 0.06, facade: 0.3 , posters: 0.02, scatter: [['weed', 0.08], ['grass', 0.06], ['can', 0.02], ['rock', 0.02], ['branch', 0.02]] },
 };
 
 const DECAL_SETS = {
@@ -160,6 +160,9 @@ export function dressMap(m, scene, cfg = {}, q = {}) {
   const weedsOk = q.gridLight !== false;
   const decals = new DecalBatch(decalMaterial());
   const graffiti = new DecalBatch(graffitiMaterial(), 2, 4);
+  const facade = new DecalBatch(facadeMaterial(), 4, 2);
+  const facadeUsed = new Set();
+  const WIN_W = [3, 2, 3, 1, 1, 1, 2, 2]; // Gewichte der Fenster-Varianten
 
   // ── gesperrte Zellen ──
   const reserved = new Set();
@@ -289,6 +292,7 @@ export function dressMap(m, scene, cfg = {}, q = {}) {
     scene.add(br);
   };
   let posters = 0;
+  const downpipeGeo = new THREE.CylinderGeometry(0.05, 0.05, WALL_H + 0.4, 8);
 
   // ── Wandzellen durchgehen ──
   const cells = m.cells.filter((c) => c.type === 'floor' && cfg.themes[c.zone]);
@@ -374,8 +378,29 @@ export function dressMap(m, scene, cfg = {}, q = {}) {
         scene.add(pm);
         posters++;
       }
+      // Fenster und Fallrohre an Hausfassaden (außen, Wand gehört zu einem Gebäude mit Decke)
+      if (outdoor && theme.facade) {
+        const beyond = m.get(c.x + dx * 2, c.y + dy * 2);
+        const building = beyond && beyond.type === 'floor' && m.zones[beyond.zone]?.ceiling;
+        const fk = `${c.x + dx},${c.y + dy},${dx},${dy}`;
+        const nearUsed = facadeUsed.has(`${c.x + dx + dy},${c.y + dy + dx},${dx},${dy}`) || facadeUsed.has(`${c.x + dx - dy},${c.y + dy - dx},${dx},${dy}`);
+        const rw = rnd(), rv = rnd(), rp = rnd();
+        if (building && !nearUsed && rw < theme.facade) {
+          let t2 = 0; for (const w of WIN_W) t2 += w;
+          let k = 0, r2 = rv * t2; while (k < WINDOW_VARIANTS - 1 && (r2 -= WIN_W[k]) > 0) k++;
+          facade.add(k, wx + n[0] * 0.02, 1.95, wz + n[1] * 0.02, 1.3, 1.45, 0, n, {});
+          facadeUsed.add(fk);
+        } else if (building && rp < 0.05) {
+          // Fallrohr an der Zellkante
+          const along = rp < 0.025 ? -0.95 : 0.95;
+          const pipe = new THREE.Mesh(downpipeGeo, m.M.metal);
+          pipe.position.set(wx + n[0] * 0.1 + t[0] * along, (WALL_H + 0.4) / 2, wz + n[1] * 0.1 + t[1] * along);
+          pipe.castShadow = true;
+          scene.add(pipe);
+        }
+      }
       // Graffiti (außen)
-      if (theme.graffiti && outdoor && rnd() < theme.graffiti * (cfg.graffiti ?? 1)) {
+      if (theme.graffiti && outdoor && rnd() < theme.graffiti * (cfg.graffiti ?? 1) && !facadeUsed.has(`${c.x + dx},${c.y + dy},${dx},${dy}`)) {
         const along = (rnd() - 0.5) * 0.4;
         graffiti.add(Math.floor(rnd() * GRAFFITI_COUNT), wx + t[0] * along, 1.25 + rnd() * 0.8, wz + t[1] * along, 2.4, 1.2, (rnd() - 0.5) * 0.08, n, {});
       }
@@ -456,7 +481,9 @@ export function dressMap(m, scene, cfg = {}, q = {}) {
 
   decals.build(scene, 'decals');
   graffiti.build(scene, 'graffiti');
+  facade.build(scene, 'facade');
   out.decals += graffiti.count;
+  out.windows = facade.count;
   return out;
 }
 

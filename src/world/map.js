@@ -533,11 +533,28 @@ export class GameMap {
       if (!cs.length) return;
       const minX = Math.min(...cs.map((c) => c.x)) * CELL, maxX = (Math.max(...cs.map((c) => c.x)) + 1) * CELL;
       const minZ = Math.min(...cs.map((c) => c.y)) * CELL, maxZ = (Math.max(...cs.map((c) => c.y)) + 1) * CELL;
+      const bm = zd.beams === 'rust' ? M.rust : M.woodDark;
+      const colGeo = new THREE.BoxGeometry(0.26, WALL_H - 0.3, 0.24);
+      // Geräte an der Wand (Perks, Kisten, Wandwaffen, Schalter) nicht zustellen
+      const def = this.def, dev = new Set();
+      for (const sp of [...(def.boxSpots || []), ...Object.values(def.perkSpots || {}), ...(def.wallbuys || []), def.powerSwitch, def.papSpot]) if (sp) dev.add(this.key(sp.cx, sp.cy));
       for (let z = minZ + 2; z < maxZ - 0.5; z += 4) {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(maxX - minX, 0.32, 0.22), zd.beams === 'rust' ? M.rust : M.woodDark);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(maxX - minX, 0.32, 0.22), bm);
         b.position.set((minX + maxX) / 2, WALL_H - 0.16, z);
         b.castShadow = true;
         scene.add(b);
+        // Stützen unter den Balkenenden, wo eine Wand ist (nicht vor Fenstern oder Türen)
+        const cz = Math.floor(z / CELL);
+        for (const [x, side] of [[minX, -1], [maxX, 1]]) {
+          const cx = Math.floor((x - side * 0.5) / CELL), wallCell = this.get(cx + side, cz);
+          const inner = this.get(cx, cz);
+          if (!wallCell || wallCell.type !== 'wall' || !inner || inner.type !== 'floor' || inner.zone !== zi || dev.has(this.key(cx, cz))) continue;
+          const col = new THREE.Mesh(colGeo, bm);
+          col.position.set(x - side * 0.13, (WALL_H - 0.3) / 2, z);
+          col.castShadow = true; col.receiveShadow = true;
+          scene.add(col);
+          this.colliders.push({ minX: col.position.x - 0.14, maxX: col.position.x + 0.14, minZ: z - 0.13, maxZ: z + 0.13 });
+        }
       }
       if (zd.pipes) {
         for (const off of [0.6, 1.0]) {

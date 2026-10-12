@@ -2,9 +2,9 @@
 
 Ein rundenbasierter 3D-Zombie-Survival-Shooter im Geist von *Call of Duty: Black Ops 2 – Zombies*,
 komplett neu entwickelt: eigene Karten, eigene Waffen, eigene Perks, eigener Sound.
-Läuft direkt im Browser (Three.js / WebGL2). Modelle, Animationen und Sounds werden prozedural im
-Code erzeugt; die Oberflächen nutzen freie Foto-Texturen (CC0, siehe „Texturen“) und fallen ohne
-sie auf eigene, im Code gemalte Texturen zurück.
+Läuft direkt im Browser (Three.js / WebGL2). Figuren, Waffen, Animationen und Sounds werden prozedural im
+Code erzeugt; die Oberflächen nutzen freie Foto-Texturen, die Einrichtung freie 3D-Modelle (beides CC0,
+siehe „Texturen und 3D-Modelle“). Ohne sie fällt alles auf eigene, im Code gebaute Formen und Texturen zurück.
 
 > **Rechtlicher Hinweis:** Dies ist ein eigenständiges Fan-Projekt. Es verwendet **keine**
 > Inhalte, Namen, Modelle, Sounds oder Musik von Activision/Treyarch. Perks, Waffen, Karten, Figuren
@@ -214,6 +214,10 @@ die Menüs.
 - **Lichtkegel** im Staub unter jeder Lampe und Lichthöfe im Nebel – flackern und gehen mit dem Strom an und aus
 - **Bodennebel** mit treibenden Schwaden, Mondschein im Dunst, Himmel mit ziehenden Wolken, Mond, Sternen und dunkler Baumlinie am Horizont; drinnen dunkler Staub statt blauem Nebel
 - Weiche Kontaktschatten unter den Zombies, eigene Nacht-Umgebung für Spiegelungen (Metall, nasse Böden)
+- **Echte 3D-Modelle** (CC0) statt Klötzchen: Fässer, Munitions- und Holzkisten, Kartons, Regale mit Inhalt, Tische, Stühle, Barhocker, Registrierkasse, Generator, Werkzeugwagen, Kompressor, Hängelampen, abgedeckte Autos, Hydranten, Mülltonnen, Verteilerkästen, Klimageräte, Strahler, Unkraut und Steine
+- **Eingerichtete Räume:** Jede Zone hat ein Thema (Depot, Lager, Diner, Werkstatt, Scheune, Bauernhaus, Kraftwerk, Labor, Bar, Bank, Laden, Hütte, Tunnel, Hof) – an den Wänden stehen passende Gruppen, dazu Wandkästen, Feuermelder, Uhren, Kameras, Rohrleitungen, Plakate und Stützen unter den Deckenbalken; Fenster, Türen, Perks, Wandwaffen und Quest-Orte bleiben frei
+- **Abziehbilder** aus einem selbst gemalten Atlas: Ölflecken, Schmutz, Papier und Zeitungen, Laub, Risse, Wasserränder, weiche Bodenschatten unter allen Requisiten; außen Graffiti und Fassadenfenster (dunkel, Jalousie, vernagelt, zerbrochen, Vorhänge, Rollladen, warm beleuchtet) mit Fallrohren
+- **Kontaktschatten (GTAO)** aus dem Tiefenpuffer auf „hoch“ und „mittel“: Fugen, Ecken und der Boden unter Kisten und Regalen dunkeln ab
 - **Foto-Texturen** (CC0) mit Normal- und Rauheits-Karten in echter Größe: Putzwände mit Sockelanstrich wie in alten Bahnhofshallen, abgenutzter Industrieboden, Marmor-Schachbrett im Diner, Kopfsteinpflaster, Schotter, Ziegel und Klinker, lackierte Holzverkleidung, Wellblech, Ton- und Schieferdächer, Riffelblech, lackiertes Metall mit Rost, Glutfelder aus Lava
 - **Keine sichtbare Wiederholung:** großräumige Flecken, Wasserschlieren an Wänden und nasse, spiegelnde Pfützen auf Böden liegen in Weltkoordinaten über den Fotos
 - **Stoff, Jeans und Leder** aus echten Höhenkarten in Kleidung und Haut der Zombies, in Handschuhen und Ärmeln der Ich-Sicht und in der Kleidung der Überlebenden; aufgerüstete Waffen tragen ein fließendes Onyx-Muster
@@ -222,14 +226,15 @@ die Menüs.
 - HDR-Pipeline: MSAA, Bloom, ACES-Tonemapping, Color-Grading, dezente chromatische Aberration, Filmkorn, Vignette
 - Leuchtende Zombie-Augen, Blut-Partikel und -Decals, Einschusslöcher, Funken, Rauch, Mündungsfeuer, Tracer
 - Eigene Viewmodel-Pipeline (Waffe clippt nie in Wände)
-- Qualitätsstufen: Handys behalten ihre Bildrate (Foto-Texturen in 512 statt 1024 Pixeln und sparsamere Oberflächen-Variation ab „niedrig“, Schwaden nur ab „mittel“, auf „minimal“ ohne Lichtkegel, Raster-Licht und Variation)
+- Qualitätsstufen: Handys behalten ihre Bildrate (Foto-Texturen in 512 statt 1024 Pixeln, Handy-Fassungen der Modelle mit halben Texturen und weniger Dreiecken, ausgedünnter Kleinkram und sparsamere Oberflächen-Variation ab „niedrig“, Schwaden nur ab „mittel“, auf „minimal“ ohne Lichtkegel, Raster-Licht, Variation und Unkraut). Alles mit Kollision steht auf allen Stufen exakt gleich – wichtig für Koop
 
-## Texturen
+## Texturen und 3D-Modelle
 
-Alle Foto-Texturen stammen von **[ambientCG](https://ambientcg.com)** und **[Poly Haven](https://polyhaven.com)**
-und stehen unter **CC0** (gemeinfrei: frei nutzbar, auch kommerziell, ohne Namensnennung) – die
-vollständige Liste mit Links steht in [`public/tex/QUELLEN.md`](public/tex/QUELLEN.md). Nichts davon
-stammt aus Black Ops oder anderen Spielen.
+Alle Foto-Texturen stammen von **[ambientCG](https://ambientcg.com)** und **[Poly Haven](https://polyhaven.com)**,
+alle 3D-Modelle von **Poly Haven**; sie stehen unter **CC0** (gemeinfrei: frei nutzbar, auch kommerziell,
+ohne Namensnennung). Die vollständigen Listen mit Links stehen in
+[`public/tex/QUELLEN.md`](public/tex/QUELLEN.md) und [`public/models/QUELLEN.md`](public/models/QUELLEN.md).
+Nichts davon stammt aus Black Ops oder anderen Spielen.
 
 So kommen sie ins Spiel – komplett über GitHub, ohne eigenen Rechner:
 1. **Aussuchen:** `scripts/assets/catalog-request.json` nennt Kategorien. Der Workflow „Texturen“
@@ -245,6 +250,15 @@ So kommen sie ins Spiel – komplett über GitHub, ohne eigenen Rechner:
    Stoff- und Lederstrukturen webt `src/core/detail.js` in die gemalten Texturen der Figuren.
 
 Zusammen etwa 23 MB (PC lädt rund 18 MB, Handy rund 5 MB); der Offline-Speicher hält sie danach vor.
+
+**3D-Modelle** laufen genauso: `scripts/assets/models.json` nennt je Verwendung ein Poly-Haven-Modell,
+die größte Texturkante und ein Dreiecksbudget. Der Workflow (`scripts/assets/fetch-models.mjs`) lädt das
+glTF, entfernt Skelette und teure Material-Erweiterungen, vereinfacht die Geometrie (meshoptimizer), setzt
+den Fuß auf den Ursprung, wandelt die Texturen in WebP und speichert je Modell zwei Meshopt-komprimierte
+GLB-Dateien nach `public/models/`: `<name>.glb` für hoch/mittel und `<name>_lo.glb` für Handys (halbe
+Texturen, ~40 % der Dreiecke). Im Spiel lädt `src/core/modellib.js` nur die Modelle der aktuellen Karte;
+`src/world/props.js` und `src/world/dressing.js` (Einrichtung je Raum-Thema, Feld `dress` der
+Kartendefinition) stellen sie auf. Rund 73 Modelle, zusammen etwa 14 MB (PC lädt je Karte höchstens rund 9 MB, Handy rund 4 MB).
 
 **Animation**
 - Zombies mit Knochenhierarchie: Schlurfen, Rennen, Sprinten, Hinken, Angriffe, Bretter reißen, Klettern, Treffer-Zucken, Sterbe-Animationen, Kopfschuss-Enthauptung
@@ -262,8 +276,10 @@ Zusammen etwa 23 MB (PC lädt rund 18 MB, Handy rund 5 MB); der Offline-Speicher
 src/
   config.js            Waffen, Perks, Balancing – alles an einem Ort
   maps/                Kartendefinitionen (Nachtfall, Linie 13 inkl. Daten und Deko)
-  core/                Renderer + Post-FX, Input, Noise, prozedurale Texturen, Foto-Texturen (texlib), Stoff-/Lederdetail, Materialien
+  core/                Renderer + Post-FX (inkl. Kontaktschatten), Input, Noise, prozedurale Texturen, Foto-Texturen (texlib),
+                       3D-Modelle (modellib), Stoff-/Lederdetail, Materialien
   world/               Generische Karte (Raster, Navigation, Kollision), Layout-Bauer, Licht-Pool, Routen, Requisiten;
+                       Einrichtung (dressing), Abziehbilder und Graffiti (decals);
                        Atmosphäre (Himmel, Bodennebel), Raster-Licht, Lichtkegel, Oberflächen-Variation
   zombies/             Zombie-Modell, Animation, KI, Spawn- & Flow-Field-Navigation
   weapons/             Waffenmodelle, Schießen, Viewmodel-Animation, Granaten, Projektile, Kettenblitz
@@ -272,9 +288,9 @@ src/
   net/                 Koop: Verbindung (WebRTC über Trystero, BroadcastChannel, Speicher), Lobby, Sitzung mit Host-Autorität
   audio/               Prozedurales Sound-Design
   ui/                  HUD, Touch-Steuerung, Splitscreen
-public/                App-Manifest, Service Worker (offline), Icons, tex/ (aufbereitete CC0-Texturen + QUELLEN.md)
+public/                App-Manifest, Service Worker (offline), Icons, tex/ und models/ (aufbereitete CC0-Texturen und -Modelle + QUELLEN.md)
 android/               Android-App (WebView-Hülle, Gradle-Projekt, fester Signaturschlüssel)
-scripts/               Einzeldatei-Build, Koop-Verbindungstest, assets/ (Textur-Katalog und -Download für GitHub Actions)
+scripts/               Einzeldatei-Build, Koop-Verbindungstest, assets/ (Katalog sowie Textur- und Modell-Download für GitHub Actions)
 ```
 
 Neue Waffen und Perks lassen sich größtenteils über `src/config.js` hinzufügen. Eine Karte ist eine
@@ -292,7 +308,7 @@ Definition in `src/maps/` (registriert in `src/maps/index.js`): kleine Karten al
 - **Das Signal:** Strom an, Turbine an den Mast → drei Tonbänder finden (jedes nennt eine Ziffer) → Frequenz am Funkempfänger im Busbahnhof einstellen → 25 Zombies in Mastnähe töten (Seelen) → Übertragung 60 Sekunden am Mast verteidigen. Belohnung: Nebel lichtet sich, alle Perks, Gewitter-Werfer, volle Munition und ein gespeicherter Erfolg.
 - **Lied „Nebelfahrt“:** drei Spieluhren aufziehen – im Tunnel, in der Scheune und im Tresorraum der Bank.
 - **Funkenmann:** Messer! Drei Treffer (mit dem Jagdmesser zwei). Sitzt er auf dem Busdach, vertreiben ihn etwa zwölf Treffer oder er springt nach 16 Sekunden ab. Belohnung: 500 Punkte und ein Power-Up.
-- **Station Nachtfall – Lied:** drei Teddys drücken – oben auf dem Kistenstapel in der Depot-Halle, auf der Diner-Theke und auf dem Generator in der Werkstatt.
+- **Station Nachtfall – Lied:** drei Teddys drücken – oben auf dem Kistenstapel in der Depot-Halle (auf dem Karton ganz oben), auf der Diner-Theke und auf dem Generator in der Werkstatt.
 </details>
 
 Entwickler-Modus: `http://localhost:5173/#dev` → 50 000 Punkte, unverwundbar, `P` beendet die Runde.
@@ -302,15 +318,16 @@ Entwickler-Modus: `http://localhost:5173/#dev` → 50 000 Punkte, unverwundbar, 
 Ein Spiel, das BO2 Zombies wirklich *ersetzt*, ist ein Mehrjahresprojekt für ein Team
 (Artists, Animatoren mit Motion-Capture, Sounddesigner, Level-Designer). Dieses Repository ist das
 **spielbare Fundament**: Kernmechaniken, Systeme und Atmosphäre stehen, Modelle und Sounds sind
-prozedural, die Oberflächen nutzen freie Foto-Texturen – alles ist sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
+prozedural, Oberflächen und Einrichtung nutzen freie Foto-Texturen und 3D-Modelle – alles ist sofort lauffähig. Die größten Hebel für „perfekte“ Optik und Animationen sind:
 
 1. **Engine-Entscheidung für AAA-Optik:** Für fotorealistische Grafik (Lumen, Nanite, MetaHuman,
    Motion-Matching) ist **Unreal Engine 5** der realistische Weg. Die Spiellogik hier (Rundenformeln,
    Balancing, Zustandsautomaten) lässt sich 1:1 übertragen. Alternativ im Browser bleiben und
    Three.js mit WebGPU + echten Assets ausbauen.
 2. **Echte Assets:** gescannte/handmodellierte Zombies mit Skinning und Motion-Capture-Animationen
-   (z. B. glTF-Import), aufgenommene Foley-Sounds und komponierte Musik. Foto-Texturen gibt es schon
-   (siehe „Texturen“); als Nächstes freie Requisiten-Modelle (Fässer, Möbel) im selben Ablauf.
+   (z. B. glTF-Import), aufgenommene Foley-Sounds und komponierte Musik. Foto-Texturen und
+   Requisiten-Modelle gibt es schon (siehe „Texturen und 3D-Modelle“); als Nächstes realistischere
+   Zombies und Spielfiguren (z. B. freie CC0-Grundkörper mit eigenen Texturen).
 3. **Koop ausbauen:** Online-Koop und Splitscreen gibt es schon (siehe oben). Als Nächstes:
    Gesichtsanimation und eigene Sprüche der Figuren, späteres Dazustoßen, Host-Wechsel, wenn der Host geht, und Sprach-Chat.
 4. **Mehr Inhalt:** weitere Karten (z. B. eine Gefängnisinsel oder eine Stadt im Ausnahmezustand),
