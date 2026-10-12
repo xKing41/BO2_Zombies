@@ -9,6 +9,7 @@ import { setAnisotropy, setTextureScale } from '../core/textures.js';
 import { buildMaterials, SHARED_SLOTS } from '../core/materials.js';
 import { configureTexLib, preload as preloadTex, release as releaseTex } from '../core/texlib.js';
 import { configureModels, preloadModels, retainModels } from '../core/modellib.js';
+import { configureChars, loadCharIndex, charNames, preloadChars } from '../zombies/skinned.js';
 import { mapModelSlots } from '../world/dressing.js';
 import { setSurfaceLite } from '../world/surfacevar.js';
 import { Input } from '../core/input.js';
@@ -121,6 +122,8 @@ export class Game {
     configureTexLib({ size: q.texScale >= 1 ? 1024 : 512, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
     // 3D-Modelle: Handy-Fassung (halbe Texturen, weniger Dreiecke) auf niedrig/minimal
     configureModels({ lo: q.texScale < 1, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
+    // Echte Körper (MakeHuman/MPFB): Handy-Fassung mit halber Textur und 4000 Dreiecken
+    configureChars({ lo: q.texScale < 1 });
     setSurfaceLite(q.texScale < 1, q.gridLight === false);
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, this.rs.width / this.rs.height, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
@@ -204,6 +207,15 @@ export class Game {
       let got = 0;
       await preloadModels(mslots, () => { got++; if (got % 4 === 0 || got === mslots.length) progress(8 + (got / mslots.length) * 2, `${def.name}: Modelle ${got}/${mslots.length} …`); });
     }
+    // Zombie-Körper (einmal geladen, für alle Karten)
+    if (this.rs.quality.realBodies !== false) {
+      await loadCharIndex();
+      const zn = charNames('z_');
+      if (zn.length) {
+        let got = 0;
+        await preloadChars(zn, () => { got++; progress(10, `${def.name}: Körper ${got}/${zn.length} …`); });
+      }
+    }
     await step(10, `${def.name}: Gelände …`);
     this.map = new GameMap(def);
     this.map.build(this.scene, this.M, { quality: this.rs.quality, game: this });
@@ -250,6 +262,7 @@ export class Game {
     this.features = [];
     if (!this.map) return;
     this.zombies.clear();
+    this.zombies.dispose();
     if (this.map.skyDome) this.map.skyDome.dispose();
     const freed = new Set();
     const free = (scene) => scene.traverse((o) => {

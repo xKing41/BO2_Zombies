@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Zombie, zombieTypes } from './zombie.js';
 import { ZombieRenderer } from './instanced.js';
 import { EyeGlow } from './eyes.js';
+import { SkinnedZombies, loadedChars } from './skinned.js';
 import { CELL, MAX_ALIVE, zombiesForRound, zombieHealth, spawnDelay, rollSpeedType, POINTS } from '../config.js';
 import { raySphere, rand } from '../core/utils.js';
 
@@ -19,7 +20,12 @@ export class ZombieManager {
     this.renderer = new ZombieRenderer(this.scene, zombieTypes(this.M.zombie));
     for (let i = 0; i < MAX_ALIVE; i++) this.pool.push(new Zombie(this, i));
     this.renderer.finalize();
+    // Echte Körper (MakeHuman/MPFB), sofern geladen – sonst bleibt der prozedurale Zombie
+    const bodies = game.rs?.quality?.realBodies === false ? [] : loadedChars('z_');
+    this.skinned = bodies.length ? new SkinnedZombies(this.scene, bodies, MAX_ALIVE + 8, this.renderer.types.gibStump) : null;
+    if (this.skinned && !this.skinned.active) this.skinned = null;
     this.eyes = new EyeGlow(this.scene, MAX_ALIVE);
+    if (this.skinned) this.eyes.setSize(0.06);
     this.stepBudget = 0;
     this.dist = new Int32Array(this.map.w * this.map.h);
     this.flowT = 0;
@@ -195,6 +201,7 @@ export class ZombieManager {
       this.stepBudget = Math.min(2, this.stepBudget + dt * 7);
       for (const z of this.pool) if (z.active) z.puppet(dt, this.game);
       this.renderer.update(this.pool);
+      if (this.skinned) this.skinned.update(this.pool);
       this.eyes.update(this.pool, dt, this.game);
       return;
     }
@@ -219,6 +226,7 @@ export class ZombieManager {
     this.stepBudget = Math.min(2, this.stepBudget + dt * 7);
     for (const z of this.pool) if (z.active) z.update(dt, this.game);
     this.renderer.update(this.pool);
+    if (this.skinned) this.skinned.update(this.pool);
     this.eyes.update(this.pool, dt, this.game);
   }
 
@@ -353,5 +361,12 @@ export class ZombieManager {
     this.toSpawn = 0;
     this.remaining = 0;
     this.renderer.update(this.pool);
+    if (this.skinned) this.skinned.update(this.pool);
+  }
+
+  // Beim Kartenwechsel: Körper-Meshes und Knochen-Texturen freigeben
+  dispose() {
+    if (this.skinned) this.skinned.dispose();
+    this.skinned = null;
   }
 }

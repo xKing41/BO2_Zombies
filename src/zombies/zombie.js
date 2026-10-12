@@ -32,6 +32,7 @@ export class Zombie {
     this.M = mgr.M.zombie;
     this.active = false;
     this.drawn = false;
+    this.skinVariant = -1;
     this.build();
     this.pos = this.root.position;
     this.hitPts = [];
@@ -205,6 +206,14 @@ export class Zombie {
     this.headTilt = rand(-0.35, 0.35);
     this.limp = R() < 0.35 ? rand(0.1, 0.32) : 0;
     this.hunch = rand(0.85, 1.25);
+    // Echter Körper (MakeHuman): Typ, Verwesung und Blut – zuletzt gewürfelt, damit
+    // das übrige Aussehen gleich bleibt, ob die Körper geladen sind oder nicht
+    const sk = this.mgr.skinned;
+    this.skinVariant = sk ? sk.pick(R()) : -1;
+    this.skinSeed = R();
+    this.decay = rand(0.6, 1.0);
+    this.bloodAmt = R() < 0.25 ? rand(0.8, 1.0) : rand(0.2, 0.7);
+    this.skinHitOk = false;
   }
 
   // Gliedmaßen und Kopf wieder anbringen (Pool-Wiederverwendung)
@@ -297,13 +306,19 @@ export class Zombie {
   hitSpheres() {
     this.root.updateMatrixWorld(true);
     const P = this.hitPts;
-    this.headMesh.getWorldPosition(P[0]);
-    this.chest.getWorldPosition(P[1]);
-    this.hips.getWorldPosition(P[2]);
-    this.legs[0].kn.getWorldPosition(P[3]);
-    this.legs[1].kn.getWorldPosition(P[4]);
-    this.arms[0].mid.getWorldPosition(P[5]);
-    this.arms[1].mid.getWorldPosition(P[6]);
+    if (this.skinVariant >= 0 && this.skinHitOk) {
+      // echter Körper: Lage aus dem zuletzt gezeichneten Skelett (skinned.js)
+      const M = this.root.matrixWorld;
+      for (let i = 0; i < 7; i++) P[i].copy(this.skinHit[i]).applyMatrix4(M);
+    } else {
+      this.headMesh.getWorldPosition(P[0]);
+      this.chest.getWorldPosition(P[1]);
+      this.hips.getWorldPosition(P[2]);
+      this.legs[0].kn.getWorldPosition(P[3]);
+      this.legs[1].kn.getWorldPosition(P[4]);
+      this.arms[0].mid.getWorldPosition(P[5]);
+      this.arms[1].mid.getWorldPosition(P[6]);
+    }
     const s = this.scale, S = this.spheres;
     S[0].r = 0.15 * s; S[1].r = 0.27 * s; S[2].r = 0.2 * s; S[3].r = S[4].r = 0.16 * s;
     S[5].r = this.arms[0].lost ? 0 : 0.1 * s; S[6].r = this.arms[1].lost ? 0 : 0.1 * s;

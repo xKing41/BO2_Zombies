@@ -50,6 +50,9 @@ export class EyeGlow {
 
   setScale(s) { this.mat.uniforms.uScale.value = s; }
 
+  // Punktgröße (echte Körper: kleinere Augen als die prozeduralen Köpfe)
+  setSize(s) { this.mat.uniforms.uSize.value = s; }
+
   // Augenfarbe (z. B. blau, nachdem das Signal gesendet wurde)
   setColor(r, g, b) { this.color.setRGB(r, g, b); }
 

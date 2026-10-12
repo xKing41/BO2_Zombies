@@ -21,8 +21,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Textur- und Modell-Liste: immer zuerst aus dem Netz (neue Dateien tragen eine neue ?v=…-Kennung)
-  if (url.origin === self.location.origin && (url.pathname.endsWith('/tex/index.json') || url.pathname.endsWith('/models/index.json'))) {
+  // Textur-, Modell- und Figuren-Liste: immer zuerst aus dem Netz (neue Dateien tragen eine neue ?v=…-Kennung)
+  if (url.origin === self.location.origin && /\/(tex|models|chars)\/index\.json$/.test(url.pathname)) {
     e.respondWith(
       fetch(req)
         .then((res) => {

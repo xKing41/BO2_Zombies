@@ -130,6 +130,8 @@ export class ZombieRenderer {
         this.blobs.setColorAt(nb, _c.setRGB(k, k, k));
         nb++;
       }
+      // Zombies mit echtem Körper (skinned.js) brauchen die Bauteile nicht
+      if (z.skinVariant >= 0) continue;
       z.root.updateMatrixWorld(true);
       const tints = this.tints[z.index];
       for (const p of this.byZombie[z.index]) {
