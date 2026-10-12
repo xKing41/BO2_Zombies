@@ -12,17 +12,17 @@
     "crateRifle": { "id": "wooden_military_crate" },
     "crateOpen": { "id": "CheeseBox_01" },
     "cardboard": { "id": "cardboard_box_01", "tris": 2500 },
-    "cratePlastic": { "id": "plastic_crate_01", "tris": 3000 },
-    "cratePlastic2": { "id": "plastic_crate_03", "tris": 3000 },
+    "cratePlastic": { "id": "plastic_crate_01", "tris": 3000, "error": 0.05 },
+    "cratePlastic2": { "id": "plastic_crate_03", "tris": 3000, "error": 0.05 },
 
     "tableWood": { "id": "wooden_table_02" },
     "tablePlank": { "id": "WoodenTable_01" },
     "deskMetal": { "id": "metal_office_desk", "tris": 5000 },
     "tableRound": { "id": "coffee_table_round_01" },
     "chairSchool": { "id": "SchoolChair_01" },
-    "chairWood": { "id": "WoodenChair_01" },
+    "chairWood": { "id": "dining_chair_02" },
     "chairPlastic": { "id": "plastic_monobloc_chair_01", "tris": 3000 },
-    "stoolBar": { "id": "bar_chair_round_01" },
+    "stoolBar": { "id": "bar_chair_round_01", "tris": 3000, "error": 0.05 },
     "stoolMetal": { "id": "metal_stool_01", "tris": 3000 },
     "shelfSteel": { "id": "steel_frame_shelves_01", "tris": 5000 },
     "shelfSteel3": { "id": "steel_frame_shelves_03", "tris": 5000 },
@@ -40,7 +40,7 @@
     "jerrycanPlastic": { "id": "plastic_jerrycan", "tris": 2500 },
     "extinguisher": { "id": "korean_fire_extinguisher_01", "tris": 2500 },
     "ladder": { "id": "wooden_ladder", "tris": 2500 },
-    "handTruck": { "id": "hand_truck", "tris": 3000 },
+    "handTruck": { "id": "hand_truck", "tris": 3000, "error": 0.04 },
     "cementBag": { "id": "cement_bag", "tris": 2000 },
     "trashBag": { "id": "trashbag", "tris": 2500 },
     "tyre": { "id": "old_tyre", "tris": 3000 },
@@ -82,8 +82,8 @@
     "logDead": { "id": "dead_tree_trunk", "tris": 4000 },
     "branches": { "id": "dry_branches_medium_01", "tris": 3000 },
     "rocks": { "id": "rock_moss_set_01", "tris": 4000 },
-    "boulder": { "id": "boulder_01", "tris": 3000 },
     "nettle": { "id": "nettle_plant", "tris": 3000 },
-    "weeds": { "id": "weed_plant_02", "tris": 3000 }
+    "weeds": { "id": "weed_plant_02", "tris": 3000 },
+    "grassTuft": { "id": "grass_medium_01", "tris": 3000, "error": 0.05 }
   }
 }

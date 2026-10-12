@@ -40,10 +40,6 @@
     "clothDetail":   { "src": "acg", "id": "Fabric031", "only": ["normal", "rough", "height"], "_": "Gewebe-Struktur für Kleidung" },
     "denimDetail":   { "src": "acg", "id": "Fabric069", "only": ["normal", "height"], "_": "Jeans-Struktur" },
     "leatherDetail": { "src": "acg", "id": "Leather033A", "only": ["normal", "rough", "height"], "_": "Leder-/Haut-Struktur" },
-    "leak1":         { "src": "acg", "id": "Leaking012C", "opacity": true, "ao": 0, "_": "Abziehbild: Wasser-/Rostläufer an Wänden" },
-    "leak2":         { "src": "acg", "id": "Leaking016C", "opacity": true, "ao": 0, "_": "Abziehbild: Wasserläufer" },
-    "leak3":         { "src": "acg", "id": "Leaking019B", "opacity": true, "ao": 0, "_": "Abziehbild: Schmutzläufer" },
-    "asphaltDamage": { "src": "acg", "id": "AsphaltDamage001", "opacity": true, "ao": 0, "_": "Abziehbild: Risse und Flickstellen im Asphalt" },
-    "tireTracks":    { "src": "acg", "id": "TireTracks001", "opacity": true, "ao": 0, "_": "Abziehbild: Reifenspuren" }
+    "asphaltDamage": { "src": "acg", "id": "AsphaltDamage001", "opacity": true, "ao": 0, "_": "Abziehbild: Risse und Flickstellen im Asphalt" }
   }
 }
