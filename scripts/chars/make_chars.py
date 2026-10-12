@@ -7,7 +7,7 @@
 #  Export-Kopie mit eingebackenen Formen als GLB (mit Skinning) und ein
 #  Vorschaubild (Cycles). Dazu out/assets.json mit allen verfügbaren Assets.
 # ─────────────────────────────────────────────────────────────
-import bpy, sys, os, json, zipfile, importlib, math, traceback
+import bpy, sys, os, re, json, zipfile, importlib, math, traceback
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 OUT = os.path.abspath(argv[0] if len(argv) > 0 else 'out/chars')
@@ -196,7 +196,7 @@ def build(spec):
         role = 'clothes'
         a = info['assets']
         if a.get('proxy') and a['proxy'].rsplit('.', 1)[0].lower() in n: role = 'skin'
-        elif 'body' in n or n.startswith('human_x') or n == 'human_x': role = 'skin'
+        elif 'body' in n or re.match(r'^human(\.\d+)?_x$', n): role = 'skin'
         elif a.get('eyes') and a['eyes'].rsplit('.', 1)[0].lower() in n: role = 'eyes'
         elif a.get('eyebrows') and a['eyebrows'].rsplit('.', 1)[0].lower() in n: role = 'eyebrows'
         elif a.get('eyelashes') and a['eyelashes'].rsplit('.', 1)[0].lower() in n: role = 'eyelashes'

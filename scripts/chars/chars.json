@@ -1,6 +1,47 @@
 {
  "_info": "Figuren aus MakeHuman/MPFB (CC0). Jede Liste nennt Kandidaten (erster Treffer gilt; Name ohne Endung oder Teilwort). macro: gender 0 = Frau … 1 = Mann, age 0 = 1 Jahr … 0.5 = 25 … 1 = 90, muscle/weight/height/proportions 0 … 1. Verarbeitet von make_chars.py (Blender + MPFB) im Workflow „Figuren“.",
  "rig": "game_engine",
+ "retouch": {
+  "_info": "Aufdrucke (MakeHuman-Logo) auf Kleidung übermalen: Rechtecke [x, y, Breite, Höhe] in 0…1 der Textur (von oben links).",
+  "male_casualsuit02": [
+   [
+    0.493,
+    0.088,
+    0.129,
+    0.149
+   ]
+  ],
+  "female_casualsuit01": [
+   [
+    0.708,
+    0.146,
+    0.161,
+    0.161
+   ]
+  ],
+  "female_casualsuit02": [
+   [
+    0.708,
+    0.146,
+    0.161,
+    0.161
+   ]
+  ],
+  "male_casualsuit06": [
+   [
+    0.198,
+    0.115,
+    0.098,
+    0.05
+   ],
+   [
+    0.447,
+    0.12,
+    0.176,
+    0.083
+   ]
+  ]
+ },
  "chars": [
   {
    "name": "z_m_shirt",
@@ -328,6 +369,7 @@
     "low-poly"
    ],
    "eyebrows": [
+    "eyebrow008",
     "eyebrow007"
    ],
    "clothes": [
@@ -341,9 +383,7 @@
      "fedora01"
     ]
    ],
-   "hair": [
-    "short01"
-   ]
+   "hair": []
   },
   {
    "name": "s_albers",

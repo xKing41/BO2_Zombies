@@ -2,7 +2,9 @@
 # CC0-Paket „makehuman_system_assets“ (Häute, Kleidung, Haare, Low-Poly-Körper).
 # scripts/chars/make_chars.py baut die in scripts/chars/chars.json beschriebenen Figuren,
 # exportiert sie als GLB mit Skelett und rendert Vorschaubilder. Rohdaten landen im
-# Release „figuren-roh“ (zum Prüfen, kein Spiel-Download).
+# Release „figuren-roh“ (zum Prüfen, kein Spiel-Download). scripts/chars/pack-chars.mjs
+# packt jede Figur danach in ein Mesh mit Textur-Atlas (PC + Handy) und committet sie
+# nach public/chars/.
 name: Figuren
 
 on:
@@ -25,6 +27,13 @@ jobs:
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
       - name: Blender holen
         run: |
@@ -81,3 +90,25 @@ jobs:
               --notes "MakeHuman/MPFB-Figuren (CC0) als GLB mit Skelett und Vorschaubilder – zum Prüfen, kein Spiel-Download."
           fi
           gh release upload "$TAG" out/chars/* --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Für das Spiel packen (Atlas, vereinfacht, WebP, Meshopt)
+        run: |
+          npm i --no-save --no-audit --no-fund sharp@0.35.5 @gltf-transform/core@4.5.1 @gltf-transform/extensions@4.5.1 @gltf-transform/functions@4.5.1 meshoptimizer@1.2.0
+          rm -rf public/chars
+          node scripts/chars/pack-chars.mjs out/chars public/chars
+          ls -la public/chars
+          N=$(ls public/chars/*_lo.glb | wc -l)
+          echo "Figuren gepackt: $N"
+          [ "$N" -ge 1 ]
+
+      - name: Ergebnis committen
+        run: |
+          git add -A public/chars
+          if git diff --cached --quiet; then echo "Keine Änderungen an public/chars"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Figuren: MakeHuman-Körper gebaut und fürs Spiel gepackt (automatisch)"
+          for i in 1 2 3; do
+            git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
