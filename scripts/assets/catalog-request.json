@@ -1,12 +1,19 @@
 {
-  "_info": "Welche Kategorien der Katalog-Lauf als Übersichtsbild zeigt. acg = Präfixe der ambientCG-IDs, ph = Stichworte für Poly Haven (ID, Name, Tags, Kategorien). Lauf 2: gezielte Nachfragen.",
-  "perSheetAcg": 36,
-  "perSheetPh": 0,
+  "_info": "Welche Kategorien der Katalog-Lauf als Übersichtsbild zeigt. kind: material (Standard), decal (ambientCG-Abziehbilder), model (3D-Modelle). acg = Präfixe der ambientCG-IDs ('*' = alle), ph = Stichworte für Poly Haven (ID, Name, Tags, Kategorien). Lauf 3: Modelle und Abziehbilder.",
+  "perSheetAcg": 0,
+  "perSheetPh": 36,
   "sheets": [
-    { "name": "21-holzverkleidung", "acg": ["WoodSiding", "PaintedWood", "Chipboard"], "ph": [] },
-    { "name": "22-lava-rinde", "acg": ["Lava", "Bark", "TreeEnd", "Moss", "ThatchedRoof", "Wicker"], "ph": [] },
-    { "name": "23-kratzer-flecken", "acg": ["Scratches", "SurfaceImperfections", "Smear", "Fingerprints"], "ph": [] },
-    { "name": "24-ziegel-bemalt-fassade", "acg": ["PaintedBricks", "Facade", "Pipe", "Rails", "Cardboard", "Paper"], "ph": [] },
-    { "name": "25-stoff-leder-mehr", "acg": ["Fabric", "Leather"], "ph": [], "skip": 24 }
+    { "name": "m01-kisten-faesser", "kind": "model", "ph": ["crate", "barrel", "pallet", "drum", "bucket", "canister", "box", "container", "jerrycan", "gas can"] },
+    { "name": "m02-moebel", "kind": "model", "ph": ["chair", "table", "stool", "bench", "cabinet", "shelf", "desk", "sofa", "armchair", "bed", "locker", "drawer"] },
+    { "name": "m03-industrie-werkzeug", "kind": "model", "ph": ["industrial", "machine", "pipe", "valve", "tool", "workbench", "generator", "ladder", "cable", "fuse", "toolbox", "wrench", "hammer", "saw", "drill", "vice"] },
+    { "name": "m04-licht-elektro", "kind": "model", "ph": ["lamp", "light", "lantern", "bulb", "electronic", "radio", "television", "fan", "phone", "clock"] },
+    { "name": "m05-strasse-aussen", "kind": "model", "ph": ["hydrant", "barrier", "cone", "bin", "trash", "sign", "mailbox", "bollard", "street", "road", "fence", "post", "dumpster", "tire", "wheel", "car", "vehicle"] },
+    { "name": "m06-kleinkram", "kind": "model", "ph": ["bottle", "can", "jar", "cup", "mug", "plate", "book", "paper", "newspaper", "shoe", "bag", "backpack", "food", "pan", "pot", "cardboard"] },
+    { "name": "m07-natur-schutt", "kind": "model", "ph": ["rock", "stone", "boulder", "debris", "brick", "rubble", "log", "stump", "branch", "dead tree", "tree", "bush", "plant", "grass", "leaves"] },
+    { "name": "m08-alle-modelle-1", "kind": "model", "ph": [""], "perPh": 36 },
+    { "name": "m09-alle-modelle-2", "kind": "model", "ph": [""], "perPh": 36, "skipPh": 36 },
+    { "name": "m10-alle-modelle-3", "kind": "model", "ph": [""], "perPh": 36, "skipPh": 72 },
+    { "name": "d01-abziehbilder-1", "kind": "decal", "acg": ["*"], "perAcg": 36, "perPh": 0 },
+    { "name": "d02-abziehbilder-2", "kind": "decal", "acg": ["*"], "perAcg": 36, "skip": 36, "perPh": 0 }
   ]
 }

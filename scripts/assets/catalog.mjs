@@ -38,17 +38,17 @@ const prefixOf = (id) => id.replace(/\d+[A-Z]?$/, '');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ── ambientCG ────────────────────────────────────────────────
-async function ambientcg() {
+async function ambientcg(type = 'Material') {
   const all = [];
   let first = true;
   for (let offset = 0; offset < 20000; offset += 250) {
-    const url = `https://ambientcg.com/api/v2/full_json?type=Material&include=tagData,displayData,previewData,downloadData&sort=Popular&limit=250&offset=${offset}`;
+    const url = `https://ambientcg.com/api/v2/full_json?type=${type}&include=tagData,displayData,previewData,downloadData&sort=Popular&limit=250&offset=${offset}`;
     const j = await get(url);
     const list = j.foundAssets || j.assets || [];
     if (first) {
       first = false;
-      console.log('ambientCG: Felder eines Eintrags:', list[0] ? Object.keys(list[0]).join(', ') : '(leer)', '| Treffer gesamt:', j.numberOfResults);
-      if (list[0]) await fs.writeFile(`${OUT}/ambientcg-beispiel.json`, JSON.stringify(list[0], null, 1));
+      console.log(`ambientCG (${type}): Felder eines Eintrags:`, list[0] ? Object.keys(list[0]).join(', ') : '(leer)', '| Treffer gesamt:', j.numberOfResults);
+      if (list[0]) await fs.writeFile(`${OUT}/ambientcg-beispiel-${type}.json`, JSON.stringify(list[0], null, 1));
     }
     all.push(...list);
     if (list.length < 250) break;
@@ -76,8 +76,8 @@ async function ambientcg() {
 }
 
 // ── Poly Haven ───────────────────────────────────────────────
-async function polyhaven() {
-  const j = await get('https://api.polyhaven.com/assets?t=textures');
+async function polyhaven(t = 'textures') {
+  const j = await get(`https://api.polyhaven.com/assets?t=${t}`);
   const list = Object.entries(j).map(([id, a]) => ({
     src: 'ph', id, name: a.name || id, cat: (a.categories || []).join(', '), tags: a.tags || [], categories: a.categories || [],
     downloads: a.download_count || 0, maxRes: a.max_resolution,
@@ -86,29 +86,38 @@ async function polyhaven() {
   list.sort((x, y) => y.downloads - x.downloads);
   list.forEach((a, i) => { a.rank = i; });
   const ex = Object.entries(j)[0];
-  if (ex) await fs.writeFile(`${OUT}/polyhaven-beispiel.json`, JSON.stringify({ [ex[0]]: ex[1] }, null, 1));
+  if (ex) await fs.writeFile(`${OUT}/polyhaven-beispiel-${t}.json`, JSON.stringify({ [ex[0]]: ex[1] }, null, 1));
   return list;
 }
 
-const [acg, ph] = await Promise.all([
-  ambientcg().catch((e) => { console.log('ambientCG nicht erreichbar:', e.message); return []; }),
-  polyhaven().catch((e) => { console.log('Poly Haven nicht erreichbar:', e.message); return []; }),
-]);
-console.log(`ambientCG: ${acg.length} Materialien, Poly Haven: ${ph.length} Texturen`);
+// Welche Arten werden gebraucht? (Material = Standard, decal, model)
+const kinds = new Set(REQ.sheets.map((x) => x.kind || 'material'));
+const safe = (p, what) => p.catch((e) => { console.log(`${what} nicht erreichbar:`, e.message); return []; });
+const SRC = {};
+if (kinds.has('material')) [SRC.acgMaterial, SRC.phTextures] = await Promise.all([safe(ambientcg('Material'), 'ambientCG'), safe(polyhaven('textures'), 'Poly Haven')]);
+if (kinds.has('decal')) SRC.acgDecal = await safe(ambientcg('Decal'), 'ambientCG Decals');
+if (kinds.has('model')) [SRC.acgModel, SRC.phModels] = await Promise.all([safe(ambientcg('3DModel'), 'ambientCG 3D'), safe(polyhaven('models'), 'Poly Haven Modelle')]);
+const acg = SRC.acgMaterial || [], ph = SRC.phTextures || [];
+console.log(Object.entries(SRC).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
 // Präfix-Liste (um weitere Kategorien zu entdecken)
-const counts = {};
-for (const a of acg) counts[a.prefix] = (counts[a.prefix] || 0) + 1;
-await fs.writeFile(`${OUT}/ambientcg-kategorien.txt`, Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}\t${n}`).join('\n') + '\n');
-const phCats = {};
-for (const a of ph) for (const c of a.categories) phCats[c] = (phCats[c] || 0) + 1;
-await fs.writeFile(`${OUT}/polyhaven-kategorien.txt`, Object.entries(phCats).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}\t${n}`).join('\n') + '\n');
+for (const [name, list] of Object.entries(SRC)) {
+  if (!list.length) continue;
+  if (list[0].src === 'acg') {
+    const counts = {};
+    for (const a of list) counts[a.prefix] = (counts[a.prefix] || 0) + 1;
+    await fs.writeFile(`${OUT}/${name}-kategorien.txt`, Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}\t${n}`).join('\n') + '\n');
+  } else {
+    const cats = {};
+    for (const a of list) for (const c of a.categories) cats[c] = (cats[c] || 0) + 1;
+    await fs.writeFile(`${OUT}/${name}-kategorien.txt`, Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}\t${n}`).join('\n') + '\n');
+    await fs.writeFile(`${OUT}/${name}-liste.txt`, list.map((a) => `${a.id}\t${a.categories.join(', ')}\t${a.tags.join(', ')}`).join('\n') + '\n');
+  }
+}
 
 // Kompakter Gesamtkatalog (zum Nachschlagen beim Auswählen)
-await fs.writeFile(`${OUT}/katalog.json`, JSON.stringify({
-  ambientcg: acg.map(({ id, name, cat, tags, downloads }) => ({ id, name, cat, tags, res: downloads.map((d) => d.attr) })),
-  polyhaven: ph.map(({ id, name, cat, tags, maxRes, downloads }) => ({ id, name, cat, tags, maxRes, downloads })),
-}));
+await fs.writeFile(`${OUT}/katalog.json`, JSON.stringify(Object.fromEntries(Object.entries(SRC).map(([k, list]) => [k,
+  list.map(({ id, name, cat, tags, downloads, maxRes }) => ({ id, name, cat, tags, res: Array.isArray(downloads) ? downloads.map((d) => d.attr) : downloads, maxRes }))]))));
 
 // ── Übersichtsbilder ─────────────────────────────────────────
 const TILE = 176, LABEL = 22, COLS = 6;
@@ -142,8 +151,11 @@ const matchPh = (a, words) => {
 let index = '# Textur-Auswahl\n\nNummern wie auf den Übersichtsbildern. acg = ambientCG, PH = Poly Haven (beide CC0).\n';
 for (const s of REQ.sheets) {
   const skip = s.skip || 0;
-  const fromAcg = acg.filter((a) => s.acg.includes(a.prefix)).slice(skip, skip + (REQ.perSheetAcg ?? 24));
-  const fromPh = ph.filter((a) => matchPh(a, s.ph)).slice(0, REQ.perSheetPh ?? 12);
+  const kind = s.kind || 'material';
+  const A = kind === 'decal' ? SRC.acgDecal || [] : kind === 'model' ? SRC.acgModel || [] : acg;
+  const Pl = kind === 'model' ? SRC.phModels || [] : kind === 'decal' ? [] : ph;
+  const fromAcg = A.filter((a) => (s.acg || []).includes('*') || (s.acg || []).includes(a.prefix)).slice(skip, skip + (s.perAcg ?? REQ.perSheetAcg ?? 24));
+  const fromPh = Pl.filter((a) => matchPh(a, s.ph || [])).slice(s.skipPh || 0, (s.skipPh || 0) + (s.perPh ?? REQ.perSheetPh ?? 12));
   const items = [...fromAcg, ...fromPh];
   console.log(`${s.name}: ${fromAcg.length} ambientCG + ${fromPh.length} Poly Haven`);
   index += `\n## ${s.name}\n`;
