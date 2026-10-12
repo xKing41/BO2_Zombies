@@ -12,8 +12,9 @@ import * as T from '../core/textures.js';
 import * as X from '../core/texlib.js';
 import { surf, photoMat } from '../core/materials.js';
 import { surfaceVar } from '../world/surfacevar.js';
+import { model } from '../core/modellib.js';
 import {
-  W, H, wx, route, CORN, CORN_CLEAR, CORN_PATHS, MAST, MAST_PAD, TREES, LAVA_RECTS, SHELTERS, ROAD_W, STOPS,
+  W, H, wx, route, CORN, CORN_CLEAR, CORN_PATHS, MAST, MAST_PAD, TREES, LAVA_RECTS, SHELTERS, ROAD_W, STOPS, STATIONS, Z,
 } from './linie13-data.js';
 
 const C = CELL;
@@ -736,6 +737,8 @@ function barrels(D, n = 3, mat) {
   return g;
 }
 function crates(D) {
+  const st = P.crateStack(D.M, 1);
+  if (st) return st;
   const g = new THREE.Group();
   g.add(P.crate(D.M, 1.1));
   const b = P.crate(D.M, 0.85); b.position.set(0.05, 1.1, 0.05); b.rotation.y = 0.3; g.add(b);
@@ -995,6 +998,70 @@ function buildProps(D) {
   place(barrels(D, 3, M.paintRed), 49.5, 57, 0.5);
 }
 
+// ── Straßenrand an den Stationen: Hydranten, Mülltonnen, Verteilerkästen,
+//    geparkte (abgedeckte) Autos und Gullydeckel – nur mit 3D-Modellen ──
+function buildStreet(D) {
+  const { m, scene } = D;
+  const r = route(), rnd = mulberry32(2024);
+  const inRect = (x, y, rc) => x >= rc[0] && x <= rc[2] && y >= rc[1] && y <= rc[3];
+  const stationAt = (x, z) => STATIONS.find((st) => st.id !== 'mast' && st.id !== 'tunnel' && inRect(x / C, z / C, st.rect));
+  const keepOut = [...SHELTERS.map((h) => [wx(h.x), wx(h.y)]), ...STOPS.map((t) => [wx(t.cell[0]), wx(t.cell[1])])];
+  const free = (b, pad = 0.4) => !m.colliders.some((t) => b.minX < t.maxX + pad && b.maxX > t.minX - pad && b.minZ < t.maxZ + pad && b.maxZ > t.minZ - pad);
+  const okCell = (x, z) => { const c = m.cellAt(x, z); return c && c.type === 'floor' && c.zone === Z.OUT && !c.lava; };
+  const put = (obj, x, z, yaw, solid = true) => {
+    obj.position.set(x, 0, z);
+    obj.rotation.y = yaw;
+    obj.updateMatrixWorld(true);
+    const b = m.aabb(obj, 0.03);
+    if (!free(b) || !okCell(x, z) || !okCell(b.minX, b.minZ) || !okCell(b.maxX, b.maxZ)) return false;
+    if (keepOut.some(([kx, kz]) => Math.hypot(kx - x, kz - z) < 4.5)) return false;
+    scene.add(obj);
+    if (solid) m.colliders.push(b);
+    return true;
+  };
+  const kinds = [
+    () => model('hydrant', { parts: /^fire_hydrant(_cap_0[1-3]|_chain)?$/, h: 0.8 }),
+    () => model('hydrant', { parts: /_aged$/, h: 0.8 }),
+    () => model('trashCan', { parts: /^metal_trash_can(_handle_left|_handle_right|_lid)?$/ }),
+    () => model('trashCan', { parts: /rust(?!_lid)/ }),
+    () => model('utilityBox', { h: 1.1 }),
+    () => model('trashBag', { h: 0.5 }),
+  ];
+  let lastCar = -99;
+  for (let s = 0; s < r.length; s += 7) {
+    const p = r.pointAt(s), h = r.headingAt(s);
+    if (!stationAt(p.x, p.z)) continue;
+    for (const side of [-1, 1]) {
+      const nx = Math.cos(h) * side, nz = -Math.sin(h) * side;
+      // geparktes Auto am Straßenrand (längs zur Fahrbahn)
+      if (s - lastCar > 22 && rnd() < 0.2) {
+        const car = model('coveredCar');
+        const off = ROAD_W / 2 + 1.6;
+        if (car && put(car, p.x + nx * off, p.z + nz * off, h + (rnd() < 0.5 ? Math.PI : 0) + (rnd() - 0.5) * 0.12)) { lastCar = s; continue; }
+      }
+      if (rnd() > 0.42) continue;
+      const k = Math.floor(rnd() * kinds.length);
+      const obj = kinds[k]();
+      if (!obj) continue;
+      const off = ROAD_W / 2 + 1.1 + rnd() * 0.9;
+      put(obj, p.x + nx * off, p.z + nz * off, h + (side > 0 ? -Math.PI / 2 : Math.PI / 2) + (rnd() - 0.5) * 0.6, k !== 5);
+    }
+  }
+  // Gullydeckel auf der Fahrbahn der Altstadt und am Busbahnhof (flach, keine Kollision)
+  for (let s = 0; s < r.length; s += 23) {
+    const p = r.pointAt(s), h = r.headingAt(s);
+    const st = stationAt(p.x, p.z);
+    if (!st || (st.id !== 'town' && st.id !== 'depot' && st.id !== 'diner')) continue;
+    const mh = model('manhole', { fit: [0.75, 0.025, 0.75] });
+    if (!mh) break;
+    const side = rnd() < 0.5 ? -1 : 1, off = 1.2 + rnd() * 0.8;
+    mh.position.set(p.x + Math.cos(h) * side * off, 0.006, p.z - Math.sin(h) * side * off);
+    mh.rotation.y = rnd() * 6.28;
+    mh.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    scene.add(mh);
+  }
+}
+
 // ── Lampen in Gebäuden (Spots über den Licht-Pool) ───────────
 function hangingLamp(D, cx, cy, o = {}) {
   const { m, scene, M } = D;
@@ -1027,6 +1094,7 @@ export function buildDecor(m, scene, M) {
   buildShelters(D);
   buildPowerLines(D);
   buildProps(D);
+  buildStreet(D);
 
   // Rote Warnlichter (blinken, durch den Nebel sichtbar)
   const glowMat = new THREE.SpriteMaterial({ map: M.tex.glow, color: new THREE.Color(1.6, 0.08, 0.05), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });

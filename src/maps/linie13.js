@@ -7,7 +7,10 @@ import * as THREE from 'three';
 import * as T from '../core/textures.js';
 import * as X from '../core/texlib.js';
 import { surf, photoMat } from '../core/materials.js';
-import { Z, STATIONS, layout, wx, route } from './linie13-data.js';
+import { Z, STATIONS, layout, wx, route, ROAD_W, CORN, PART_SPOTS, TAPE_SPOTS, MUSIC_BOXES, BENCHES, RADIO, BANK, KNIFE_SPOT, SHELTERS, STOPS, MAST_PAD } from './linie13-data.js';
+import { CELL } from '../config.js';
+
+const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
 import { buildDecor, buildLights } from './linie13-decor.js';
 import { setupLinie13 } from '../game/linie13.js';
 
@@ -86,6 +89,27 @@ export default {
   }),
 
   // Foto-Texturen nur für diese Karte (gemeinsame lädt materials.js)
+  // Einrichtung (world/dressing.js): Thema je Zone; draußen nur an den Stationen, nie auf der Straße
+  dress: {
+    seed: 1313,
+    themes: {
+      [Z.DEPOT]: 'depot', [Z.STORAGE]: 'storage', [Z.OUT]: 'yard', [Z.DINER]: 'diner', [Z.GARAGE]: 'workshop', [Z.BARN]: 'barn',
+      [Z.HOUSE]: 'house', [Z.POWER]: 'power', [Z.LAB]: 'lab', [Z.BAR]: 'bar', [Z.BANK]: 'bank', [Z.HUT]: 'hut', [Z.STORE]: 'store', [Z.TUNNEL]: 'tunnel',
+    },
+    reserved: () => [
+      ...Object.values(PART_SPOTS).flat(), ...TAPE_SPOTS, ...MUSIC_BOXES,
+      ...Object.values(BENCHES).map((b) => [b.x, b.y]), [RADIO.x, RADIO.y],
+      [BANK.deposit.x, BANK.deposit.y], [BANK.withdraw.x, BANK.withdraw.y], [BANK.locker.x, BANK.locker.y], [KNIFE_SPOT.x, KNIFE_SPOT.y],
+      ...SHELTERS.map((h) => [h.x, h.y]), ...STOPS.map((t) => t.cell), [MAST_PAD.x / CELL, MAST_PAD.z / CELL],
+    ],
+    outdoor: (cx, cy) => {
+      if (!STATIONS.some((st) => st.id !== 'mast' && inRect(cx, cy, st.rect))) return false;
+      if (inRect(cx, cy, CORN)) return false;
+      const r = route(), x = wx(cx), z = wx(cy), q = r.pointAt(r.nearestS(x, z));
+      return Math.hypot(q.x - x, q.z - z) > ROAD_W / 2 + 2;
+    },
+  },
+
   texSlots: ['brick', 'brickLight', 'siding', 'corrugated', 'panels', 'grass', 'road', 'dirt', 'roofRed', 'roofSlate', 'fence', 'lava', 'hay'],
 
   materials(M) {

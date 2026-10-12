@@ -8,6 +8,7 @@ import { rand } from '../core/utils.js';
 import * as P from '../world/props.js';
 import * as T from '../core/textures.js';
 import { Teddies } from '../game/teddies.js';
+import { surfacesAt } from '../core/modellib.js';
 
 // Legende: '#' Wand · '0'-'9' Boden (Zone) · 'A'-'Z' kaufbare Tür · 'w' Fenster · 's' Spawn draußen · ' ' Außenbereich
 const ROWS = [
@@ -80,12 +81,31 @@ export default {
   powerSwitch: { cx: 3, cy: 11, wall: 'N' },
   papSpot: { cx: 17, cy: 14 },
   env: { fogDensity: 0.03, fogColor: 0x1a2130, background: 0x1a2130, ash: 1 },
-  // Drei versteckte Teddys starten das geheime Lied (Kistenstapel, Theke, Generator)
-  setup: (game) => [new Teddies(game, [
-    { x: 23.25, y: 2.0, z: 18.85, yaw: -2.25 },
-    { x: 30.5, y: 1.06, z: 8.8, yaw: 0.3 },
-    { x: 15.36, y: 1.0, z: 30.77, yaw: 2.6 },
-  ])],
+  // Drei versteckte Teddys starten das geheime Lied (Kistenstapel, Theke, Generator).
+  // Mit 3D-Modellen liegen Stapel und Generator anders hoch: buildDecor merkt sich die Sitzflächen.
+  setup: (game) => {
+    const t = game.map.teddySpots || {};
+    return [new Teddies(game, [
+      t.stack || { x: 23.25, y: 2.0, z: 18.85, yaw: -2.25 },
+      { x: 30.5, y: 1.06, z: 8.8, yaw: 0.3 },
+      t.generator || { x: 15.36, y: 1.0, z: 30.77, yaw: 2.6 },
+    ])];
+  },
+  // Einrichtung (world/dressing.js): Thema je Zone
+  dress: {
+    seed: 1311, themes: { 0: 'depot', 1: 'diner', 2: 'workshop', 3: 'yard' },
+    // außen ums Gebäude (Außenkante der Mauern in Metern)
+    ring: {
+      rect: [2, 2, 48, 40], count: 150, depth: 7,
+      items: [
+        { s: 'weeds', pick: 1, sc: 3.2, weed: 1 }, { s: 'nettle', pick: 1, sc: 2.6, weed: 1 }, { s: 'grassTuft', pick: 1, sc: 1.2, weed: 1 },
+        { s: 'weeds', pick: 1, sc: 4, weed: 1 }, { s: 'grassTuft', pick: 1, sc: 1.5, weed: 1 },
+        { s: 'rocks', pick: 1, h: 0.3 }, { s: 'branches', pick: 1 }, { s: 'tyre', lie: 1 }, { s: 'drumRust', h: 0.88 },
+        { s: 'trashBag', h: 0.5 }, { s: 'logDead', h: 0.28 }, { s: 'cardboard', h: 0.3, lie: 1 },
+      ],
+    },
+  },
+  models: ['weeds', 'nettle', 'grassTuft', 'rocks', 'branches', 'tyre', 'drumRust', 'trashBag', 'logDead', 'cardboard'],
 
   menuCamera(cam, t) {
     const a = t * 0.05;
@@ -110,11 +130,20 @@ export default {
     scene.add(ground);
 
     // Zone 0 – Depot-Halle
-    const cr = new THREE.Group();
-    cr.add(P.crate(M, 1.1));
-    const b = P.crate(M, 0.9); b.position.set(0.05, 1.1, 0.05); b.rotation.y = 0.3; cr.add(b);
-    const c2 = P.crate(M, 0.8); c2.position.set(-0.2, 0, 1.0); c2.rotation.y = -0.2; cr.add(c2);
-    solid(cr, 11, 9, null, 0, true, 0.2, -0.2);
+    m.teddySpots = {};
+    let cr = P.crateStack(M, 0);
+    if (cr) {
+      cr.rotation.y = 0.35;
+      solid(cr, 11, 9, null, 0, true, 0.1, -0.1);
+      const top = cr.localToWorld(cr.userData.top.clone());
+      m.teddySpots.stack = { x: top.x, y: top.y, z: top.z, yaw: -2.25 };
+    } else {
+      cr = new THREE.Group();
+      cr.add(P.crate(M, 1.1));
+      const b = P.crate(M, 0.9); b.position.set(0.05, 1.1, 0.05); b.rotation.y = 0.3; cr.add(b);
+      const c2 = P.crate(M, 0.8); c2.position.set(-0.2, 0, 1.0); c2.rotation.y = -0.2; cr.add(c2);
+      solid(cr, 11, 9, null, 0, true, 0.2, -0.2);
+    }
     const bar = new THREE.Group();
     [[0, 0], [0.62, 0.1], [0.25, 0.55]].forEach(([x, z]) => { const br = P.barrel(M); br.position.set(x, 0, z); bar.add(br); });
     solid(bar, 2, 9, null, 0, true, -0.3, 0.2);
@@ -135,6 +164,12 @@ export default {
     // Zone 2 – Werkstatt
     solid(P.workbench(M), 10, 11, 'N', 0.8, true);
     const gen = P.generator(M); gen.rotation.y = 0.2; solid(gen, 7, 15, null, 0, true);
+    if (gen.userData.model) {
+      // Teddy auf die höchste Fläche in der Mitte des Generators setzen
+      const ys = surfacesAt(gen, gen.position.x, gen.position.z);
+      const y = ys.length ? ys[ys.length - 1] : gen.userData.size.y;
+      m.teddySpots.generator = { x: gen.position.x, y, z: gen.position.z, yaw: 2.6 };
+    }
     const bar2 = new THREE.Group();
     [[0, 0], [0.65, 0], [0.3, 0.6]].forEach(([x, z]) => { const br = P.barrel(M, M.paintRed); br.position.set(x, 0, z); bar2.add(br); });
     solid(bar2, 2, 18, null, 0, true, -0.2, 0.2);

@@ -8,6 +8,8 @@ import { RenderSystem, QUALITY, resolveQuality } from '../core/renderer.js';
 import { setAnisotropy, setTextureScale } from '../core/textures.js';
 import { buildMaterials, SHARED_SLOTS } from '../core/materials.js';
 import { configureTexLib, preload as preloadTex, release as releaseTex } from '../core/texlib.js';
+import { configureModels, preloadModels, retainModels } from '../core/modellib.js';
+import { mapModelSlots } from '../world/dressing.js';
 import { setSurfaceLite } from '../world/surfacevar.js';
 import { Input } from '../core/input.js';
 import { AudioEngine } from '../audio/audio.js';
@@ -117,6 +119,8 @@ export class Game {
     setTextureScale(q.texScale);
     // Foto-Texturen: 1024 px auf hoch/mittel, 512 px auf niedrig/minimal (Handys)
     configureTexLib({ size: q.texScale >= 1 ? 1024 : 512, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
+    // 3D-Modelle: Handy-Fassung (halbe Texturen, weniger Dreiecke) auf niedrig/minimal
+    configureModels({ lo: q.texScale < 1, anisotropy: Math.min(8, this.rs.renderer.capabilities.getMaxAnisotropy()) });
     setSurfaceLite(q.texScale < 1, q.gridLight === false);
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, this.rs.width / this.rs.height, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
@@ -193,6 +197,13 @@ export class Game {
       await preloadTex(slots, () => { got++; progress(3 + (got / slots.length) * 7, `${def.name}: Texturen ${got}/${slots.length} …`); });
     }
     this.mapTexSlots = slots;
+    // 3D-Modelle dieser Karte (Requisiten, Einrichtung); andere freigeben
+    const mslots = mapModelSlots(def);
+    if (!this.opts.sharedM) retainModels(mslots);
+    if (mslots.length) {
+      let got = 0;
+      await preloadModels(mslots, () => { got++; if (got % 4 === 0 || got === mslots.length) progress(8 + (got / mslots.length) * 2, `${def.name}: Modelle ${got}/${mslots.length} …`); });
+    }
     await step(10, `${def.name}: Gelände …`);
     this.map = new GameMap(def);
     this.map.build(this.scene, this.M, { quality: this.rs.quality, game: this });
@@ -246,7 +257,8 @@ export class Game {
       if (o.isLight && o.shadow && o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; }
       if (o.geometry && !o.geometry.userData.shared && !freed.has(o.geometry)) { freed.add(o.geometry); o.geometry.dispose(); }
       if (o.material) for (const m of [].concat(o.material)) {
-        if (this.sharedMats.has(m) || freed.has(m)) continue;
+        // Gemeinsame Materialien, Modell-Bibliothek und Abziehbild-Atlanten bleiben (werden wiederverwendet)
+        if (this.sharedMats.has(m) || freed.has(m) || m.userData.modelLib || m.userData.shared) continue;
         freed.add(m);
         for (const k of ['map', 'bumpMap', 'emissiveMap', 'alphaMap', 'normalMap', 'roughnessMap', 'metalnessMap']) if (m[k] && !this.sharedTex.has(m[k]) && !freed.has(m[k])) { freed.add(m[k]); m[k].dispose(); }
         m.dispose();

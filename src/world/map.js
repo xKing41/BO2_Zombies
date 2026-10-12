@@ -13,6 +13,8 @@ import { LightPool } from './lightpool.js';
 import { Sky, atmoSettings, applyFog } from './atmosphere.js';
 import { bakeGridLight, GRID } from './gridlight.js';
 import { LightShafts, collectShafts } from './lightshafts.js';
+import { dressMap } from './dressing.js';
+import { worldBox } from '../core/modellib.js';
 
 export const WALLDIR = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] };
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -334,6 +336,10 @@ export class GameMap {
 
   // ── Aufbau der Geometrie ────────────────────────────────────
   build(scene, M, ctx = {}) {
+    // Requisiten-Zufall je Karte festlegen (gleiche Welt auf allen Geräten)
+    let seed = 7;
+    for (const ch of this.def.id || '') seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    P.seedProps(seed);
     this.scene = scene;
     this.M = M;
     this.ctx = ctx;
@@ -414,6 +420,8 @@ export class GameMap {
     if (this.def.lightPool) this.lightPool = new LightPool(scene, this.def.lightPool(ctx.quality || {}));
     if (this.def.buildDecor) this.def.buildDecor(this, scene, M);
     if (this.def.buildLights) this.def.buildLights(this, scene, M);
+    // Einrichtung: Kleinkram an den Wänden, Flecken, Graffiti, weiche Schatten unter Requisiten
+    this.dressInfo = this.def.dress ? dressMap(this, scene, this.def.dress, ctx.quality || {}) : null;
     // Lichtkegel und Lichthöfe unter allen Lampen mit Glühbirne
     if (ctx.quality && ctx.quality.shafts !== false) {
       this.shafts = new LightShafts(scene, this.def.shafts || {});
@@ -561,7 +569,7 @@ export class GameMap {
   }
 
   aabb(obj, pad = 0) {
-    const b = new THREE.Box3().setFromObject(obj);
+    const b = worldBox(obj); // Modelle mit festen Index-Maßen (gleiche Kollision auf allen Geräten)
     return { minX: b.min.x - pad, maxX: b.max.x + pad, minZ: b.min.z - pad, maxZ: b.max.z + pad };
   }
 

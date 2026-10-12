@@ -131,6 +131,7 @@ public class MainActivity extends Activity {
         if (l.endsWith(".jpg") || l.endsWith(".jpeg")) return "image/jpeg";
         if (l.endsWith(".svg")) return "image/svg+xml";
         if (l.endsWith(".webp")) return "image/webp";
+        if (l.endsWith(".glb")) return "model/gltf-binary";
         if (l.endsWith(".ico")) return "image/x-icon";
         if (l.endsWith(".woff2")) return "font/woff2";
         if (l.endsWith(".woff")) return "font/woff";

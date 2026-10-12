@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { Pass } from 'three/addons/postprocessing/Pass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
@@ -9,9 +10,10 @@ import { IS_MOBILE } from './platform.js';
 import { GRID } from '../world/gridlight.js';
 
 // lightTier/shadowTier: welche Lichter bzw. Schatten aktiv sind (siehe GameMap.addLight)
+// ao: Kontaktschatten aus dem Tiefenpuffer (Abtastungen, Auflösungsanteil)
 export const QUALITY = {
-  hoch: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, shadowTier: 3, msaa: 4, bloom: true, lightTier: 3, texScale: 1, hrtf: true },
-  mittel: { pixelRatio: 1.25, shadows: true, shadowSize: 1024, shadowTier: 2, msaa: 2, bloom: true, lightTier: 2, texScale: 1, hrtf: true },
+  hoch: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, shadowTier: 3, msaa: 4, bloom: true, lightTier: 3, texScale: 1, hrtf: true, ao: { samples: 16, res: 0.5 } },
+  mittel: { pixelRatio: 1.25, shadows: true, shadowSize: 1024, shadowTier: 2, msaa: 2, bloom: true, lightTier: 2, texScale: 1, hrtf: true, ao: { samples: 8, res: 0.5 } },
   niedrig: { pixelRatio: 1.0, shadows: false, shadowSize: 1024, shadowTier: 0, msaa: 0, bloom: true, lightTier: 1, texScale: 0.5, hrtf: false },
   minimal: { pixelRatio: 0.75, shadows: false, shadowSize: 512, shadowTier: 0, msaa: 0, bloom: false, lightTier: 1, texScale: 0.5, hrtf: false, shafts: false, gridLight: false },
 };
@@ -42,6 +44,82 @@ class OverlayPass extends Pass {
     renderer.render(this.scene, this.camera);
     GRID.p2.value.y = grid;
     renderer.autoClear = ac;
+  }
+}
+
+// Kontaktschatten (GTAO) aus dem Tiefenpuffer des Hauptbilds: dunkelt Fugen, Ecken und den
+// Boden unter Requisiten ab – dort, wo das grobe Raster-Licht (50 cm) nicht hinreicht.
+// Kein zweiter Szenen-Durchgang (Normalen aus der Tiefe), halbe Auflösung, entrauscht;
+// mit der Entfernung ausgeblendet, damit Nebel und Himmel sauber bleiben.
+// Das Ergebnis wird direkt ins Bild multipliziert (kein Kopieren des Bildes).
+class ContactAOPass extends Pass {
+  constructor(scene, camera, depthTexture, w, h, o = {}) {
+    super();
+    this.needsSwap = false;
+    this.camera = camera;
+    this.res = o.res ?? 0.5;
+    const sw = Math.max(1, Math.round(w * this.res)), shh = Math.max(1, Math.round(h * this.res));
+    const g = (this.gtao = new GTAOPass(scene, camera, sw, shh));
+    g.setGBuffer(depthTexture); // Tiefe vom Hauptbild, Normalen aus der Tiefe rekonstruiert
+    g.output = GTAOPass.OUTPUT.Off; // nur AO + Entrauschen; das Mischen übernimmt dieser Pass
+    g.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.6, thickness: 0.9, distanceFallOff: 1, scale: 1.3, samples: o.samples ?? 16, screenSpaceRadius: false });
+    g.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 5, radiusExponent: 1.5, rings: 2, samples: o.pdSamples ?? 12 });
+    this.mat = new THREE.ShaderMaterial({
+      uniforms: {
+        tAO: { value: null }, tDepth: { value: depthTexture },
+        cameraNear: { value: 0.05 }, cameraFar: { value: 400 },
+        intensity: { value: o.intensity ?? 0.9 }, fade: { value: new THREE.Vector2(14, 34) },
+      },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: /* glsl */`
+        #include <packing>
+        uniform sampler2D tAO;
+        uniform highp sampler2D tDepth;
+        uniform float cameraNear, cameraFar, intensity;
+        uniform vec2 fade;
+        varying vec2 vUv;
+        void main() {
+          float d = texture2D( tDepth, vUv ).x;
+          float dist = -perspectiveDepthToViewZ( d, cameraNear, cameraFar );
+          float k = intensity * ( 1.0 - smoothstep( fade.x, fade.y, dist ) ) * step( d, 0.99999 );
+          gl_FragColor = vec4( vec3( mix( 1.0, texture2D( tAO, vUv ).r, k ) ), 1.0 );
+        }`,
+      transparent: true, depthTest: false, depthWrite: false,
+      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+      blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor,
+      blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
+    });
+    this.quad = new FullScreenQuad(this.mat);
+  }
+  setSize(w, h) {
+    this.gtao.setSize(Math.max(1, Math.round(w * this.res)), Math.max(1, Math.round(h * this.res)));
+  }
+  render(renderer, writeBuffer, readBuffer) {
+    // Der Composer wechselt seine beiden Puffer von Bild zu Bild: immer die Tiefe des aktuellen nehmen
+    const depth = readBuffer.depthTexture;
+    if (!depth) return;
+    const g = this.gtao;
+    if (g.depthTexture !== depth) {
+      g.depthTexture = depth;
+      g.gtaoMaterial.uniforms.tDepth.value = depth;
+      g.pdMaterial.uniforms.tDepth.value = depth;
+    }
+    g.render(renderer, writeBuffer, readBuffer);
+    const u = this.mat.uniforms;
+    u.tAO.value = g.pdRenderTarget.texture;
+    u.tDepth.value = depth;
+    u.cameraNear.value = this.camera.near;
+    u.cameraFar.value = this.camera.far;
+    const ac = renderer.autoClear;
+    renderer.autoClear = false; // ins vorhandene Bild multiplizieren, nicht löschen
+    renderer.setRenderTarget(readBuffer);
+    this.quad.render(renderer);
+    renderer.autoClear = ac;
+  }
+  dispose() {
+    this.gtao.dispose();
+    this.mat.dispose();
+    this.quad.dispose();
   }
 }
 
@@ -161,7 +239,10 @@ export class RenderSystem {
     this.renderer.setSize(this.width, this.height, false);
     this.renderer.shadowMap.enabled = q.shadows;
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    // Kontaktschatten nur auf den PC-Stufen und bei mindestens halbem Bildschirm (Splitscreen zu zweit)
+    const ao = q.ao && this.view.w * this.view.h >= 0.5 ? q.ao : null;
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: q.msaa });
+    if (ao) rt.depthTexture = new THREE.DepthTexture(size.x, size.y, THREE.UnsignedIntType);
     if (this.composer) {
       // Alle Effekt-Passes freigeben (Bloom hält eigene Render-Targets)
       for (const pass of this.composer.passes) if (pass.dispose) pass.dispose();
@@ -169,6 +250,8 @@ export class RenderSystem {
     }
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.ao = ao ? new ContactAOPass(this.scene, this.camera, this.composer.readBuffer.depthTexture, size.x, size.y, ao) : null;
+    if (this.ao) this.composer.addPass(this.ao);
     this.composer.addPass(new OverlayPass(this.vmScene, this.vmCamera));
     this.composer.addPass(new ShaderPass(SanitizeShader));
     this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.55, 0.55, 0.85);

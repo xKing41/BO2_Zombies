@@ -1,6 +1,36 @@
-// Prozedurale Requisiten (Kisten, Fässer, Möbel, Bäume, Lampen …)
+// Requisiten (Kisten, Fässer, Möbel, Bäume, Lampen …). Wo ein CC0-Modell
+// geladen ist (core/modellib.js), wird es benutzt – mit derselben Grundfläche
+// wie die alte Form, damit Kollision und Wege stimmen. Sonst entstehen die
+// Requisiten wie bisher aus Grundkörpern.
 import * as THREE from 'three';
-import { rand } from '../core/utils.js';
+import { model, surfacesAt, worldBox } from '../core/modellib.js';
+import { mulberry32 } from '../core/noise.js';
+
+// Zufall der Requisiten: je Karte mit festem Seed (Koop/Splitscreen: alle bauen dieselbe Welt,
+// auch die Kollisionsboxen gedrehter Fässer, Hocker und Regale stimmen überein)
+let R = Math.random;
+export function seedProps(seed) { R = mulberry32(seed); }
+const rand = (a = 0, b = 1) => a + R() * (b - a);
+
+// Gruppe mit gedrehtem, wieder auf den Boden gesetztem Inhalt (umgekippte Stühle, liegende Dinge)
+const _b = new THREE.Box3();
+export function lay(obj, rx = 0, rz = 0, ry = 0) {
+  const g = new THREE.Group();
+  obj.rotation.set(rx, ry, rz, 'YXZ');
+  g.add(obj);
+  g.updateMatrixWorld(true);
+  worldBox(obj, _b);
+  obj.position.y -= _b.min.y;
+  obj.position.x -= (_b.min.x + _b.max.x) / 2;
+  obj.position.z -= (_b.min.z + _b.max.z) / 2;
+  return g;
+}
+
+// Kleinkram für Regale und Werkbänke (Modell, Höhe in m)
+const SHELF_ITEMS = [
+  ['cardboard', 0.3], ['cardboard', 0.26], ['foodCans', 0.09], ['bottles', 0.3, /bordeaux|burgundy/], ['sprayCans', 0.22],
+  ['oilCan', 0.2], ['toolbox', 0.26], ['jerrycanPlastic', 0.3], ['canRusted', 0.15], ['medBox', 0.08], ['cardboard', 0.34],
+];
 
 const box = (w, h, d, mat, x = 0, y = 0, z = 0) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -30,6 +60,9 @@ export function crate(M, s = 1) {
 }
 
 export function barrel(M, mat) {
+  const slot = mat === M.paintRed ? 'drumRed' : mat === M.paintGreen || mat === M.metal ? 'drumBlue' : 'drumRust';
+  const md = model(slot, { h: 0.9 });
+  if (md) { md.children[0].rotation.y = R() * Math.PI * 2; return md; }
   const g = new THREE.Group();
   g.add(cyl(0.3, 0.3, 0.9, mat || M.rust, 20, 0, 0.45, 0));
   for (const y of [0.15, 0.45, 0.75]) {
@@ -40,13 +73,19 @@ export function barrel(M, mat) {
 }
 
 export function table(M, w = 1.4, d = 0.8, h = 0.78, top = M.woodDark) {
+  if (top !== M.chrome) {
+    const md = Math.abs(w - d) < 0.05 ? model('tableRound', { fit: [w, h, d] }) : model('tableWood', { fit: [w, h, d] });
+    if (md) return md;
+  }
   const g = new THREE.Group();
   g.add(box(w, 0.05, d, top, 0, h, 0));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(cyl(0.025, 0.025, h, M.metal, 8, sx * (w / 2 - 0.08), h / 2, sz * (d / 2 - 0.08)));
   return g;
 }
 
-export function chair(M, fallen = false) {
+export function chair(M, fallen = false, kind = 'chairSchool') {
+  const md = model(kind, { h: kind === 'chairSchool' ? 0.92 : 0.95 });
+  if (md) return fallen ? lay(md, -Math.PI / 2 + 0.1, 0.15) : md;
   const g = new THREE.Group();
   g.add(box(0.45, 0.04, 0.45, M.woodDark, 0, 0.46, 0));
   g.add(box(0.45, 0.5, 0.04, M.woodDark, 0, 0.72, -0.21));
@@ -63,12 +102,17 @@ export function counter(M, len) {
   for (let i = 0; i < Math.floor(len / 0.8); i++) {
     const s = stool(M);
     s.position.set(-len / 2 + 0.4 + i * 0.8, 0, 0.75);
+    s.rotation.y = rand(-0.6, 0.6);
     g.add(s);
   }
+  const reg = model('register', { h: 0.42 });
+  if (reg) { reg.position.set(len / 2 - 0.45, 1.06, -0.08); reg.rotation.y = Math.PI + 0.2; g.add(reg); }
   return g;
 }
 
 export function stool(M) {
+  const md = model('stoolMetal', { h: 0.76 });
+  if (md) return md;
   const g = new THREE.Group();
   g.add(cyl(0.2, 0.2, 0.08, M.leather, 16, 0, 0.72, 0));
   g.add(cyl(0.035, 0.035, 0.7, M.chrome, 8, 0, 0.36, 0));
@@ -91,24 +135,58 @@ export function workbench(M) {
   g.add(box(1.8, 0.08, 0.8, M.wood, 0, 0.9, 0));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(box(0.06, 0.9, 0.06, M.metal, sx * 0.85, 0.45, sz * 0.35));
   g.add(box(1.7, 0.04, 0.7, M.metal, 0, 0.25, 0));
-  g.add(box(0.2, 0.15, 0.15, M.paintRed, -0.6, 1.01, 0.2)); // Schraubstock
-  g.add(box(0.5, 0.18, 0.25, M.paintRed, 0.4, 1.03, -0.1)); // Werkzeugkiste
+  const vise = model('vise', { h: 0.24 }), tb = model('toolbox', { h: 0.28 });
+  if (vise) { vise.position.set(-0.6, 0.94, 0.22); vise.rotation.y = Math.PI / 2; g.add(vise); }
+  else g.add(box(0.2, 0.15, 0.15, M.paintRed, -0.6, 1.01, 0.2)); // Schraubstock
+  if (tb) { tb.position.set(0.4, 0.94, -0.1); tb.rotation.y = 0.15; g.add(tb); }
+  else g.add(box(0.5, 0.18, 0.25, M.paintRed, 0.4, 1.03, -0.1)); // Werkzeugkiste
+  const can = model('oilCan', { h: 0.2, shadow: false });
+  if (can) { can.position.set(0.0, 0.94, 0.2); can.rotation.y = 2.1; g.add(can); }
   g.add(box(1.8, 0.9, 0.04, M.woodDark, 0, 1.4, -0.38)); // Lochwand
   for (let i = 0; i < 5; i++) g.add(box(0.04, 0.25, 0.02, M.metal, -0.7 + i * 0.3, 1.5, -0.35));
   return g;
 }
 
-export function shelf(M) {
+// Höhen der Regalböden je Modell (einmal per Strahl ermittelt)
+const levels = new Map();
+// rng: Zufallsquelle (Einrichtung: fester Seed, damit im Koop alle dasselbe Regal sehen)
+export function shelf(M, rng0 = R) {
+  // eigener Zufallsstrom: wie viele Böden das Modell hat, beeinflusst sonst den Rest der Karte
+  const rng = mulberry32((rng0() * 4294967296) >>> 0);
+  const md = model('shelfSteel', { fit: [1.45, 2.0, 0.5] });
+  if (md) {
+    const rr = (a, b) => a + rng() * (b - a);
+    if (!levels.has('shelfSteel')) levels.set('shelfSteel', surfacesAt(md, 0.12, 0).filter((y) => y > 0.05));
+    const ys = levels.get('shelfSteel');
+    for (const y of ys) {
+      let x = -0.62;
+      while (x < 0.55) {
+        const [slot, h, parts] = SHELF_ITEMS[Math.floor(rng() * SHELF_ITEMS.length)];
+        const it = rng() < 0.8 ? model(slot, { h: h * rr(0.85, 1.1), parts, shadow: false }) : null;
+        const w = it ? Math.min(0.45, Math.max(it.userData.size.x, it.userData.size.z)) : 0.2;
+        if (it && x + w < 0.68 && y + it.userData.size.y < 2.05) {
+          it.position.set(x + w / 2, y, rr(-0.06, 0.06));
+          it.rotation.y = rr(-0.3, 0.3) + (rng() < 0.5 ? Math.PI : 0);
+          it.userData.blob = false;
+          md.add(it);
+        }
+        x += w + rr(0.03, 0.12);
+      }
+    }
+    return md;
+  }
   const g = new THREE.Group();
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(box(0.05, 2.0, 0.05, M.metal, sx * 0.7, 1.0, sz * 0.22));
   for (const y of [0.1, 0.7, 1.3, 1.9]) {
     g.add(box(1.45, 0.03, 0.5, M.metal, 0, y, 0));
-    for (let i = 0; i < 3; i++) if (Math.random() < 0.7) g.add(box(rand(0.2, 0.35), rand(0.15, 0.4), 0.3, Math.random() < 0.5 ? M.paper : M.wood, -0.45 + i * 0.45, y + 0.15, 0));
+    for (let i = 0; i < 3; i++) if (R() < 0.7) g.add(box(rand(0.2, 0.35), rand(0.15, 0.4), 0.3, R() < 0.5 ? M.paper : M.wood, -0.45 + i * 0.45, y + 0.15, 0));
   }
   return g;
 }
 
 export function generator(M) {
+  const md = model('generator', { h: 0.95 });
+  if (md) { md.userData.top = md.userData.size.y; return md; }
   const g = new THREE.Group();
   g.add(box(1.4, 0.9, 0.8, M.paintGreen, 0, 0.55, 0));
   g.add(box(1.5, 0.1, 0.9, M.metal, 0, 0.05, 0));
@@ -144,6 +222,18 @@ export function tree(M, h = rand(5, 8)) {
 }
 
 export function hangingLamp(M) {
+  const md = model('lampHanging', { h: 1.0 });
+  if (md) {
+    const g = new THREE.Group();
+    md.position.y = -1.0;
+    md.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    g.add(md);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 3.6, 2.2) }));
+    bulb.position.y = -0.93;
+    g.add(bulb);
+    g.userData.bulb = bulb;
+    return g;
+  }
   const g = new THREE.Group();
   g.add(cyl(0.008, 0.008, 0.8, M.dark, 4, 0, -0.4, 0));
   const shadeMat = M.lampShade || (M.lampShade = new THREE.MeshStandardMaterial({ color: 0x2a2d2a, roughness: 0.5, metalness: 0.6, side: THREE.DoubleSide }));
@@ -157,8 +247,9 @@ export function hangingLamp(M) {
 
 export function fireBarrel(M) {
   const g = barrel(M, M.rust);
-  const ember = new THREE.Mesh(new THREE.CircleGeometry(0.28, 20), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 1.2, 0.2) }));
-  ember.rotation.x = -Math.PI / 2; ember.position.y = 0.82;
+  const top = g.userData.size ? g.userData.size.y - 0.03 : 0.82;
+  const ember = new THREE.Mesh(new THREE.CircleGeometry(0.26, 20), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 1.2, 0.2) }));
+  ember.rotation.x = -Math.PI / 2; ember.position.y = top;
   g.add(ember);
   return g;
 }
@@ -176,6 +267,14 @@ export function lampPost(M) {
 }
 
 export function carWreck(M) {
+  const md = model('coveredCar');
+  if (md) {
+    // Modell liegt längs z, die alte Form längs x
+    const g = new THREE.Group();
+    md.rotation.y = Math.PI / 2 + rand(-0.05, 0.05);
+    g.add(md);
+    return g;
+  }
   const g = new THREE.Group();
   const body = M.carPaint || (M.carPaint = new THREE.MeshStandardMaterial({ color: 0x3c4a52, roughness: 0.6, metalness: 0.5 }));
   g.add(box(4.2, 0.7, 1.8, body, 0, 0.65, 0));
@@ -199,4 +298,27 @@ export function pipe(M, len, r = 0.06) {
   const m = cyl(r, r, len, M.rust, 10);
   m.rotation.z = Math.PI / 2;
   return m;
+}
+
+// ── Neue Requisiten (nur mit Modellen; ohne Modell: null) ────
+// Kistenstapel: lange Munitionskisten kreuzweise, Holzkiste und Karton obenauf.
+// userData.top: Mitte der obersten Fläche (für Dinge, die oben liegen sollen)
+export function crateStack(M, variant = 0) {
+  const a = model('crateRifle'), b = model('crateRifle'), c = model('crateRifle');
+  if (!a || !b || !c) return null;
+  const g = new THREE.Group();
+  const L = a.userData.size; // ~1.24 × 0.46 × 0.52
+  a.position.set(0, 0, -L.z / 2 - 0.01); b.position.set(0.03, 0, L.z / 2 + 0.01); b.rotation.y = Math.PI + 0.03;
+  g.add(a, b);
+  let y = L.y;
+  if (variant !== 1) { c.position.set(0, y, 0); c.rotation.y = Math.PI / 2 + 0.06; g.add(c); y += L.y; }
+  const w = model('crateWood');
+  if (w) { w.position.set(0.05, y, 0.02); w.rotation.y = 0.12 + variant * 0.4; g.add(w); y += w.userData.size.y; }
+  const box = model('cardboard', { h: 0.34 });
+  if (box) { box.position.set(-0.08, y, 0.05); box.rotation.y = 0.5; g.add(box); }
+  g.userData.top = new THREE.Vector3(-0.08, y + (box ? box.userData.size.y : 0), 0.05);
+  // daneben auf dem Boden
+  const side = model(variant === 1 ? 'cementBag' : 'cardboard', { h: variant === 1 ? 0.18 : 0.3 });
+  if (side) { side.position.set(-L.x / 2 - 0.32, 0, rand(-0.25, 0.25)); side.rotation.y = rand(0, 3); g.add(side); }
+  return g;
 }
