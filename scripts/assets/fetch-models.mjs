@@ -100,9 +100,21 @@ function simplifyMaterials(doc) {
   for (const ext of doc.getRoot().listExtensionsUsed()) if (DROP.includes(ext.extensionName)) ext.dispose();
 }
 
+// Skelette und Animationen entfernen: Im Spiel sind alle Modelle starre Requisiten
+function stripRig(doc) {
+  const root = doc.getRoot();
+  for (const a of root.listAnimations()) a.dispose();
+  for (const n of root.listNodes()) if (n.getSkin()) n.setSkin(null);
+  for (const sk of root.listSkins()) sk.dispose();
+  for (const mesh of root.listMeshes()) for (const p of mesh.listPrimitives()) {
+    for (const sem of p.listSemantics()) if (/^(JOINTS|WEIGHTS)_/.test(sem)) p.setAttribute(sem, null);
+  }
+}
+
 async function variant(src, outFile, { tex, tris, error }) {
   const doc = await io.read(src);
   const before = triangles(doc);
+  stripRig(doc);
   simplifyMaterials(doc);
   await doc.transform(dedup(), prune(), weld());
   const ratio = Math.min(1, tris / Math.max(1, before));
