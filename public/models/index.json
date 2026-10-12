@@ -1,0 +1,4164 @@
+{
+ "drumRed": {
+  "id": "Barrel_01",
+  "name": "Barrel_01",
+  "page": "https://polyhaven.com/a/Barrel_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.563,
+   0.88,
+   0.563
+  ],
+  "nodes": [
+   {
+    "name": "Barrel_01",
+    "size": [
+     0.563,
+     0.88,
+     0.563
+    ],
+    "center": [
+     0,
+     0.44,
+     0
+    ]
+   }
+  ],
+  "srcTris": 2682,
+  "tris": 2682,
+  "trisLo": 1600,
+  "bytes": 149980,
+  "bytesLo": 60924,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "Barrel_01"
+  },
+  "v": "bafae79483"
+ },
+ "drumBlue": {
+  "id": "barrel_03",
+  "name": "Barrel 03",
+  "page": "https://polyhaven.com/a/barrel_03",
+  "license": "CC0 1.0",
+  "size": [
+   0.634,
+   0.93,
+   0.639
+  ],
+  "nodes": [
+   {
+    "name": "barrel_03",
+    "size": [
+     0.634,
+     0.93,
+     0.639
+    ],
+    "center": [
+     0,
+     0.465,
+     0
+    ]
+   }
+  ],
+  "srcTris": 1473,
+  "tris": 1473,
+  "trisLo": 1473,
+  "bytes": 109584,
+  "bytesLo": 46604,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "barrel_03"
+  },
+  "v": "94fd6c1472"
+ },
+ "drumPlastic": {
+  "id": "Barrel_02",
+  "name": "Barrel 02",
+  "page": "https://polyhaven.com/a/Barrel_02",
+  "license": "CC0 1.0",
+  "size": [
+   0.488,
+   0.88,
+   0.485
+  ],
+  "nodes": [
+   {
+    "name": "Barrel_02",
+    "size": [
+     0.488,
+     0.88,
+     0.485
+    ],
+    "center": [
+     0,
+     0.44,
+     0
+    ]
+   }
+  ],
+  "srcTris": 2688,
+  "tris": 2688,
+  "trisLo": 1600,
+  "bytes": 95108,
+  "bytesLo": 45580,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "Barrel_02"
+  },
+  "v": "71c2a2a0df"
+ },
+ "drumRust": {
+  "id": "barrel_stove",
+  "name": "Barrel Stove",
+  "page": "https://polyhaven.com/a/barrel_stove",
+  "license": "CC0 1.0",
+  "size": [
+   0.591,
+   0.856,
+   0.593
+  ],
+  "nodes": [
+   {
+    "name": "barrel_stove",
+    "size": [
+     0.591,
+     0.856,
+     0.593
+    ],
+    "center": [
+     0,
+     0.428,
+     0
+    ]
+   }
+  ],
+  "srcTris": 9216,
+  "tris": 3999,
+  "trisLo": 1916,
+  "bytes": 145432,
+  "bytesLo": 57932,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "barrel_stove"
+  },
+  "v": "ae9b58c5f7"
+ },
+ "trashCan": {
+  "id": "metal_trash_can",
+  "name": "Metal Trash Can",
+  "page": "https://polyhaven.com/a/metal_trash_can",
+  "license": "CC0 1.0",
+  "size": [
+   1.777,
+   0.906,
+   0.554
+  ],
+  "nodes": [
+   {
+    "name": "metal_trash_can_handle_left",
+    "size": [
+     0.072,
+     0.089,
+     0.186
+    ],
+    "center": [
+     0.275,
+     0.687,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_lid",
+    "size": [
+     0.183,
+     0.536,
+     0.554
+    ],
+    "center": [
+     0.203,
+     0.277,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can",
+    "size": [
+     0.61,
+     0.906,
+     0.552
+    ],
+    "center": [
+     0.564,
+     0.453,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_handle_right",
+    "size": [
+     0.072,
+     0.089,
+     0.186
+    ],
+    "center": [
+     0.853,
+     0.687,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_rust",
+    "size": [
+     0.608,
+     0.906,
+     0.547
+    ],
+    "center": [
+     -0.435,
+     0.453,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_rust_handle_left",
+    "size": [
+     0.072,
+     0.099,
+     0.186
+    ],
+    "center": [
+     -0.725,
+     0.692,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_rust_handle_right",
+    "size": [
+     0.057,
+     0.1,
+     0.186
+    ],
+    "center": [
+     -0.144,
+     0.607,
+     0
+    ]
+   },
+   {
+    "name": "metal_trash_can_rust_lid",
+    "size": [
+     0.183,
+     0.539,
+     0.542
+    ],
+    "center": [
+     -0.797,
+     0.278,
+     0.003
+    ]
+   }
+  ],
+  "srcTris": 13960,
+  "tris": 4372,
+  "trisLo": 1665,
+  "bytes": 372104,
+  "bytesLo": 134828,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "metal_trash_can"
+  },
+  "v": "91998097aa"
+ },
+ "crateWood": {
+  "id": "wooden_crate_02",
+  "name": "Wooden Crate 02",
+  "page": "https://polyhaven.com/a/wooden_crate_02",
+  "license": "CC0 1.0",
+  "size": [
+   0.529,
+   0.464,
+   1.166
+  ],
+  "nodes": [
+   {
+    "name": "wooden_crate_02_crate",
+    "size": [
+     0.529,
+     0.445,
+     1.166
+    ],
+    "center": [
+     0,
+     0.223,
+     0
+    ]
+   },
+   {
+    "name": "wooden_crate_02_lid",
+    "size": [
+     0.479,
+     0.067,
+     1.04
+    ],
+    "center": [
+     0,
+     0.43,
+     0
+    ]
+   }
+  ],
+  "srcTris": 5176,
+  "tris": 3998,
+  "trisLo": 1598,
+  "bytes": 150376,
+  "bytesLo": 58872,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "wooden_crate_02"
+  },
+  "v": "d87b15fe48"
+ },
+ "crateMilitary": {
+  "id": "old_military_crate",
+  "name": "Old Military Crate",
+  "page": "https://polyhaven.com/a/old_military_crate",
+  "license": "CC0 1.0",
+  "size": [
+   1.815,
+   0.301,
+   0.974
+  ],
+  "nodes": [
+   {
+    "name": "old_military_crate_lid_a",
+    "size": [
+     0.77,
+     0.057,
+     0.461
+    ],
+    "center": [
+     -0.495,
+     0.272,
+     0.18
+    ]
+   },
+   {
+    "name": "old_military_crate_loop_a",
+    "size": [
+     0.436,
+     0.062,
+     0.006
+    ],
+    "center": [
+     -0.495,
+     0.238,
+     0.401
+    ]
+   },
+   {
+    "name": "old_military_crate_latch_a",
+    "size": [
+     0.416,
+     0.11,
+     0.019
+    ],
+    "center": [
+     -0.495,
+     0.18,
+     0.406
+    ]
+   },
+   {
+    "name": "old_military_crate_cloth_a",
+    "size": [
+     0.717,
+     0.211,
+     0.497
+    ],
+    "center": [
+     -0.549,
+     0.153,
+     0.239
+    ]
+   },
+   {
+    "name": "old_military_crate_a",
+    "size": [
+     0.805,
+     0.258,
+     0.448
+    ],
+    "center": [
+     -0.495,
+     0.129,
+     0.174
+    ]
+   },
+   {
+    "name": "old_military_crate_lid_b",
+    "size": [
+     0.77,
+     0.134,
+     0.451
+    ],
+    "center": [
+     0.505,
+     0.191,
+     -0.262
+    ]
+   },
+   {
+    "name": "old_military_crate_loop_b",
+    "size": [
+     0.436,
+     0.059,
+     0.026
+    ],
+    "center": [
+     0.505,
+     0.183,
+     0.412
+    ]
+   },
+   {
+    "name": "old_military_crate_latch_b",
+    "size": [
+     0.416,
+     0.11,
+     0.019
+    ],
+    "center": [
+     0.505,
+     0.18,
+     0.406
+    ]
+   },
+   {
+    "name": "old_military_crate_cloth_b",
+    "size": [
+     0.717,
+     0.211,
+     0.497
+    ],
+    "center": [
+     0.451,
+     0.153,
+     0.239
+    ]
+   },
+   {
+    "name": "old_military_crate_b",
+    "size": [
+     0.805,
+     0.258,
+     0.448
+    ],
+    "center": [
+     0.505,
+     0.129,
+     0.174
+    ]
+   }
+  ],
+  "srcTris": 10476,
+  "tris": 3995,
+  "trisLo": 1588,
+  "bytes": 156548,
+  "bytesLo": 65548,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "old_military_crate"
+  },
+  "v": "6ec40cdea2"
+ },
+ "crateRifle": {
+  "id": "wooden_military_crate",
+  "name": "Wooden Military Crate",
+  "page": "https://polyhaven.com/a/wooden_military_crate",
+  "license": "CC0 1.0",
+  "size": [
+   1.242,
+   0.464,
+   0.52
+  ],
+  "nodes": [
+   {
+    "name": "wooden_military_crate",
+    "size": [
+     1.242,
+     0.418,
+     0.52
+    ],
+    "center": [
+     0,
+     0.209,
+     0
+    ]
+   },
+   {
+    "name": "wooden_military_crate_lid",
+    "size": [
+     1.203,
+     0.051,
+     0.473
+    ],
+    "center": [
+     0,
+     0.438,
+     0.002
+    ]
+   },
+   {
+    "name": "wooden_military_crate_latch",
+    "size": [
+     0.787,
+     0.043,
+     0.007
+    ],
+    "center": [
+     0,
+     0.415,
+     0.235
+    ]
+   }
+  ],
+  "srcTris": 22986,
+  "tris": 3997,
+  "trisLo": 1672,
+  "bytes": 190424,
+  "bytesLo": 77524,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "wooden_military_crate"
+  },
+  "v": "6003909b4b"
+ },
+ "crateOpen": {
+  "id": "CheeseBox_01",
+  "name": "CheeseBox_01",
+  "page": "https://polyhaven.com/a/CheeseBox_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.24,
+   0.066,
+   0.107
+  ],
+  "nodes": [
+   {
+    "name": "CheeseBox_01",
+    "size": [
+     0.24,
+     0.064,
+     0.106
+    ],
+    "center": [
+     0,
+     0.032,
+     0
+    ]
+   },
+   {
+    "name": "CheeseBox_01_lid",
+    "size": [
+     0.239,
+     0.004,
+     0.105
+    ],
+    "center": [
+     0,
+     0.064,
+     0.001
+    ]
+   }
+  ],
+  "srcTris": 884,
+  "tris": 884,
+  "trisLo": 884,
+  "bytes": 89508,
+  "bytesLo": 37992,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "CheeseBox_01"
+  },
+  "v": "1dae3e9812"
+ },
+ "cardboard": {
+  "id": "cardboard_box_01",
+  "name": "Cardboard Box 01",
+  "page": "https://polyhaven.com/a/cardboard_box_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.387,
+   0.342,
+   0.516
+  ],
+  "nodes": [
+   {
+    "name": "cardboard_box_01",
+    "size": [
+     0.387,
+     0.342,
+     0.516
+    ],
+    "center": [
+     0,
+     0.171,
+     0
+    ]
+   }
+  ],
+  "srcTris": 16952,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 128272,
+  "bytesLo": 44180,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "cardboard_box_01"
+  },
+  "v": "e998094f16"
+ },
+ "cratePlastic": {
+  "id": "plastic_crate_01",
+  "name": "Plastic Crate 01",
+  "page": "https://polyhaven.com/a/plastic_crate_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.298,
+   0.264,
+   0.408
+  ],
+  "nodes": [
+   {
+    "name": "plastic_crate_01",
+    "size": [
+     0.298,
+     0.264,
+     0.408
+    ],
+    "center": [
+     0,
+     0.132,
+     0
+    ]
+   }
+  ],
+  "srcTris": 18320,
+  "tris": 10350,
+  "trisLo": 10272,
+  "bytes": 318344,
+  "bytesLo": 195388,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "plastic_crate_01"
+  },
+  "v": "221aa3d0ab"
+ },
+ "cratePlastic2": {
+  "id": "plastic_crate_03",
+  "name": "Plastic Crate 03",
+  "page": "https://polyhaven.com/a/plastic_crate_03",
+  "license": "CC0 1.0",
+  "size": [
+   0.481,
+   0.265,
+   0.265
+  ],
+  "nodes": [
+   {
+    "name": "plastic_crate_03",
+    "size": [
+     0.481,
+     0.265,
+     0.265
+    ],
+    "center": [
+     0,
+     0.133,
+     0
+    ]
+   }
+  ],
+  "srcTris": 21740,
+  "tris": 10776,
+  "trisLo": 10732,
+  "bytes": 319248,
+  "bytesLo": 199556,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "plastic_crate_03"
+  },
+  "v": "991d884a79"
+ },
+ "tableWood": {
+  "id": "wooden_table_02",
+  "name": "Wooden Table 02",
+  "page": "https://polyhaven.com/a/wooden_table_02",
+  "license": "CC0 1.0",
+  "size": [
+   1.134,
+   0.8,
+   0.706
+  ],
+  "nodes": [
+   {
+    "name": "wooden_table_02",
+    "size": [
+     1.134,
+     0.8,
+     0.706
+    ],
+    "center": [
+     0,
+     0.4,
+     0
+    ]
+   }
+  ],
+  "srcTris": 196,
+  "tris": 196,
+  "trisLo": 196,
+  "bytes": 74736,
+  "bytesLo": 26980,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "wooden_table_02"
+  },
+  "v": "33f99a449f"
+ },
+ "tablePlank": {
+  "id": "WoodenTable_01",
+  "name": "Wooden Table 01",
+  "page": "https://polyhaven.com/a/WoodenTable_01",
+  "license": "CC0 1.0",
+  "size": [
+   1.8,
+   0.549,
+   0.657
+  ],
+  "nodes": [
+   {
+    "name": "WoodenTable_01",
+    "size": [
+     1.8,
+     0.549,
+     0.657
+    ],
+    "center": [
+     0,
+     0.274,
+     0
+    ]
+   }
+  ],
+  "srcTris": 952,
+  "tris": 952,
+  "trisLo": 952,
+  "bytes": 104760,
+  "bytesLo": 44396,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "WoodenTable_01"
+  },
+  "v": "4f8d91d0a7"
+ },
+ "deskMetal": {
+  "id": "metal_office_desk",
+  "name": "Metal Office Desk",
+  "page": "https://polyhaven.com/a/metal_office_desk",
+  "license": "CC0 1.0",
+  "size": [
+   2,
+   0.788,
+   0.947
+  ],
+  "nodes": [
+   {
+    "name": "metal_office_desk_drawer_06",
+    "size": [
+     0.411,
+     0.162,
+     0.779
+    ],
+    "center": [
+     -0.718,
+     0.303,
+     0.08
+    ]
+   },
+   {
+    "name": "metal_office_desk_tray_01",
+    "size": [
+     0.413,
+     0.023,
+     0.552
+    ],
+    "center": [
+     -0.718,
+     0.739,
+     0.159
+    ]
+   },
+   {
+    "name": "metal_office_desk",
+    "size": [
+     2,
+     0.788,
+     0.917
+    ],
+    "center": [
+     0,
+     0.394,
+     -0.015
+    ]
+   },
+   {
+    "name": "metal_office_desk_drawer_04",
+    "size": [
+     0.411,
+     0.162,
+     0.779
+    ],
+    "center": [
+     -0.718,
+     0.628,
+     0.082
+    ]
+   },
+   {
+    "name": "metal_office_desk_drawer_03",
+    "size": [
+     0.411,
+     0.162,
+     0.779
+    ],
+    "center": [
+     0.718,
+     0.303,
+     0.08
+    ]
+   },
+   {
+    "name": "metal_office_desk_drawer_05",
+    "size": [
+     0.411,
+     0.162,
+     0.778
+    ],
+    "center": [
+     -0.718,
+     0.465,
+     0.08
+    ]
+   },
+   {
+    "name": "metal_office_desk_drawer_02",
+    "size": [
+     0.411,
+     0.162,
+     0.778
+    ],
+    "center": [
+     0.719,
+     0.468,
+     0.083
+    ]
+   },
+   {
+    "name": "metal_office_desk_drawer_01",
+    "size": [
+     0.411,
+     0.162,
+     0.779
+    ],
+    "center": [
+     0.718,
+     0.631,
+     0.084
+    ]
+   },
+   {
+    "name": "metal_office_desk_tray_02",
+    "size": [
+     0.413,
+     0.023,
+     0.552
+    ],
+    "center": [
+     0.718,
+     0.739,
+     0.156
+    ]
+   }
+  ],
+  "srcTris": 6898,
+  "tris": 4993,
+  "trisLo": 1993,
+  "bytes": 123908,
+  "bytesLo": 65476,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 5000,
+   "id": "metal_office_desk"
+  },
+  "v": "2126f367e2"
+ },
+ "tableRound": {
+  "id": "coffee_table_round_01",
+  "name": "Coffee Table Round 01",
+  "page": "https://polyhaven.com/a/coffee_table_round_01",
+  "license": "CC0 1.0",
+  "size": [
+   1.301,
+   0.491,
+   1.301
+  ],
+  "nodes": [
+   {
+    "name": "coffee_table_round_01",
+    "size": [
+     1.301,
+     0.491,
+     1.301
+    ],
+    "center": [
+     0,
+     0.246,
+     0
+    ]
+   }
+  ],
+  "srcTris": 4044,
+  "tris": 4044,
+  "trisLo": 1600,
+  "bytes": 104032,
+  "bytesLo": 44860,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "coffee_table_round_01"
+  },
+  "v": "a5fc572df0"
+ },
+ "chairSchool": {
+  "id": "SchoolChair_01",
+  "name": "School Chair 01",
+  "page": "https://polyhaven.com/a/SchoolChair_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.566,
+   1.006,
+   0.675
+  ],
+  "nodes": [
+   {
+    "name": "SchoolChair_01",
+    "size": [
+     0.566,
+     1.006,
+     0.675
+    ],
+    "center": [
+     0,
+     0.503,
+     0
+    ]
+   }
+  ],
+  "srcTris": 5072,
+  "tris": 4000,
+  "trisLo": 1600,
+  "bytes": 114384,
+  "bytesLo": 45608,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "SchoolChair_01"
+  },
+  "v": "f379a1b782"
+ },
+ "chairWood": {
+  "id": "WoodenChair_01",
+  "name": "Wooden Chair 01",
+  "page": "https://polyhaven.com/a/WoodenChair_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.687,
+   2.274,
+   0.657
+  ],
+  "nodes": [
+   {
+    "name": "WoodenChair_01",
+    "size": [
+     0.687,
+     2.274,
+     0.657
+    ],
+    "center": [
+     0,
+     1.137,
+     0
+    ]
+   }
+  ],
+  "srcTris": 19992,
+  "tris": 4000,
+  "trisLo": 1599,
+  "bytes": 173248,
+  "bytesLo": 71116,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "WoodenChair_01"
+  },
+  "v": "51926e879b"
+ },
+ "chairPlastic": {
+  "id": "plastic_monobloc_chair_01",
+  "name": "Plastic Monobloc Chair 01",
+  "page": "https://polyhaven.com/a/plastic_monobloc_chair_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.642,
+   0.88,
+   0.628
+  ],
+  "nodes": [
+   {
+    "name": "plastic_monobloc_chair_01",
+    "size": [
+     0.642,
+     0.88,
+     0.628
+    ],
+    "center": [
+     0,
+     0.44,
+     0
+    ]
+   }
+  ],
+  "srcTris": 3356,
+  "tris": 3000,
+  "trisLo": 1200,
+  "bytes": 156008,
+  "bytesLo": 66504,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "plastic_monobloc_chair_01"
+  },
+  "v": "854f80ded0"
+ },
+ "stoolBar": {
+  "id": "bar_chair_round_01",
+  "name": "Bar Chair Round 01",
+  "page": "https://polyhaven.com/a/bar_chair_round_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.483,
+   0.751,
+   0.486
+  ],
+  "nodes": [
+   {
+    "name": "bar_chair_round_01",
+    "size": [
+     0.483,
+     0.751,
+     0.486
+    ],
+    "center": [
+     0,
+     0.375,
+     0
+    ]
+   }
+  ],
+  "srcTris": 14373,
+  "tris": 14372,
+  "trisLo": 14372,
+  "bytes": 505608,
+  "bytesLo": 438956,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "bar_chair_round_01"
+  },
+  "v": "4a035b3e5d"
+ },
+ "stoolMetal": {
+  "id": "metal_stool_01",
+  "name": "Metal Stool 01",
+  "page": "https://polyhaven.com/a/metal_stool_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.351,
+   0.882,
+   0.354
+  ],
+  "nodes": [
+   {
+    "name": "metal_stool_01",
+    "size": [
+     0.351,
+     0.882,
+     0.354
+    ],
+    "center": [
+     0,
+     0.441,
+     0
+    ]
+   }
+  ],
+  "srcTris": 8334,
+  "tris": 2999,
+  "trisLo": 1200,
+  "bytes": 139064,
+  "bytesLo": 51160,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "metal_stool_01"
+  },
+  "v": "2ee574c60c"
+ },
+ "shelfSteel": {
+  "id": "steel_frame_shelves_01",
+  "name": "Steel Frame Shelves 01",
+  "page": "https://polyhaven.com/a/steel_frame_shelves_01",
+  "license": "CC0 1.0",
+  "size": [
+   10.974,
+   21.405,
+   5.021
+  ],
+  "nodes": [
+   {
+    "name": "steel_frame_shelves_01",
+    "size": [
+     10.974,
+     21.405,
+     5.021
+    ],
+    "center": [
+     0,
+     10.703,
+     0
+    ]
+   }
+  ],
+  "srcTris": 4348,
+  "tris": 4348,
+  "trisLo": 2000,
+  "bytes": 100244,
+  "bytesLo": 46200,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 5000,
+   "id": "steel_frame_shelves_01"
+  },
+  "v": "e59b77718c"
+ },
+ "shelfSteel3": {
+  "id": "steel_frame_shelves_03",
+  "name": "Steel Frame Shelves 03",
+  "page": "https://polyhaven.com/a/steel_frame_shelves_03",
+  "license": "CC0 1.0",
+  "size": [
+   2.351,
+   2.312,
+   0.721
+  ],
+  "nodes": [
+   {
+    "name": "steel_frame_shelves_03",
+    "size": [
+     2.351,
+     2.312,
+     0.718
+    ],
+    "center": [
+     0,
+     1.156,
+     -0.001
+    ]
+   },
+   {
+    "name": "steel_frame_shelves_03_drawer_01",
+    "size": [
+     0.964,
+     0.1,
+     0.648
+    ],
+    "center": [
+     -0.646,
+     0.585,
+     0.037
+    ]
+   },
+   {
+    "name": "steel_frame_shelves_03_drawer_02",
+    "size": [
+     0.964,
+     0.1,
+     0.648
+    ],
+    "center": [
+     -0.646,
+     0.469,
+     0.037
+    ]
+   },
+   {
+    "name": "steel_frame_shelves_03_drawer_03",
+    "size": [
+     0.964,
+     0.1,
+     0.648
+    ],
+    "center": [
+     -0.646,
+     0.351,
+     0.037
+    ]
+   }
+  ],
+  "srcTris": 8396,
+  "tris": 4993,
+  "trisLo": 1994,
+  "bytes": 191544,
+  "bytesLo": 80336,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 5000,
+   "id": "steel_frame_shelves_03"
+  },
+  "v": "51ca0a5518"
+ },
+ "rackMetal": {
+  "id": "worn_metal_rack",
+  "name": "Worn Metal Rack",
+  "page": "https://polyhaven.com/a/worn_metal_rack",
+  "license": "CC0 1.0",
+  "size": [
+   0.915,
+   1.9,
+   0.6
+  ],
+  "nodes": [
+   {
+    "name": "worn_metal_rack",
+    "size": [
+     0.915,
+     1.9,
+     0.6
+    ],
+    "center": [
+     0,
+     0.95,
+     0
+    ]
+   }
+  ],
+  "srcTris": 6372,
+  "tris": 6000,
+  "trisLo": 3054,
+  "bytes": 140816,
+  "bytesLo": 73460,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 6000,
+   "id": "worn_metal_rack"
+  },
+  "v": "4167d5c637"
+ },
+ "bookshelf": {
+  "id": "wooden_bookshelf_worn",
+  "name": "Wooden Bookshelf Worn",
+  "page": "https://polyhaven.com/a/wooden_bookshelf_worn",
+  "license": "CC0 1.0",
+  "size": [
+   1.374,
+   2.063,
+   0.581
+  ],
+  "nodes": [
+   {
+    "name": "wooden_bookshelf_worn",
+    "size": [
+     1.374,
+     2.063,
+     0.581
+    ],
+    "center": [
+     0,
+     1.032,
+     0
+    ]
+   }
+  ],
+  "srcTris": 10106,
+  "tris": 4999,
+  "trisLo": 2000,
+  "bytes": 211248,
+  "bytesLo": 69064,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 5000,
+   "id": "wooden_bookshelf_worn"
+  },
+  "v": "ab8e44f515"
+ },
+ "toolChest": {
+  "id": "metal_tool_chest",
+  "name": "Metal Tool Chest",
+  "page": "https://polyhaven.com/a/metal_tool_chest",
+  "license": "CC0 1.0",
+  "size": [
+   0.685,
+   0.652,
+   0.407
+  ],
+  "nodes": [
+   {
+    "name": "metal_tool_chest_chest",
+    "size": [
+     0.685,
+     0.348,
+     0.315
+    ],
+    "center": [
+     0,
+     0.174,
+     0.018
+    ]
+   },
+   {
+    "name": "metal_tool_chest_hinge_chest",
+    "size": [
+     0.664,
+     0.097,
+     0.09
+    ],
+    "center": [
+     0,
+     0.363,
+     -0.034
+    ]
+   },
+   {
+    "name": "metal_tool_chest_lid",
+    "size": [
+     0.66,
+     0.313,
+     0.078
+    ],
+    "center": [
+     0,
+     0.495,
+     -0.165
+    ]
+   },
+   {
+    "name": "metal_tool_chest_handle_left",
+    "size": [
+     0.009,
+     0.066,
+     0.131
+    ],
+    "center": [
+     -0.336,
+     0.188,
+     0.021
+    ]
+   },
+   {
+    "name": "metal_tool_chest_lock",
+    "size": [
+     0.055,
+     0.027,
+     0.055
+    ],
+    "center": [
+     0.014,
+     0.303,
+     0.176
+    ]
+   },
+   {
+    "name": "metal_tool_chest_hinge_lid",
+    "size": [
+     0.664,
+     0.108,
+     0.108
+    ],
+    "center": [
+     0,
+     0.429,
+     -0.104
+    ]
+   },
+   {
+    "name": "metal_tool_chest_handle_right",
+    "size": [
+     0.009,
+     0.066,
+     0.131
+    ],
+    "center": [
+     0.336,
+     0.189,
+     0.021
+    ]
+   }
+  ],
+  "srcTris": 13360,
+  "tris": 5025,
+  "trisLo": 2807,
+  "bytes": 174408,
+  "bytesLo": 89052,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 5000,
+   "id": "metal_tool_chest"
+  },
+  "v": "23de2d1e00"
+ },
+ "toolbox": {
+  "id": "metal_toolbox",
+  "name": "Metal Toolbox",
+  "page": "https://polyhaven.com/a/metal_toolbox",
+  "license": "CC0 1.0",
+  "size": [
+   0.4,
+   0.305,
+   0.27
+  ],
+  "nodes": [
+   {
+    "name": "metal_toolbox",
+    "size": [
+     0.4,
+     0.121,
+     0.219
+    ],
+    "center": [
+     0,
+     0.06,
+     0.025
+    ]
+   },
+   {
+    "name": "metal_toolbox_tray",
+    "size": [
+     0.386,
+     0.087,
+     0.187
+    ],
+    "center": [
+     0,
+     0.145,
+     0.021
+    ]
+   },
+   {
+    "name": "metal_toolbox_lid",
+    "size": [
+     0.4,
+     0.188,
+     0.199
+    ],
+    "center": [
+     0,
+     0.211,
+     -0.035
+    ]
+   }
+  ],
+  "srcTris": 14228,
+  "tris": 2736,
+  "trisLo": 2196,
+  "bytes": 85688,
+  "bytesLo": 57948,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "metal_toolbox"
+  },
+  "v": "acdd9b6ad9"
+ },
+ "vise": {
+  "id": "bench_vice_01",
+  "name": "Bench Vice 01",
+  "page": "https://polyhaven.com/a/bench_vice_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.2,
+   0.285,
+   0.396
+  ],
+  "nodes": [
+   {
+    "name": "Pivot",
+    "size": [
+     0.2,
+     0.285,
+     0.396
+    ],
+    "center": [
+     0,
+     0.143,
+     0
+    ]
+   }
+  ],
+  "srcTris": 2864,
+  "tris": 2496,
+  "trisLo": 1028,
+  "bytes": 85916,
+  "bytesLo": 44412,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2500,
+   "id": "bench_vice_01"
+  },
+  "v": "a742742843"
+ },
+ "toolCart": {
+  "id": "tool_cart",
+  "name": "Tool Cart",
+  "page": "https://polyhaven.com/a/tool_cart",
+  "license": "CC0 1.0",
+  "size": [
+   1.271,
+   0.965,
+   0.752
+  ],
+  "nodes": [
+   {
+    "name": "tool_cart",
+    "size": [
+     1.271,
+     0.965,
+     0.752
+    ],
+    "center": [
+     0,
+     0.482,
+     0
+    ]
+   }
+  ],
+  "srcTris": 29394,
+  "tris": 6000,
+  "trisLo": 3473,
+  "bytes": 202452,
+  "bytesLo": 89572,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 6000,
+   "id": "tool_cart"
+  },
+  "v": "31b61388cc"
+ },
+ "generator": {
+  "id": "portable_generator",
+  "name": "Portable Generator",
+  "page": "https://polyhaven.com/a/portable_generator",
+  "license": "CC0 1.0",
+  "size": [
+   0.815,
+   0.575,
+   0.564
+  ],
+  "nodes": [
+   {
+    "name": "portable_generator",
+    "size": [
+     0.815,
+     0.575,
+     0.564
+    ],
+    "center": [
+     0,
+     0.288,
+     0
+    ]
+   },
+   {
+    "name": "portable_generator_dial",
+    "size": [
+     0.011,
+     0.03,
+     0.009
+    ],
+    "center": [
+     0.101,
+     0.426,
+     0.24
+    ]
+   },
+   {
+    "name": "portable_generator_switch",
+    "size": [
+     0.027,
+     0.02,
+     0.038
+    ],
+    "center": [
+     -0.253,
+     0.437,
+     0.236
+    ]
+   },
+   {
+    "name": "portable_generator_toggle",
+    "size": [
+     0.008,
+     0.008,
+     0.015
+    ],
+    "center": [
+     0.02,
+     0.428,
+     0.24
+    ]
+   }
+  ],
+  "srcTris": 26419,
+  "tris": 6077,
+  "trisLo": 4534,
+  "bytes": 288292,
+  "bytesLo": 152684,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 6000,
+   "id": "portable_generator"
+  },
+  "v": "7584eaf16f"
+ },
+ "compressor": {
+  "id": "old_military_compressor",
+  "name": "Old Military Compressor",
+  "page": "https://polyhaven.com/a/old_military_compressor",
+  "license": "CC0 1.0",
+  "size": [
+   0.586,
+   1.171,
+   1.67
+  ],
+  "nodes": [
+   {
+    "name": "old_military_compressor",
+    "size": [
+     0.586,
+     1.171,
+     1.67
+    ],
+    "center": [
+     0,
+     0.586,
+     0
+    ]
+   }
+  ],
+  "srcTris": 79042,
+  "tris": 6207,
+  "trisLo": 5395,
+  "bytes": 257176,
+  "bytesLo": 154980,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 6000,
+   "id": "old_military_compressor"
+  },
+  "v": "a5e623aba3"
+ },
+ "propane": {
+  "id": "propane_tank",
+  "name": "Propane Tank",
+  "page": "https://polyhaven.com/a/propane_tank",
+  "license": "CC0 1.0",
+  "size": [
+   0.337,
+   0.553,
+   0.337
+  ],
+  "nodes": [
+   {
+    "name": "propane_tank",
+    "size": [
+     0.337,
+     0.553,
+     0.337
+    ],
+    "center": [
+     0,
+     0.277,
+     0
+    ]
+   }
+  ],
+  "srcTris": 5238,
+  "tris": 2499,
+  "trisLo": 994,
+  "bytes": 121076,
+  "bytesLo": 46504,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "propane_tank"
+  },
+  "v": "d68c266eba"
+ },
+ "jerrycan": {
+  "id": "metal_jerrycan",
+  "name": "Metal Jerrycan",
+  "page": "https://polyhaven.com/a/metal_jerrycan",
+  "license": "CC0 1.0",
+  "size": [
+   0.35,
+   0.455,
+   0.172
+  ],
+  "nodes": [
+   {
+    "name": "metal_jerrycan",
+    "size": [
+     0.35,
+     0.455,
+     0.172
+    ],
+    "center": [
+     0,
+     0.227,
+     0
+    ]
+   }
+  ],
+  "srcTris": 20022,
+  "tris": 2499,
+  "trisLo": 996,
+  "bytes": 174696,
+  "bytesLo": 57588,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "metal_jerrycan"
+  },
+  "v": "7bda648224"
+ },
+ "jerrycanPlastic": {
+  "id": "plastic_jerrycan",
+  "name": "Plastic Jerrycan",
+  "page": "https://polyhaven.com/a/plastic_jerrycan",
+  "license": "CC0 1.0",
+  "size": [
+   0.268,
+   0.318,
+   0.341
+  ],
+  "nodes": [
+   {
+    "name": "plastic_jerrycan",
+    "size": [
+     0.268,
+     0.318,
+     0.341
+    ],
+    "center": [
+     0,
+     0.159,
+     0
+    ]
+   }
+  ],
+  "srcTris": 7348,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 162628,
+  "bytesLo": 58264,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "plastic_jerrycan"
+  },
+  "v": "c96919e126"
+ },
+ "extinguisher": {
+  "id": "korean_fire_extinguisher_01",
+  "name": "Korean Fire Extinguisher 01",
+  "page": "https://polyhaven.com/a/korean_fire_extinguisher_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.279,
+   0.658,
+   0.367
+  ],
+  "nodes": [
+   {
+    "name": "korean_fire_extinguisher_01",
+    "size": [
+     0.279,
+     0.658,
+     0.367
+    ],
+    "center": [
+     0,
+     0.329,
+     0
+    ]
+   }
+  ],
+  "srcTris": 9913,
+  "tris": 2596,
+  "trisLo": 1079,
+  "bytes": 246532,
+  "bytesLo": 84460,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "korean_fire_extinguisher_01"
+  },
+  "v": "ce65b5a024"
+ },
+ "ladder": {
+  "id": "wooden_ladder",
+  "name": "Wooden Ladder",
+  "page": "https://polyhaven.com/a/wooden_ladder",
+  "license": "CC0 1.0",
+  "size": [
+   0.959,
+   1.335,
+   0.5
+  ],
+  "nodes": [
+   {
+    "name": "wooden_ladder_supports",
+    "size": [
+     0.485,
+     1.215,
+     0.497
+    ],
+    "center": [
+     0.237,
+     0.608,
+     0
+    ]
+   },
+   {
+    "name": "wooden_ladder_steps",
+    "size": [
+     0.577,
+     1.335,
+     0.5
+    ],
+    "center": [
+     -0.191,
+     0.667,
+     0
+    ]
+   }
+  ],
+  "srcTris": 8492,
+  "tris": 2499,
+  "trisLo": 1454,
+  "bytes": 169816,
+  "bytesLo": 63248,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "wooden_ladder"
+  },
+  "v": "f1fb926645"
+ },
+ "handTruck": {
+  "id": "hand_truck",
+  "name": "Hand Truck",
+  "page": "https://polyhaven.com/a/hand_truck",
+  "license": "CC0 1.0",
+  "size": [
+   0.593,
+   1.402,
+   0.692
+  ],
+  "nodes": [
+   {
+    "name": "hand_truck",
+    "size": [
+     0.593,
+     1.402,
+     0.692
+    ],
+    "center": [
+     0,
+     0.701,
+     0
+    ]
+   }
+  ],
+  "srcTris": 13220,
+  "tris": 5500,
+  "trisLo": 5300,
+  "bytes": 272600,
+  "bytesLo": 155648,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "hand_truck"
+  },
+  "v": "387f7c49e7"
+ },
+ "cementBag": {
+  "id": "cement_bag",
+  "name": "Cement Bag",
+  "page": "https://polyhaven.com/a/cement_bag",
+  "license": "CC0 1.0",
+  "size": [
+   0.462,
+   0.18,
+   0.7
+  ],
+  "nodes": [
+   {
+    "name": "cement_bag",
+    "size": [
+     0.462,
+     0.18,
+     0.7
+    ],
+    "center": [
+     0,
+     0.09,
+     0
+    ]
+   }
+  ],
+  "srcTris": 844,
+  "tris": 844,
+  "trisLo": 800,
+  "bytes": 61788,
+  "bytesLo": 29816,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2000,
+   "id": "cement_bag"
+  },
+  "v": "d2d4aa0671"
+ },
+ "trashBag": {
+  "id": "trashbag",
+  "name": "Trashbag",
+  "page": "https://polyhaven.com/a/trashbag",
+  "license": "CC0 1.0",
+  "size": [
+   0.528,
+   0.575,
+   0.463
+  ],
+  "nodes": [
+   {
+    "name": "trashbag",
+    "size": [
+     0.528,
+     0.575,
+     0.463
+    ],
+    "center": [
+     0,
+     0.287,
+     0
+    ]
+   }
+  ],
+  "srcTris": 4482,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 138596,
+  "bytesLo": 55736,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2500,
+   "id": "trashbag"
+  },
+  "v": "c2ac89c250"
+ },
+ "tyre": {
+  "id": "old_tyre",
+  "name": "Old Tyre",
+  "page": "https://polyhaven.com/a/old_tyre",
+  "license": "CC0 1.0",
+  "size": [
+   0.6,
+   0.6,
+   0.165
+  ],
+  "nodes": [
+   {
+    "name": "old_tyre",
+    "size": [
+     0.6,
+     0.6,
+     0.165
+    ],
+    "center": [
+     0,
+     0.3,
+     0
+    ]
+   }
+  ],
+  "srcTris": 2880,
+  "tris": 2880,
+  "trisLo": 1200,
+  "bytes": 148292,
+  "bytesLo": 48356,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "old_tyre"
+  },
+  "v": "e1cb73977c"
+ },
+ "wheelRim": {
+  "id": "rusted_wheel_rim_01",
+  "name": "Rusted Wheel Rim 01",
+  "page": "https://polyhaven.com/a/rusted_wheel_rim_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.404,
+   0.404,
+   0.15
+  ],
+  "nodes": [
+   {
+    "name": "rusted_wheel_rim_01",
+    "size": [
+     0.404,
+     0.404,
+     0.15
+    ],
+    "center": [
+     0,
+     0.202,
+     0
+    ]
+   }
+  ],
+  "srcTris": 16440,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 73208,
+  "bytesLo": 31616,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2500,
+   "id": "rusted_wheel_rim_01"
+  },
+  "v": "0a828fd00b"
+ },
+ "canRusted": {
+  "id": "can_rusted",
+  "name": "Can Rusted",
+  "page": "https://polyhaven.com/a/can_rusted",
+  "license": "CC0 1.0",
+  "size": [
+   0.125,
+   0.151,
+   0.124
+  ],
+  "nodes": [
+   {
+    "name": "can_rusted",
+    "size": [
+     0.125,
+     0.151,
+     0.124
+    ],
+    "center": [
+     0,
+     0.076,
+     0
+    ]
+   }
+  ],
+  "srcTris": 3520,
+  "tris": 800,
+  "trisLo": 320,
+  "bytes": 46668,
+  "bytesLo": 16360,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 800,
+   "id": "can_rusted"
+  },
+  "v": "f336fc16d9"
+ },
+ "foodCans": {
+  "id": "russian_food_cans_01",
+  "name": "Russian Food Cans 01",
+  "page": "https://polyhaven.com/a/russian_food_cans_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.142,
+   0.085,
+   0.046
+  ],
+  "nodes": [
+   {
+    "name": "russian_food_cans_01_salt_box",
+    "size": [
+     0.033,
+     0.085,
+     0.027
+    ],
+    "center": [
+     0.002,
+     0.042,
+     0
+    ]
+   },
+   {
+    "name": "russian_food_cans_01_can_cond",
+    "size": [
+     0.039,
+     0.038,
+     0.039
+    ],
+    "center": [
+     0.052,
+     0.019,
+     0
+    ]
+   },
+   {
+    "name": "russian_food_cans_01_can_fish",
+    "size": [
+     0.046,
+     0.02,
+     0.046
+    ],
+    "center": [
+     -0.048,
+     0.01,
+     0
+    ]
+   }
+  ],
+  "srcTris": 1348,
+  "tris": 1348,
+  "trisLo": 598,
+  "bytes": 40828,
+  "bytesLo": 21544,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1500,
+   "id": "russian_food_cans_01"
+  },
+  "v": "9c44310a1e"
+ },
+ "bottles": {
+  "id": "wine_bottles_01",
+  "name": "Wine Bottles 01",
+  "page": "https://polyhaven.com/a/wine_bottles_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.676,
+   0.331,
+   0.08
+  ],
+  "nodes": [
+   {
+    "name": "wine_bottles_01_bordeaux",
+    "size": [
+     0.074,
+     0.298,
+     0.074
+    ],
+    "center": [
+     -0.092,
+     0.149,
+     0
+    ]
+   },
+   {
+    "name": "wine_bottles_01_alsace",
+    "size": [
+     0.072,
+     0.331,
+     0.071
+    ],
+    "center": [
+     -0.302,
+     0.166,
+     0
+    ]
+   },
+   {
+    "name": "wine_bottles_01_burgundy",
+    "size": [
+     0.08,
+     0.305,
+     0.08
+    ],
+    "center": [
+     0.108,
+     0.153,
+     0
+    ]
+   },
+   {
+    "name": "wine_bottles_01_champagne",
+    "size": [
+     0.081,
+     0.316,
+     0.08
+    ],
+    "center": [
+     0.298,
+     0.158,
+     0
+    ]
+   }
+  ],
+  "srcTris": 28848,
+  "tris": 2834,
+  "trisLo": 1080,
+  "bytes": 104032,
+  "bytesLo": 55236,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "wine_bottles_01"
+  },
+  "v": "a54830e089"
+ },
+ "sprayCans": {
+  "id": "spray_paint_bottles",
+  "name": "Spray Paint Bottles",
+  "page": "https://polyhaven.com/a/spray_paint_bottles",
+  "license": "CC0 1.0",
+  "size": [
+   0.158,
+   0.229,
+   0.065
+  ],
+  "nodes": [
+   {
+    "name": "spray_paint_bottles",
+    "size": [
+     0.065,
+     0.229,
+     0.065
+    ],
+    "center": [
+     -0.046,
+     0.114,
+     0
+    ]
+   },
+   {
+    "name": "spray_paint_bottles_dirty",
+    "size": [
+     0.065,
+     0.228,
+     0.065
+    ],
+    "center": [
+     0.046,
+     0.114,
+     0
+    ]
+   }
+  ],
+  "srcTris": 5040,
+  "tris": 2000,
+  "trisLo": 798,
+  "bytes": 64388,
+  "bytesLo": 28884,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "spray_paint_bottles"
+  },
+  "v": "4e0803a8c8"
+ },
+ "oilCan": {
+  "id": "oil_tin",
+  "name": "Oil Tin",
+  "page": "https://polyhaven.com/a/oil_tin",
+  "license": "CC0 1.0",
+  "size": [
+   0.114,
+   0.205,
+   0.154
+  ],
+  "nodes": [
+   {
+    "name": "oil_tin",
+    "size": [
+     0.114,
+     0.205,
+     0.154
+    ],
+    "center": [
+     0,
+     0.103,
+     0
+    ]
+   },
+   {
+    "name": "oil_tin_handle",
+    "size": [
+     0.039,
+     0.008,
+     0.076
+    ],
+    "center": [
+     -0.009,
+     0.195,
+     -0.008
+    ]
+   }
+  ],
+  "srcTris": 2834,
+  "tris": 1198,
+  "trisLo": 478,
+  "bytes": 48744,
+  "bytesLo": 20264,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1200,
+   "id": "oil_tin"
+  },
+  "v": "88410b0c2b"
+ },
+ "medBox": {
+  "id": "medical_box",
+  "name": "Medical Box",
+  "page": "https://polyhaven.com/a/medical_box",
+  "license": "CC0 1.0",
+  "size": [
+   0.525,
+   0.097,
+   0.35
+  ],
+  "nodes": [
+   {
+    "name": "medical_box_latch",
+    "size": [
+     0.345,
+     0.045,
+     0.007
+    ],
+    "center": [
+     0,
+     0.038,
+     0.167
+    ]
+   },
+   {
+    "name": "medical_box_latch_rings",
+    "size": [
+     0.352,
+     0.033,
+     0.005
+    ],
+    "center": [
+     0,
+     0.05,
+     0.17
+    ]
+   },
+   {
+    "name": "medical_box_lid",
+    "size": [
+     0.525,
+     0.033,
+     0.346
+    ],
+    "center": [
+     0,
+     0.08,
+     0.002
+    ]
+   },
+   {
+    "name": "medical_box",
+    "size": [
+     0.517,
+     0.077,
+     0.344
+    ],
+    "center": [
+     0,
+     0.039,
+     -0.003
+    ]
+   },
+   {
+    "name": "medical_box_handle",
+    "size": [
+     0.162,
+     0.041,
+     0.004
+    ],
+    "center": [
+     0,
+     0.024,
+     0.166
+    ]
+   }
+  ],
+  "srcTris": 3718,
+  "tris": 1496,
+  "trisLo": 606,
+  "bytes": 62508,
+  "bytesLo": 31384,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1500,
+   "id": "medical_box"
+  },
+  "v": "02bffe2d30"
+ },
+ "gasMask": {
+  "id": "old_gas_mask",
+  "name": "Old Gas Mask",
+  "page": "https://polyhaven.com/a/old_gas_mask",
+  "license": "CC0 1.0",
+  "size": [
+   0.211,
+   1.124,
+   0.309
+  ],
+  "nodes": [
+   {
+    "name": "old_gas_mask",
+    "size": [
+     0.211,
+     1.124,
+     0.309
+    ],
+    "center": [
+     0,
+     0.562,
+     0
+    ]
+   }
+  ],
+  "srcTris": 18900,
+  "tris": 2499,
+  "trisLo": 1314,
+  "bytes": 68400,
+  "bytesLo": 37588,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2500,
+   "id": "old_gas_mask"
+  },
+  "v": "f08c3048ac"
+ },
+ "broom": {
+  "id": "plastic_broom",
+  "name": "Plastic Broom",
+  "page": "https://polyhaven.com/a/plastic_broom",
+  "license": "CC0 1.0",
+  "size": [
+   0.416,
+   1.197,
+   0.566
+  ],
+  "nodes": [
+   {
+    "name": "plastic_broom",
+    "size": [
+     0.416,
+     1.197,
+     0.566
+    ],
+    "center": [
+     0,
+     0.599,
+     0
+    ]
+   }
+  ],
+  "srcTris": 18736,
+  "tris": 3915,
+  "trisLo": 599,
+  "bytes": 91652,
+  "bytesLo": 27348,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1500,
+   "id": "plastic_broom"
+  },
+  "v": "d808c8803e"
+ },
+ "wetSign": {
+  "id": "WetFloorSign_01",
+  "name": "Wet Floor Sign 01",
+  "page": "https://polyhaven.com/a/WetFloorSign_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.3,
+   0.63,
+   0.359
+  ],
+  "nodes": [
+   {
+    "name": "WetFloorSign_01",
+    "size": [
+     0.3,
+     0.63,
+     0.359
+    ],
+    "center": [
+     0,
+     0.315,
+     0
+    ]
+   }
+  ],
+  "srcTris": 228,
+  "tris": 228,
+  "trisLo": 228,
+  "bytes": 25792,
+  "bytesLo": 13880,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1500,
+   "id": "WetFloorSign_01"
+  },
+  "v": "932e1155b5"
+ },
+ "hydrant": {
+  "id": "fire_hydrant",
+  "name": "Fire Hydrant",
+  "page": "https://polyhaven.com/a/fire_hydrant",
+  "license": "CC0 1.0",
+  "size": [
+   0.875,
+   0.799,
+   0.317
+  ],
+  "nodes": [
+   {
+    "name": "fire_hydrant",
+    "size": [
+     0.251,
+     0.799,
+     0.283
+    ],
+    "center": [
+     -0.296,
+     0.4,
+     -0.017
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_01",
+    "size": [
+     0.25,
+     0.249,
+     0.085
+    ],
+    "center": [
+     -0.296,
+     0.43,
+     0.116
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_02",
+    "size": [
+     0.057,
+     0.075,
+     0.071
+    ],
+    "center": [
+     -0.191,
+     0.56,
+     0.027
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_03",
+    "size": [
+     0.067,
+     0.1,
+     0.094
+    ],
+    "center": [
+     -0.404,
+     0.558,
+     0.031
+    ]
+   },
+   {
+    "name": "fire_hydrant_chain",
+    "size": [
+     0.252,
+     0.381,
+     0.123
+    ],
+    "center": [
+     -0.3,
+     0.388,
+     0.075
+    ]
+   },
+   {
+    "name": "fire_hydrant_aged",
+    "size": [
+     0.251,
+     0.799,
+     0.283
+    ],
+    "center": [
+     0.304,
+     0.4,
+     -0.017
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_01_aged",
+    "size": [
+     0.25,
+     0.249,
+     0.085
+    ],
+    "center": [
+     0.304,
+     0.43,
+     0.116
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_02_aged",
+    "size": [
+     0.057,
+     0.075,
+     0.071
+    ],
+    "center": [
+     0.409,
+     0.56,
+     0.027
+    ]
+   },
+   {
+    "name": "fire_hydrant_cap_03_aged",
+    "size": [
+     0.067,
+     0.1,
+     0.094
+    ],
+    "center": [
+     0.196,
+     0.558,
+     0.031
+    ]
+   },
+   {
+    "name": "fire_hydrant_chain_aged",
+    "size": [
+     0.252,
+     0.381,
+     0.123
+    ],
+    "center": [
+     0.3,
+     0.388,
+     0.075
+    ]
+   }
+  ],
+  "srcTris": 86316,
+  "tris": 5378,
+  "trisLo": 2604,
+  "bytes": 250352,
+  "bytesLo": 103720,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "fire_hydrant"
+  },
+  "v": "242b0de196"
+ },
+ "roadBarrier": {
+  "id": "concrete_road_barrier",
+  "name": "Concrete Road Barrier",
+  "page": "https://polyhaven.com/a/concrete_road_barrier",
+  "license": "CC0 1.0",
+  "size": [
+   1.544,
+   0.83,
+   0.639
+  ],
+  "nodes": [
+   {
+    "name": "concrete_road_barrier",
+    "size": [
+     1.544,
+     0.83,
+     0.639
+    ],
+    "center": [
+     0,
+     0.415,
+     0
+    ]
+   }
+  ],
+  "srcTris": 60928,
+  "tris": 2000,
+  "trisLo": 798,
+  "bytes": 154388,
+  "bytesLo": 41320,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 2000,
+   "id": "concrete_road_barrier"
+  },
+  "v": "318248ab3b"
+ },
+ "manhole": {
+  "id": "water_manhole_cover",
+  "name": "Water Manhole Cover",
+  "page": "https://polyhaven.com/a/water_manhole_cover",
+  "license": "CC0 1.0",
+  "size": [
+   0.691,
+   0.068,
+   0.691
+  ],
+  "nodes": [
+   {
+    "name": "water_manhole_cover_frame",
+    "size": [
+     0.691,
+     0.068,
+     0.691
+    ],
+    "center": [
+     0,
+     0.034,
+     0
+    ]
+   },
+   {
+    "name": "water_manhole_cover",
+    "size": [
+     0.61,
+     0.025,
+     0.6
+    ],
+    "center": [
+     0,
+     0.055,
+     0
+    ]
+   }
+  ],
+  "srcTris": 6301,
+  "tris": 1575,
+  "trisLo": 893,
+  "bytes": 162724,
+  "bytesLo": 63248,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 1500,
+   "id": "water_manhole_cover"
+  },
+  "v": "182e1b07df"
+ },
+ "utilityBox": {
+  "id": "utility_box_02",
+  "name": "Utility Box 02",
+  "page": "https://polyhaven.com/a/utility_box_02",
+  "license": "CC0 1.0",
+  "size": [
+   0.92,
+   1.119,
+   0.432
+  ],
+  "nodes": [
+   {
+    "name": "utility_box_02",
+    "size": [
+     0.92,
+     1.119,
+     0.432
+    ],
+    "center": [
+     0,
+     0.56,
+     0
+    ]
+   }
+  ],
+  "srcTris": 6268,
+  "tris": 3000,
+  "trisLo": 1199,
+  "bytes": 117364,
+  "bytesLo": 50772,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "utility_box_02"
+  },
+  "v": "4fedebea24"
+ },
+ "powerBox": {
+  "id": "power_box_01",
+  "name": "Power Box 01",
+  "page": "https://polyhaven.com/a/power_box_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.461,
+   0.503,
+   0.399
+  ],
+  "nodes": [
+   {
+    "name": "power_box_01_door",
+    "size": [
+     0.125,
+     0.487,
+     0.311
+    ],
+    "center": [
+     -0.168,
+     0.25,
+     0.044
+    ]
+   },
+   {
+    "name": "power_box_01_box",
+    "size": [
+     0.345,
+     0.503,
+     0.095
+    ],
+    "center": [
+     0.058,
+     0.252,
+     -0.152
+    ]
+   }
+  ],
+  "srcTris": 21272,
+  "tris": 4077,
+  "trisLo": 3953,
+  "bytes": 168856,
+  "bytesLo": 111416,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "power_box_01"
+  },
+  "v": "6889bf50b3"
+ },
+ "aircon": {
+  "id": "exterior_aircon_unit",
+  "name": "Exterior Aircon Unit",
+  "page": "https://polyhaven.com/a/exterior_aircon_unit",
+  "license": "CC0 1.0",
+  "size": [
+   1.796,
+   0.928,
+   0.374
+  ],
+  "nodes": [
+   {
+    "name": "exterior_aircon_unit",
+    "size": [
+     0.796,
+     0.928,
+     0.374
+    ],
+    "center": [
+     -0.5,
+     0.464,
+     0
+    ]
+   },
+   {
+    "name": "exterior_aircon_unit_rusted",
+    "size": [
+     0.796,
+     0.928,
+     0.374
+    ],
+    "center": [
+     0.5,
+     0.464,
+     0
+    ]
+   }
+  ],
+  "srcTris": 18986,
+  "tris": 4024,
+  "trisLo": 1614,
+  "bytes": 502636,
+  "bytesLo": 153216,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "exterior_aircon_unit"
+  },
+  "v": "8861c54513"
+ },
+ "securityCam": {
+  "id": "security_camera_01",
+  "name": "Security Camera 01",
+  "page": "https://polyhaven.com/a/security_camera_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.17,
+   0.285,
+   0.554
+  ],
+  "nodes": [
+   {
+    "name": "security_camera_01",
+    "size": [
+     0.17,
+     0.285,
+     0.554
+    ],
+    "center": [
+     0,
+     0.142,
+     0
+    ]
+   }
+  ],
+  "srcTris": 13571,
+  "tris": 2000,
+  "trisLo": 797,
+  "bytes": 59980,
+  "bytesLo": 28224,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "security_camera_01"
+  },
+  "v": "171ac57df8"
+ },
+ "fireAlarm": {
+  "id": "fire_alarm",
+  "name": "Fire Alarm",
+  "page": "https://polyhaven.com/a/fire_alarm",
+  "license": "CC0 1.0",
+  "size": [
+   0.099,
+   0.144,
+   0.026
+  ],
+  "nodes": [
+   {
+    "name": "fire_alarm",
+    "size": [
+     0.099,
+     0.144,
+     0.026
+    ],
+    "center": [
+     0,
+     0.072,
+     0
+    ]
+   },
+   {
+    "name": "fire_alarm_lever",
+    "size": [
+     0.072,
+     0.049,
+     0.011
+    ],
+    "center": [
+     0,
+     0.066,
+     0.004
+    ]
+   }
+  ],
+  "srcTris": 2705,
+  "tris": 1275,
+  "trisLo": 915,
+  "bytes": 58812,
+  "bytesLo": 32864,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1200,
+   "id": "fire_alarm"
+  },
+  "v": "fcc3985965"
+ },
+ "coveredCar": {
+  "id": "covered_car",
+  "name": "Covered Car",
+  "page": "https://polyhaven.com/a/covered_car",
+  "license": "CC0 1.0",
+  "size": [
+   1.789,
+   1.411,
+   4.38
+  ],
+  "nodes": [
+   {
+    "name": "covered_car_wheel_01",
+    "size": [
+     0.161,
+     0.598,
+     0.598
+    ],
+    "center": [
+     0.71,
+     0.3,
+     1.257
+    ]
+   },
+   {
+    "name": "covered_car_wheel_02",
+    "size": [
+     0.161,
+     0.6,
+     0.6
+    ],
+    "center": [
+     -0.73,
+     0.3,
+     1.257
+    ]
+   },
+   {
+    "name": "covered_car_wheel_03",
+    "size": [
+     0.161,
+     0.6,
+     0.6
+    ],
+    "center": [
+     -0.72,
+     0.3,
+     -1.323
+    ]
+   },
+   {
+    "name": "covered_car_wheel_04",
+    "size": [
+     0.161,
+     0.6,
+     0.6
+    ],
+    "center": [
+     0.7,
+     0.3,
+     -1.323
+    ]
+   },
+   {
+    "name": "covered_car",
+    "size": [
+     1.789,
+     1.285,
+     4.38
+    ],
+    "center": [
+     0,
+     0.768,
+     0
+    ]
+   }
+  ],
+  "srcTris": 12592,
+  "tris": 12592,
+  "trisLo": 5595,
+  "bytes": 457464,
+  "bytesLo": 178640,
+  "tex": 1024,
+  "opts": {
+   "tex": 1024,
+   "tris": 14000,
+   "id": "covered_car"
+  },
+  "v": "71aefc6383"
+ },
+ "lampHanging": {
+  "id": "hanging_industrial_lamp",
+  "name": "Hanging Industrial Lamp",
+  "page": "https://polyhaven.com/a/hanging_industrial_lamp",
+  "license": "CC0 1.0",
+  "size": [
+   0.55,
+   1.355,
+   0.55
+  ],
+  "nodes": [
+   {
+    "name": "hanging_industrial_lamp",
+    "size": [
+     0.55,
+     1.355,
+     0.55
+    ],
+    "center": [
+     0,
+     0.678,
+     0
+    ]
+   }
+  ],
+  "srcTris": 9530,
+  "tris": 2506,
+  "trisLo": 1320,
+  "bytes": 95884,
+  "bytesLo": 46924,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "hanging_industrial_lamp"
+  },
+  "v": "5a642b9a62"
+ },
+ "lampCaged": {
+  "id": "caged_hanging_light",
+  "name": "Caged Hanging Light",
+  "page": "https://polyhaven.com/a/caged_hanging_light",
+  "license": "CC0 1.0",
+  "size": [
+   1.162,
+   0.75,
+   0.315
+  ],
+  "nodes": [
+   {
+    "name": "caged_hanging_light",
+    "size": [
+     1.162,
+     0.75,
+     0.315
+    ],
+    "center": [
+     0,
+     0.375,
+     0
+    ]
+   }
+  ],
+  "srcTris": 22893,
+  "tris": 1991,
+  "trisLo": 1513,
+  "bytes": 86592,
+  "bytesLo": 44944,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "caged_hanging_light"
+  },
+  "v": "3ba01be277"
+ },
+ "lampWall": {
+  "id": "industrial_wall_lamp",
+  "name": "Industrial Wall Lamp",
+  "page": "https://polyhaven.com/a/industrial_wall_lamp",
+  "license": "CC0 1.0",
+  "size": [
+   0.273,
+   0.428,
+   0.139
+  ],
+  "nodes": [
+   {
+    "name": "industrial_wall_lamp",
+    "size": [
+     0.273,
+     0.428,
+     0.139
+    ],
+    "center": [
+     0,
+     0.214,
+     0
+    ]
+   }
+  ],
+  "srcTris": 4446,
+  "tris": 1998,
+  "trisLo": 790,
+  "bytes": 85492,
+  "bytesLo": 38640,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "industrial_wall_lamp"
+  },
+  "v": "56a6bbf454"
+ },
+ "fluorescent": {
+  "id": "mounted_fluorescent_lights",
+  "name": "Mounted Fluorescent Lights",
+  "page": "https://polyhaven.com/a/mounted_fluorescent_lights",
+  "license": "CC0 1.0",
+  "size": [
+   0.912,
+   0.035,
+   0.645
+  ],
+  "nodes": [
+   {
+    "name": "mounted_fluorescent_lights_a",
+    "size": [
+     0.912,
+     0.035,
+     0.04
+    ],
+    "center": [
+     0,
+     0.018,
+     0.303
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_f",
+    "size": [
+     0.911,
+     0.032,
+     0.045
+    ],
+    "center": [
+     0,
+     0.019,
+     -0.198
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_d",
+    "size": [
+     0.911,
+     0.032,
+     0.042
+    ],
+    "center": [
+     0,
+     0.019,
+     0.003
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_b",
+    "size": [
+     0.912,
+     0.035,
+     0.04
+    ],
+    "center": [
+     0,
+     0.018,
+     0.203
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_g",
+    "size": [
+     0.905,
+     0.027,
+     0.05
+    ],
+    "center": [
+     0,
+     0.022,
+     -0.298
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_e",
+    "size": [
+     0.911,
+     0.032,
+     0.042
+    ],
+    "center": [
+     0,
+     0.019,
+     -0.097
+    ]
+   },
+   {
+    "name": "mounted_fluorescent_lights_c",
+    "size": [
+     0.912,
+     0.035,
+     0.04
+    ],
+    "center": [
+     0,
+     0.018,
+     0.103
+    ]
+   }
+  ],
+  "srcTris": 17820,
+  "tris": 2482,
+  "trisLo": 1511,
+  "bytes": 85552,
+  "bytesLo": 56424,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2500,
+   "id": "mounted_fluorescent_lights"
+  },
+  "v": "623b455e5d"
+ },
+ "securityLight": {
+  "id": "security_light",
+  "name": "Security Light",
+  "page": "https://polyhaven.com/a/security_light",
+  "license": "CC0 1.0",
+  "size": [
+   0.323,
+   0.531,
+   0.417
+  ],
+  "nodes": [
+   {
+    "name": "security_light",
+    "size": [
+     0.323,
+     0.411,
+     0.417
+    ],
+    "center": [
+     0,
+     0.325,
+     0
+    ]
+   },
+   {
+    "name": "security_light_glass",
+    "size": [
+     0.302,
+     0.193,
+     0.302
+    ],
+    "center": [
+     0.001,
+     0.096,
+     0.045
+    ]
+   }
+  ],
+  "srcTris": 4668,
+  "tris": 2095,
+  "trisLo": 826,
+  "bytes": 79416,
+  "bytesLo": 35480,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2000,
+   "id": "security_light"
+  },
+  "v": "760f09d1e8"
+ },
+ "streetLamp": {
+  "id": "street_lamp_02",
+  "name": "Street Lamp 02",
+  "page": "https://polyhaven.com/a/street_lamp_02",
+  "license": "CC0 1.0",
+  "size": [
+   0.385,
+   1.674,
+   0.806
+  ],
+  "nodes": [
+   {
+    "name": "street_lamp_02",
+    "size": [
+     0.385,
+     1.674,
+     0.806
+    ],
+    "center": [
+     0,
+     0.837,
+     0
+    ]
+   }
+  ],
+  "srcTris": 20338,
+  "tris": 4179,
+  "trisLo": 1727,
+  "bytes": 122724,
+  "bytesLo": 53152,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "street_lamp_02"
+  },
+  "v": "616a46fa76"
+ },
+ "tv": {
+  "id": "Television_01",
+  "name": "Television 01",
+  "page": "https://polyhaven.com/a/Television_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.6,
+   0.457,
+   0.471
+  ],
+  "nodes": [
+   {
+    "name": "Television_01",
+    "size": [
+     0.6,
+     0.457,
+     0.471
+    ],
+    "center": [
+     0,
+     0.228,
+     0
+    ]
+   }
+  ],
+  "srcTris": 1918,
+  "tris": 1918,
+  "trisLo": 1200,
+  "bytes": 106408,
+  "bytesLo": 46540,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "Television_01"
+  },
+  "v": "3a18eb3f5e"
+ },
+ "radio": {
+  "id": "boombox",
+  "name": "Boombox",
+  "page": "https://polyhaven.com/a/boombox",
+  "license": "CC0 1.0",
+  "size": [
+   0.724,
+   0.47,
+   0.186
+  ],
+  "nodes": [
+   {
+    "name": "boombox",
+    "size": [
+     0.724,
+     0.47,
+     0.186
+    ],
+    "center": [
+     0,
+     0.235,
+     0
+    ]
+   }
+  ],
+  "srcTris": 10168,
+  "tris": 3055,
+  "trisLo": 1284,
+  "bytes": 104728,
+  "bytesLo": 43232,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 3000,
+   "id": "boombox"
+  },
+  "v": "c9f9bbc9f3"
+ },
+ "register": {
+  "id": "CashRegister_01",
+  "name": "Cash Register 01",
+  "page": "https://polyhaven.com/a/CashRegister_01",
+  "license": "CC0 1.0",
+  "size": [
+   0.598,
+   0.62,
+   0.623
+  ],
+  "nodes": [
+   {
+    "name": "CashRegister_01_body",
+    "size": [
+     0.598,
+     0.62,
+     0.435
+    ],
+    "center": [
+     0,
+     0.31,
+     -0.094
+    ]
+   },
+   {
+    "name": "CashRegister_011_drawer",
+    "size": [
+     0.42,
+     0.105,
+     0.327
+    ],
+    "center": [
+     -0.058,
+     0.073,
+     0.148
+    ]
+   }
+  ],
+  "srcTris": 9927,
+  "tris": 3186,
+  "trisLo": 1791,
+  "bytes": 188732,
+  "bytesLo": 95372,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "CashRegister_01"
+  },
+  "v": "b92c6eba5e"
+ },
+ "microwave": {
+  "id": "vintage_microwave",
+  "name": "Vintage Microwave",
+  "page": "https://polyhaven.com/a/vintage_microwave",
+  "license": "CC0 1.0",
+  "size": [
+   1.073,
+   0.526,
+   0.745
+  ],
+  "nodes": [
+   {
+    "name": "vintage_microwave",
+    "size": [
+     1.073,
+     0.526,
+     0.745
+    ],
+    "center": [
+     0,
+     0.263,
+     0
+    ]
+   }
+  ],
+  "srcTris": 8120,
+  "tris": 2498,
+  "trisLo": 998,
+  "bytes": 56000,
+  "bytesLo": 27772,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 2500,
+   "id": "vintage_microwave"
+  },
+  "v": "653097a944"
+ },
+ "wallClock": {
+  "id": "wall_clock",
+  "name": "Wall Clock",
+  "page": "https://polyhaven.com/a/wall_clock",
+  "license": "CC0 1.0",
+  "size": [
+   0.32,
+   0.32,
+   0.047
+  ],
+  "nodes": [
+   {
+    "name": "wall_clock_minute_hand",
+    "size": [
+     0.118,
+     0.076,
+     0
+    ],
+    "center": [
+     0.041,
+     0.186,
+     0.006
+    ]
+   },
+   {
+    "name": "wall_clock_second_hand",
+    "size": [
+     0.03,
+     0.161,
+     0.006
+    ],
+    "center": [
+     0.008,
+     0.108,
+     0.005
+    ]
+   },
+   {
+    "name": "wall_clock_hours_hand",
+    "size": [
+     0.089,
+     0.064,
+     0
+    ],
+    "center": [
+     -0.032,
+     0.183,
+     0.005
+    ]
+   },
+   {
+    "name": "wall_clock",
+    "size": [
+     0.32,
+     0.32,
+     0.047
+    ],
+    "center": [
+     0,
+     0.16,
+     0
+    ]
+   }
+  ],
+  "srcTris": 3658,
+  "tris": 1211,
+  "trisLo": 651,
+  "bytes": 49872,
+  "bytesLo": 28880,
+  "tex": 256,
+  "opts": {
+   "tex": 256,
+   "tris": 1200,
+   "id": "wall_clock"
+  },
+  "v": "e3b21447c0"
+ },
+ "logDead": {
+  "id": "dead_tree_trunk",
+  "name": "Dead Tree Trunk",
+  "page": "https://polyhaven.com/a/dead_tree_trunk",
+  "license": "CC0 1.0",
+  "size": [
+   3.05,
+   0.288,
+   0.277
+  ],
+  "nodes": [
+   {
+    "name": "dead_tree_trunk",
+    "size": [
+     3.05,
+     0.288,
+     0.277
+    ],
+    "center": [
+     0,
+     0.144,
+     0
+    ]
+   }
+  ],
+  "srcTris": 101802,
+  "tris": 4000,
+  "trisLo": 1600,
+  "bytes": 212652,
+  "bytesLo": 65320,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "dead_tree_trunk"
+  },
+  "v": "8590063a89"
+ },
+ "branches": {
+  "id": "dry_branches_medium_01",
+  "name": "Dry Branches Medium 01",
+  "page": "https://polyhaven.com/a/dry_branches_medium_01",
+  "license": "CC0 1.0",
+  "size": [
+   1.058,
+   0.34,
+   1.296
+  ],
+  "nodes": [
+   {
+    "name": "dry_branches_medium_01_c",
+    "size": [
+     0.13,
+     0.143,
+     0.775
+    ],
+    "center": [
+     0.464,
+     0.082,
+     -0.025
+    ]
+   },
+   {
+    "name": "dry_branches_medium_01_b",
+    "size": [
+     0.149,
+     0.14,
+     1.039
+    ],
+    "center": [
+     0.049,
+     0.085,
+     0.044
+    ]
+   },
+   {
+    "name": "dry_branches_medium_01_a",
+    "size": [
+     0.322,
+     0.34,
+     1.296
+    ],
+    "center": [
+     -0.368,
+     0.17,
+     0
+    ]
+   }
+  ],
+  "srcTris": 16803,
+  "tris": 3201,
+  "trisLo": 2681,
+  "bytes": 266956,
+  "bytesLo": 114064,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "dry_branches_medium_01"
+  },
+  "v": "c914be342f"
+ },
+ "rocks": {
+  "id": "rock_moss_set_01",
+  "name": "Rock Moss Set 01",
+  "page": "https://polyhaven.com/a/rock_moss_set_01",
+  "license": "CC0 1.0",
+  "size": [
+   8.005,
+   1.759,
+   6.943
+  ],
+  "nodes": [
+   {
+    "name": "rock_moss_set_01_rock01",
+    "size": [
+     2.236,
+     1.458,
+     3.363
+    ],
+    "center": [
+     -2.884,
+     0.743,
+     -1.79
+    ]
+   },
+   {
+    "name": "rock_moss_set_01_rock02",
+    "size": [
+     2.642,
+     1.248,
+     3.238
+    ],
+    "center": [
+     -0.033,
+     0.822,
+     -1.785
+    ]
+   },
+   {
+    "name": "rock_moss_set_01_rock03",
+    "size": [
+     2.105,
+     1.095,
+     2.078
+    ],
+    "center": [
+     2.95,
+     0.797,
+     -1.759
+    ]
+   },
+   {
+    "name": "rock_moss_set_01_rock04",
+    "size": [
+     2.127,
+     1.759,
+     1.959
+    ],
+    "center": [
+     -2.675,
+     0.879,
+     2.02
+    ]
+   },
+   {
+    "name": "rock_moss_set_01_rock05",
+    "size": [
+     1.814,
+     1.201,
+     2.997
+    ],
+    "center": [
+     0.111,
+     0.688,
+     1.973
+    ]
+   },
+   {
+    "name": "rock_moss_set_01_rock06",
+    "size": [
+     2.126,
+     1.248,
+     2.737
+    ],
+    "center": [
+     2.574,
+     0.759,
+     1.821
+    ]
+   }
+  ],
+  "srcTris": 63127,
+  "tris": 4864,
+  "trisLo": 1718,
+  "bytes": 164024,
+  "bytesLo": 58968,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 4000,
+   "id": "rock_moss_set_01"
+  },
+  "v": "f6aae5235c"
+ },
+ "boulder": {
+  "id": "boulder_01",
+  "name": "Boulder 01",
+  "page": "https://polyhaven.com/a/boulder_01",
+  "license": "CC0 1.0",
+  "size": [
+   1.272,
+   1.004,
+   1.828
+  ],
+  "nodes": [
+   {
+    "name": "boulder_01",
+    "size": [
+     1.272,
+     1.004,
+     1.828
+    ],
+    "center": [
+     0,
+     0.502,
+     0
+    ]
+   }
+  ],
+  "srcTris": 66122,
+  "tris": 54146,
+  "trisLo": 54122,
+  "bytes": 1099060,
+  "bytesLo": 941736,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "boulder_01"
+  },
+  "v": "409b8c117e"
+ },
+ "nettle": {
+  "id": "nettle_plant",
+  "name": "Nettle Plant",
+  "page": "https://polyhaven.com/a/nettle_plant",
+  "license": "CC0 1.0",
+  "size": [
+   1.082,
+   0.218,
+   0.095
+  ],
+  "nodes": [
+   {
+    "name": "nettle_plant_medium_a_LOD0",
+    "size": [
+     0.077,
+     0.131,
+     0.089
+    ],
+    "center": [
+     -0.079,
+     0.069,
+     -0.001
+    ]
+   },
+   {
+    "name": "nettle_plant_medium_b_LOD0",
+    "size": [
+     0.065,
+     0.104,
+     0.066
+    ],
+    "center": [
+     0.124,
+     0.056,
+     0.001
+    ]
+   },
+   {
+    "name": "nettle_plant_small_a_LOD0",
+    "size": [
+     0.064,
+     0.062,
+     0.043
+    ],
+    "center": [
+     0.312,
+     0.035,
+     0.001
+    ]
+   },
+   {
+    "name": "nettle_plant_small_b_LOD0",
+    "size": [
+     0.06,
+     0.022,
+     0.038
+    ],
+    "center": [
+     0.511,
+     0.015,
+     0.002
+    ]
+   },
+   {
+    "name": "nettle_plant_tall_a_LOD0",
+    "size": [
+     0.103,
+     0.217,
+     0.09
+    ],
+    "center": [
+     -0.49,
+     0.11,
+     0
+    ]
+   },
+   {
+    "name": "nettle_plant_tall_b_LOD0",
+    "size": [
+     0.082,
+     0.191,
+     0.095
+    ],
+    "center": [
+     -0.289,
+     0.096,
+     0
+    ]
+   }
+  ],
+  "srcTris": 31304,
+  "tris": 4727,
+  "trisLo": 4243,
+  "bytes": 190792,
+  "bytesLo": 118856,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "nettle_plant"
+  },
+  "v": "a77a2f9e67"
+ },
+ "weeds": {
+  "id": "weed_plant_02",
+  "name": "Weed Plant 02",
+  "page": "https://polyhaven.com/a/weed_plant_02",
+  "license": "CC0 1.0",
+  "size": [
+   2.125,
+   0.075,
+   0.291
+  ],
+  "nodes": [
+   {
+    "name": "weed_plant_02_a_LOD0",
+    "size": [
+     0.219,
+     0.072,
+     0.291
+    ],
+    "center": [
+     -0.953,
+     0.036,
+     0
+    ]
+   },
+   {
+    "name": "weed_plant_02_b_LOD0",
+    "size": [
+     0.187,
+     0.067,
+     0.199
+    ],
+    "center": [
+     -0.459,
+     0.041,
+     -0.046
+    ]
+   },
+   {
+    "name": "weed_plant_02_c_LOD0",
+    "size": [
+     0.142,
+     0.055,
+     0.143
+    ],
+    "center": [
+     0.032,
+     0.034,
+     -0.03
+    ]
+   },
+   {
+    "name": "weed_plant_02_d_LOD0",
+    "size": [
+     0.154,
+     0.039,
+     0.108
+    ],
+    "center": [
+     0.523,
+     0.028,
+     -0.042
+    ]
+   },
+   {
+    "name": "weed_plant_02_e_LOD0",
+    "size": [
+     0.119,
+     0.04,
+     0.061
+    ],
+    "center": [
+     1.003,
+     0.025,
+     -0.037
+    ]
+   }
+  ],
+  "srcTris": 11116,
+  "tris": 2994,
+  "trisLo": 1229,
+  "bytes": 151420,
+  "bytesLo": 60100,
+  "tex": 512,
+  "opts": {
+   "tex": 512,
+   "tris": 3000,
+   "id": "weed_plant_02"
+  },
+  "v": "e7de059feb"
+ }
+}

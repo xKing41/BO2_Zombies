@@ -1278,5 +1278,181 @@
    "_": "Leder-/Haut-Struktur"
   },
   "v": "a30a3d8b29"
+ },
+ "leak1": {
+  "src": "acg",
+  "id": "Leaking012C",
+  "name": "Leaking 012 C",
+  "page": "https://ambientcg.com/view?id=Leaking012C",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   249,
+   249,
+   249
+  ],
+  "bytes": 153672,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leaking012C",
+   "opacity": true,
+   "ao": 0,
+   "_": "Abziehbild: Wasser-/Rostläufer an Wänden"
+  },
+  "v": "6ddabecd63"
+ },
+ "leak2": {
+  "src": "acg",
+  "id": "Leaking016C",
+  "name": "Leaking 016 C",
+  "page": "https://ambientcg.com/view?id=Leaking016C",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   252,
+   252,
+   252
+  ],
+  "bytes": 90642,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leaking016C",
+   "opacity": true,
+   "ao": 0,
+   "_": "Abziehbild: Wasserläufer"
+  },
+  "v": "ae4362c242"
+ },
+ "leak3": {
+  "src": "acg",
+  "id": "Leaking019B",
+  "name": "Leaking 019 B",
+  "page": "https://ambientcg.com/view?id=Leaking019B",
+  "dims": null,
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   245,
+   245,
+   245
+  ],
+  "bytes": 121386,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "Leaking019B",
+   "opacity": true,
+   "ao": 0,
+   "_": "Abziehbild: Schmutzläufer"
+  },
+  "v": "9d74336251"
+ },
+ "asphaltDamage": {
+  "src": "acg",
+  "id": "AsphaltDamage001",
+  "name": "Asphalt Damage 001",
+  "page": "https://ambientcg.com/view?id=AsphaltDamage001",
+  "dims": [
+   120,
+   120
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": true,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   131,
+   128,
+   128
+  ],
+  "bytes": 957768,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "AsphaltDamage001",
+   "opacity": true,
+   "ao": 0,
+   "_": "Abziehbild: Risse und Flickstellen im Asphalt"
+  },
+  "v": "fb473a3ed7"
+ },
+ "tireTracks": {
+  "src": "acg",
+  "id": "TireTracks001",
+  "name": "Tire Tracks 001",
+  "page": "https://ambientcg.com/view?id=TireTracks001",
+  "dims": [
+   180,
+   45
+  ],
+  "maps": {
+   "color": true,
+   "normal": true,
+   "rough": true,
+   "metal": false,
+   "alpha": false,
+   "height": false
+  },
+  "sizes": [
+   1024,
+   512
+  ],
+  "avg": [
+   197,
+   194,
+   176
+  ],
+  "bytes": 166610,
+  "license": "CC0 1.0",
+  "opts": {
+   "src": "acg",
+   "id": "TireTracks001",
+   "opacity": true,
+   "ao": 0,
+   "_": "Abziehbild: Reifenspuren"
+  },
+  "v": "6f9e966f69"
  }
 }

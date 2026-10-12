@@ -5,6 +5,7 @@ Aufbereitet (verkleinert, komprimiert, Umgebungsverdeckung eingerechnet) von scr
 
 | Verwendung | Quelle | Textur |
 |---|---|---|
+| asphaltDamage | ambientCG | [Asphalt Damage 001](https://ambientcg.com/view?id=AsphaltDamage001) |
 | board | Poly Haven | [Rough Wood](https://polyhaven.com/a/rough_wood) |
 | brick | Poly Haven | [Red Brick 03](https://polyhaven.com/a/red_brick_03) |
 | brickLight | ambientCG | [Bricks 093](https://ambientcg.com/view?id=Bricks093) |
@@ -26,6 +27,9 @@ Aufbereitet (verkleinert, komprimiert, Umgebungsverdeckung eingerechnet) von scr
 | gunWood | ambientCG | [Wood 027](https://ambientcg.com/view?id=Wood027) |
 | hay | ambientCG | [Thatched Roof 001 A](https://ambientcg.com/view?id=ThatchedRoof001A) |
 | lava | ambientCG | [Lava 001](https://ambientcg.com/view?id=Lava001) |
+| leak1 | ambientCG | [Leaking 012 C](https://ambientcg.com/view?id=Leaking012C) |
+| leak2 | ambientCG | [Leaking 016 C](https://ambientcg.com/view?id=Leaking016C) |
+| leak3 | ambientCG | [Leaking 019 B](https://ambientcg.com/view?id=Leaking019B) |
 | leather | ambientCG | [Leather 037](https://ambientcg.com/view?id=Leather037) |
 | leatherDetail | ambientCG | [Leather 033 A](https://ambientcg.com/view?id=Leather033A) |
 | metal | Poly Haven | [Metal Plate 02](https://polyhaven.com/a/metal_plate_02) |
@@ -40,6 +44,7 @@ Aufbereitet (verkleinert, komprimiert, Umgebungsverdeckung eingerechnet) von scr
 | shutter | Poly Haven | [Painted Metal Shutter](https://polyhaven.com/a/painted_metal_shutter) |
 | siding | ambientCG | [Wood Siding 009](https://ambientcg.com/view?id=WoodSiding009) |
 | tiles | ambientCG | [Tiles 074](https://ambientcg.com/view?id=Tiles074) |
+| tireTracks | ambientCG | [Tire Tracks 001](https://ambientcg.com/view?id=TireTracks001) |
 | wall | ambientCG | [Painted Plaster 017](https://ambientcg.com/view?id=PaintedPlaster017) |
 | wood | Poly Haven | [Wood Floor Worn](https://polyhaven.com/a/wood_floor_worn) |
 | woodDark | ambientCG | [Planks 037 A](https://ambientcg.com/view?id=Planks037A) |
