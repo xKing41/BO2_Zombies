@@ -25,17 +25,17 @@
    }
   ],
   "srcTris": 2682,
-  "tris": 2682,
-  "trisLo": 1600,
-  "bytes": 149980,
-  "bytesLo": 60924,
+  "tris": 2000,
+  "trisLo": 799,
+  "bytes": 145076,
+  "bytesLo": 52948,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2000,
    "id": "Barrel_01"
   },
-  "v": "bafae79483"
+  "v": "565d286852"
  },
  "drumBlue": {
   "id": "barrel_03",
@@ -64,16 +64,16 @@
   ],
   "srcTris": 1473,
   "tris": 1473,
-  "trisLo": 1473,
+  "trisLo": 600,
   "bytes": 109584,
-  "bytesLo": 46604,
+  "bytesLo": 38440,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 1500,
    "id": "barrel_03"
   },
-  "v": "94fd6c1472"
+  "v": "73244dc09e"
  },
  "drumPlastic": {
   "id": "Barrel_02",
@@ -101,17 +101,17 @@
    }
   ],
   "srcTris": 2688,
-  "tris": 2688,
-  "trisLo": 1600,
-  "bytes": 95108,
-  "bytesLo": 45580,
+  "tris": 2000,
+  "trisLo": 800,
+  "bytes": 89868,
+  "bytesLo": 37784,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2000,
    "id": "Barrel_02"
   },
-  "v": "71c2a2a0df"
+  "v": "8a7bb4e54c"
  },
  "drumRust": {
   "id": "barrel_stove",
@@ -119,17 +119,17 @@
   "page": "https://polyhaven.com/a/barrel_stove",
   "license": "CC0 1.0",
   "size": [
-   0.591,
+   0.587,
    0.856,
-   0.593
+   0.589
   ],
   "nodes": [
    {
     "name": "barrel_stove",
     "size": [
-     0.591,
+     0.587,
      0.856,
-     0.593
+     0.589
     ],
     "center": [
      0,
@@ -139,17 +139,17 @@
    }
   ],
   "srcTris": 9216,
-  "tris": 3999,
-  "trisLo": 1916,
-  "bytes": 145432,
-  "bytesLo": 57932,
+  "tris": 2173,
+  "trisLo": 1920,
+  "bytes": 127516,
+  "bytesLo": 57996,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2000,
    "id": "barrel_stove"
   },
-  "v": "ae9b58c5f7"
+  "v": "138355cd8d"
  },
  "trashCan": {
   "id": "metal_trash_can",
@@ -159,7 +159,7 @@
   "size": [
    1.777,
    0.906,
-   0.554
+   0.553
   ],
   "nodes": [
    {
@@ -180,12 +180,12 @@
     "size": [
      0.183,
      0.536,
-     0.554
+     0.551
     ],
     "center": [
      0.203,
      0.277,
-     0
+     -0.001
     ]
    },
    {
@@ -217,7 +217,7 @@
    {
     "name": "metal_trash_can_rust",
     "size": [
-     0.608,
+     0.609,
      0.906,
      0.547
     ],
@@ -257,28 +257,28 @@
     "name": "metal_trash_can_rust_lid",
     "size": [
      0.183,
-     0.539,
-     0.542
+     0.536,
+     0.54
     ],
     "center": [
      -0.797,
-     0.278,
+     0.277,
      0.003
     ]
    }
   ],
   "srcTris": 13960,
-  "tris": 4372,
-  "trisLo": 1665,
-  "bytes": 372104,
-  "bytesLo": 134828,
+  "tris": 3498,
+  "trisLo": 1315,
+  "bytes": 363300,
+  "bytesLo": 130560,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 3000,
    "id": "metal_trash_can"
   },
-  "v": "91998097aa"
+  "v": "a07e17c20e"
  },
  "crateWood": {
   "id": "wooden_crate_02",
@@ -319,17 +319,17 @@
    }
   ],
   "srcTris": 5176,
-  "tris": 3998,
-  "trisLo": 1598,
-  "bytes": 150376,
-  "bytesLo": 58872,
+  "tris": 2499,
+  "trisLo": 998,
+  "bytes": 136532,
+  "bytesLo": 53080,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "wooden_crate_02"
   },
-  "v": "d87b15fe48"
+  "v": "6f4cad4cc6"
  },
  "crateMilitary": {
   "id": "old_military_crate",
@@ -337,7 +337,7 @@
   "page": "https://polyhaven.com/a/old_military_crate",
   "license": "CC0 1.0",
   "size": [
-   1.815,
+   1.812,
    0.301,
    0.974
   ],
@@ -350,7 +350,7 @@
      0.461
     ],
     "center": [
-     -0.495,
+     -0.496,
      0.272,
      0.18
     ]
@@ -363,7 +363,7 @@
      0.006
     ],
     "center": [
-     -0.495,
+     -0.496,
      0.238,
      0.401
     ]
@@ -376,7 +376,7 @@
      0.019
     ],
     "center": [
-     -0.495,
+     -0.496,
      0.18,
      0.406
     ]
@@ -384,7 +384,7 @@
    {
     "name": "old_military_crate_cloth_a",
     "size": [
-     0.717,
+     0.714,
      0.211,
      0.497
     ],
@@ -402,7 +402,7 @@
      0.448
     ],
     "center": [
-     -0.495,
+     -0.496,
      0.129,
      0.174
     ]
@@ -415,7 +415,7 @@
      0.451
     ],
     "center": [
-     0.505,
+     0.504,
      0.191,
      -0.262
     ]
@@ -428,7 +428,7 @@
      0.026
     ],
     "center": [
-     0.505,
+     0.504,
      0.183,
      0.412
     ]
@@ -441,7 +441,7 @@
      0.019
     ],
     "center": [
-     0.505,
+     0.504,
      0.18,
      0.406
     ]
@@ -449,7 +449,7 @@
    {
     "name": "old_military_crate_cloth_b",
     "size": [
-     0.717,
+     0.714,
      0.211,
      0.497
     ],
@@ -467,24 +467,24 @@
      0.448
     ],
     "center": [
-     0.505,
+     0.504,
      0.129,
      0.174
     ]
    }
   ],
   "srcTris": 10476,
-  "tris": 3995,
-  "trisLo": 1588,
-  "bytes": 156548,
-  "bytesLo": 65548,
+  "tris": 2997,
+  "trisLo": 1277,
+  "bytes": 147044,
+  "bytesLo": 61456,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 3000,
    "id": "old_military_crate"
   },
-  "v": "6ec40cdea2"
+  "v": "f7747015a8"
  },
  "crateRifle": {
   "id": "wooden_military_crate",
@@ -513,12 +513,12 @@
    {
     "name": "wooden_military_crate_lid",
     "size": [
-     1.203,
+     1.201,
      0.051,
      0.473
     ],
     "center": [
-     0,
+     0.001,
      0.438,
      0.002
     ]
@@ -528,7 +528,7 @@
     "size": [
      0.787,
      0.043,
-     0.007
+     0.006
     ],
     "center": [
      0,
@@ -538,17 +538,17 @@
    }
   ],
   "srcTris": 22986,
-  "tris": 3997,
-  "trisLo": 1672,
-  "bytes": 190424,
-  "bytesLo": 77524,
+  "tris": 2499,
+  "trisLo": 1612,
+  "bytes": 174532,
+  "bytesLo": 76624,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "wooden_military_crate"
   },
-  "v": "6003909b4b"
+  "v": "1da54f9494"
  },
  "crateOpen": {
   "id": "CheeseBox_01",
@@ -590,16 +590,16 @@
   ],
   "srcTris": 884,
   "tris": 884,
-  "trisLo": 884,
+  "trisLo": 358,
   "bytes": 89508,
-  "bytesLo": 37992,
+  "bytesLo": 33044,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 900,
    "id": "CheeseBox_01"
   },
-  "v": "1dae3e9812"
+  "v": "da72f4c0c2"
  },
  "cardboard": {
   "id": "cardboard_box_01",
@@ -607,37 +607,38 @@
   "page": "https://polyhaven.com/a/cardboard_box_01",
   "license": "CC0 1.0",
   "size": [
-   0.387,
-   0.342,
+   0.385,
+   0.341,
    0.516
   ],
   "nodes": [
    {
     "name": "cardboard_box_01",
     "size": [
-     0.387,
-     0.342,
+     0.385,
+     0.341,
      0.516
     ],
     "center": [
      0,
-     0.171,
+     0.17,
      0
     ]
    }
   ],
   "srcTris": 16952,
-  "tris": 2500,
-  "trisLo": 1000,
-  "bytes": 128272,
-  "bytesLo": 44180,
+  "tris": 800,
+  "trisLo": 320,
+  "bytes": 113320,
+  "bytesLo": 37896,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
-   "id": "cardboard_box_01"
+   "tris": 800,
+   "id": "cardboard_box_01",
+   "error": 0.02
   },
-  "v": "e998094f16"
+  "v": "5802c532c3"
  },
  "tableWood": {
   "id": "wooden_table_02",
@@ -672,7 +673,7 @@
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 1000,
    "id": "wooden_table_02"
   },
   "v": "33f99a449f"
@@ -845,17 +846,17 @@
    }
   ],
   "srcTris": 6898,
-  "tris": 4993,
-  "trisLo": 1993,
-  "bytes": 123908,
-  "bytesLo": 65476,
+  "tris": 3991,
+  "trisLo": 1607,
+  "bytes": 115376,
+  "bytesLo": 60556,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 5000,
+   "tris": 4000,
    "id": "metal_office_desk"
   },
-  "v": "2126f367e2"
+  "v": "f3036a258c"
  },
  "tableRound": {
   "id": "coffee_table_round_01",
@@ -877,23 +878,23 @@
     ],
     "center": [
      0,
-     0.246,
+     0.245,
      0
     ]
    }
   ],
   "srcTris": 4044,
-  "tris": 4044,
-  "trisLo": 1600,
-  "bytes": 104032,
-  "bytesLo": 44860,
+  "tris": 2500,
+  "trisLo": 999,
+  "bytes": 92500,
+  "bytesLo": 38688,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "coffee_table_round_01"
   },
-  "v": "a5fc572df0"
+  "v": "8cd005feba"
  },
  "chairSchool": {
   "id": "SchoolChair_01",
@@ -902,36 +903,36 @@
   "license": "CC0 1.0",
   "size": [
    0.566,
-   1.006,
-   0.675
+   1.004,
+   0.673
   ],
   "nodes": [
    {
     "name": "SchoolChair_01",
     "size": [
      0.566,
-     1.006,
-     0.675
+     1.004,
+     0.673
     ],
     "center": [
      0,
-     0.503,
+     0.502,
      0
     ]
    }
   ],
   "srcTris": 5072,
-  "tris": 4000,
-  "trisLo": 1600,
-  "bytes": 114384,
-  "bytesLo": 45608,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 101144,
+  "bytesLo": 39452,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "SchoolChair_01"
   },
-  "v": "f379a1b782"
+  "v": "0ba670a135"
  },
  "chairWood": {
   "id": "dining_chair_02",
@@ -959,17 +960,17 @@
    }
   ],
   "srcTris": 22013,
-  "tris": 4000,
-  "trisLo": 1599,
-  "bytes": 113132,
-  "bytesLo": 48172,
+  "tris": 2500,
+  "trisLo": 1000,
+  "bytes": 99796,
+  "bytesLo": 42040,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "dining_chair_02"
   },
-  "v": "22e2ae61b7"
+  "v": "ba18f293e7"
  },
  "chairPlastic": {
   "id": "plastic_monobloc_chair_01",
@@ -997,17 +998,17 @@
    }
   ],
   "srcTris": 3356,
-  "tris": 3000,
-  "trisLo": 1200,
-  "bytes": 156008,
-  "bytesLo": 66504,
+  "tris": 2000,
+  "trisLo": 800,
+  "bytes": 145780,
+  "bytesLo": 61008,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "plastic_monobloc_chair_01"
   },
-  "v": "854f80ded0"
+  "v": "4692e14477"
  },
  "stoolMetal": {
   "id": "metal_stool_01",
@@ -1015,7 +1016,7 @@
   "page": "https://polyhaven.com/a/metal_stool_01",
   "license": "CC0 1.0",
   "size": [
-   0.351,
+   0.35,
    0.882,
    0.354
   ],
@@ -1023,7 +1024,7 @@
    {
     "name": "metal_stool_01",
     "size": [
-     0.351,
+     0.35,
      0.882,
      0.354
     ],
@@ -1035,17 +1036,18 @@
    }
   ],
   "srcTris": 8334,
-  "tris": 2999,
-  "trisLo": 1200,
-  "bytes": 139064,
-  "bytesLo": 51160,
+  "tris": 1500,
+  "trisLo": 583,
+  "bytes": 125336,
+  "bytesLo": 44672,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
-   "id": "metal_stool_01"
+   "tris": 1500,
+   "id": "metal_stool_01",
+   "error": 0.02
   },
-  "v": "2ee574c60c"
+  "v": "36fcc855e6"
  },
  "shelfSteel": {
   "id": "steel_frame_shelves_01",
@@ -1073,17 +1075,17 @@
    }
   ],
   "srcTris": 4348,
-  "tris": 4348,
-  "trisLo": 2000,
-  "bytes": 100244,
-  "bytesLo": 46200,
+  "tris": 2999,
+  "trisLo": 1199,
+  "bytes": 89500,
+  "bytesLo": 37072,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 5000,
+   "tris": 3000,
    "id": "steel_frame_shelves_01"
   },
-  "v": "e59b77718c"
+  "v": "404f3f407a"
  },
  "shelfSteel3": {
   "id": "steel_frame_shelves_03",
@@ -1093,7 +1095,7 @@
   "size": [
    2.351,
    2.312,
-   0.721
+   0.72
   ],
   "nodes": [
    {
@@ -1113,54 +1115,54 @@
     "name": "steel_frame_shelves_03_drawer_01",
     "size": [
      0.964,
-     0.1,
+     0.099,
      0.648
     ],
     "center": [
      -0.646,
      0.585,
-     0.037
+     0.036
     ]
    },
    {
     "name": "steel_frame_shelves_03_drawer_02",
     "size": [
      0.964,
-     0.1,
+     0.099,
      0.648
     ],
     "center": [
      -0.646,
-     0.469,
-     0.037
+     0.468,
+     0.036
     ]
    },
    {
     "name": "steel_frame_shelves_03_drawer_03",
     "size": [
      0.964,
-     0.1,
+     0.099,
      0.648
     ],
     "center": [
      -0.646,
      0.351,
-     0.037
+     0.036
     ]
    }
   ],
   "srcTris": 8396,
-  "tris": 4993,
-  "trisLo": 1994,
-  "bytes": 191544,
-  "bytesLo": 80336,
+  "tris": 3496,
+  "trisLo": 1394,
+  "bytes": 177928,
+  "bytesLo": 73128,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 5000,
+   "tris": 3500,
    "id": "steel_frame_shelves_03"
   },
-  "v": "51ca0a5518"
+  "v": "5eb8cb36a1"
  },
  "rackMetal": {
   "id": "worn_metal_rack",
@@ -1188,17 +1190,17 @@
    }
   ],
   "srcTris": 6372,
-  "tris": 6000,
-  "trisLo": 3054,
-  "bytes": 140816,
-  "bytesLo": 73460,
+  "tris": 4000,
+  "trisLo": 3046,
+  "bytes": 129076,
+  "bytesLo": 73288,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 6000,
+   "tris": 4000,
    "id": "worn_metal_rack"
   },
-  "v": "4167d5c637"
+  "v": "96ff096f0b"
  },
  "bookshelf": {
   "id": "wooden_bookshelf_worn",
@@ -1226,17 +1228,17 @@
    }
   ],
   "srcTris": 10106,
-  "tris": 4999,
-  "trisLo": 2000,
-  "bytes": 211248,
-  "bytesLo": 69064,
+  "tris": 3000,
+  "trisLo": 1200,
+  "bytes": 195596,
+  "bytesLo": 60788,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 5000,
+   "tris": 3000,
    "id": "wooden_bookshelf_worn"
   },
-  "v": "ab8e44f515"
+  "v": "a47ae65460"
  },
  "toolChest": {
   "id": "metal_tool_chest",
@@ -1296,8 +1298,8 @@
      0.131
     ],
     "center": [
-     -0.336,
-     0.188,
+     -0.337,
+     0.189,
      0.021
     ]
    },
@@ -1342,17 +1344,17 @@
    }
   ],
   "srcTris": 13360,
-  "tris": 5025,
-  "trisLo": 2807,
-  "bytes": 174408,
-  "bytesLo": 89052,
+  "tris": 3495,
+  "trisLo": 2531,
+  "bytes": 157776,
+  "bytesLo": 86084,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 5000,
+   "tris": 3000,
    "id": "metal_tool_chest"
   },
-  "v": "23de2d1e00"
+  "v": "6d4fa62a40"
  },
  "toolbox": {
   "id": "metal_toolbox",
@@ -1369,13 +1371,13 @@
     "name": "metal_toolbox",
     "size": [
      0.4,
-     0.121,
-     0.219
+     0.12,
+     0.215
     ],
     "center": [
      0,
      0.06,
-     0.025
+     0.027
     ]
    },
    {
@@ -1395,28 +1397,29 @@
     "name": "metal_toolbox_lid",
     "size": [
      0.4,
-     0.188,
+     0.183,
      0.199
     ],
     "center": [
      0,
-     0.211,
+     0.213,
      -0.035
     ]
    }
   ],
   "srcTris": 14228,
-  "tris": 2736,
-  "trisLo": 2196,
-  "bytes": 85688,
-  "bytesLo": 57948,
+  "tris": 2301,
+  "trisLo": 2039,
+  "bytes": 80224,
+  "bytesLo": 56104,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "metal_toolbox"
+   "tris": 1200,
+   "id": "metal_toolbox",
+   "error": 0.02
   },
-  "v": "acdd9b6ad9"
+  "v": "6f4d098d11"
  },
  "vise": {
   "id": "bench_vice_01",
@@ -1430,31 +1433,71 @@
   ],
   "nodes": [
    {
-    "name": "Pivot",
+    "name": "bench_vice_frame",
     "size": [
      0.2,
-     0.285,
-     0.396
+     0.199,
+     0.273
     ],
     "center": [
      0,
-     0.143,
-     0
+     0.185,
+     0.008
+    ]
+   },
+   {
+    "name": "bench_vice_clamp",
+    "size": [
+     0.134,
+     0.152,
+     0.366
+    ],
+    "center": [
+     0,
+     0.202,
+     -0.015
+    ]
+   },
+   {
+    "name": "bench_vice_dial",
+    "size": [
+     0.03,
+     0.029,
+     0.033
+    ],
+    "center": [
+     -0.002,
+     0.163,
+     0.182
+    ]
+   },
+   {
+    "name": "bench_vice_bar",
+    "size": [
+     0.018,
+     0.199,
+     0.018
+    ],
+    "center": [
+     -0.002,
+     0.1,
+     0.181
     ]
    }
   ],
   "srcTris": 2864,
-  "tris": 2496,
-  "trisLo": 1028,
-  "bytes": 85916,
-  "bytesLo": 44412,
+  "tris": 1506,
+  "trisLo": 608,
+  "bytes": 68488,
+  "bytesLo": 31964,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2500,
-   "id": "bench_vice_01"
+   "tris": 1500,
+   "id": "bench_vice_01",
+   "error": 0.02
   },
-  "v": "a742742843"
+  "v": "fec44c217b"
  },
  "toolCart": {
   "id": "tool_cart",
@@ -1462,37 +1505,37 @@
   "page": "https://polyhaven.com/a/tool_cart",
   "license": "CC0 1.0",
   "size": [
-   1.271,
-   0.965,
+   1.268,
+   0.962,
    0.752
   ],
   "nodes": [
    {
     "name": "tool_cart",
     "size": [
-     1.271,
-     0.965,
+     1.268,
+     0.962,
      0.752
     ],
     "center": [
      0,
-     0.482,
+     0.481,
      0
     ]
    }
   ],
   "srcTris": 29394,
-  "tris": 6000,
-  "trisLo": 3473,
-  "bytes": 202452,
-  "bytesLo": 89572,
+  "tris": 3995,
+  "trisLo": 3461,
+  "bytes": 179920,
+  "bytesLo": 89420,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 6000,
+   "tris": 4000,
    "id": "tool_cart"
   },
-  "v": "31b61388cc"
+  "v": "597a078a4e"
  },
  "generator": {
   "id": "portable_generator",
@@ -1559,17 +1602,17 @@
    }
   ],
   "srcTris": 26419,
-  "tris": 6077,
-  "trisLo": 4534,
-  "bytes": 288292,
-  "bytesLo": 152684,
+  "tris": 5836,
+  "trisLo": 4525,
+  "bytes": 285064,
+  "bytesLo": 152576,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 6000,
+   "tris": 4000,
    "id": "portable_generator"
   },
-  "v": "7584eaf16f"
+  "v": "225344317e"
  },
  "compressor": {
   "id": "old_military_compressor",
@@ -1577,37 +1620,37 @@
   "page": "https://polyhaven.com/a/old_military_compressor",
   "license": "CC0 1.0",
   "size": [
-   0.586,
-   1.171,
-   1.67
+   0.578,
+   1.162,
+   1.664
   ],
   "nodes": [
    {
     "name": "old_military_compressor",
     "size": [
-     0.586,
-     1.171,
-     1.67
+     0.578,
+     1.162,
+     1.664
     ],
     "center": [
      0,
-     0.586,
+     0.581,
      0
     ]
    }
   ],
   "srcTris": 79042,
-  "tris": 6207,
-  "trisLo": 5395,
-  "bytes": 257176,
-  "bytesLo": 154980,
+  "tris": 6075,
+  "trisLo": 5380,
+  "bytes": 255272,
+  "bytesLo": 154648,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 6000,
+   "tris": 4000,
    "id": "old_military_compressor"
   },
-  "v": "a5e623aba3"
+  "v": "7b1da8aa1a"
  },
  "propane": {
   "id": "propane_tank",
@@ -1635,17 +1678,18 @@
    }
   ],
   "srcTris": 5238,
-  "tris": 2499,
-  "trisLo": 994,
-  "bytes": 121076,
-  "bytesLo": 46504,
+  "tris": 1500,
+  "trisLo": 753,
+  "bytes": 110724,
+  "bytesLo": 43368,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
-   "id": "propane_tank"
+   "tris": 1500,
+   "id": "propane_tank",
+   "error": 0.02
   },
-  "v": "d68c266eba"
+  "v": "7eac0ed824"
  },
  "jerrycan": {
   "id": "metal_jerrycan",
@@ -1653,7 +1697,7 @@
   "page": "https://polyhaven.com/a/metal_jerrycan",
   "license": "CC0 1.0",
   "size": [
-   0.35,
+   0.349,
    0.455,
    0.172
   ],
@@ -1661,7 +1705,7 @@
    {
     "name": "metal_jerrycan",
     "size": [
-     0.35,
+     0.349,
      0.455,
      0.172
     ],
@@ -1673,17 +1717,18 @@
    }
   ],
   "srcTris": 20022,
-  "tris": 2499,
-  "trisLo": 996,
-  "bytes": 174696,
-  "bytesLo": 57588,
+  "tris": 1197,
+  "trisLo": 477,
+  "bytes": 162144,
+  "bytesLo": 51720,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
-   "id": "metal_jerrycan"
+   "tris": 1200,
+   "id": "metal_jerrycan",
+   "error": 0.02
   },
-  "v": "7bda648224"
+  "v": "f78a10f5e7"
  },
  "jerrycanPlastic": {
   "id": "plastic_jerrycan",
@@ -1693,7 +1738,7 @@
   "size": [
    0.268,
    0.318,
-   0.341
+   0.34
   ],
   "nodes": [
    {
@@ -1701,7 +1746,7 @@
     "size": [
      0.268,
      0.318,
-     0.341
+     0.34
     ],
     "center": [
      0,
@@ -1711,17 +1756,18 @@
    }
   ],
   "srcTris": 7348,
-  "tris": 2500,
-  "trisLo": 1000,
-  "bytes": 162628,
-  "bytesLo": 58264,
+  "tris": 1200,
+  "trisLo": 480,
+  "bytes": 148996,
+  "bytesLo": 52008,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
-   "id": "plastic_jerrycan"
+   "tris": 1200,
+   "id": "plastic_jerrycan",
+   "error": 0.02
   },
-  "v": "c96919e126"
+  "v": "50aff556cc"
  },
  "extinguisher": {
   "id": "korean_fire_extinguisher_01",
@@ -1749,17 +1795,17 @@
    }
   ],
   "srcTris": 9913,
-  "tris": 2596,
-  "trisLo": 1079,
-  "bytes": 246532,
-  "bytesLo": 84460,
+  "tris": 1630,
+  "trisLo": 697,
+  "bytes": 237548,
+  "bytesLo": 80028,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
+   "tris": 1500,
    "id": "korean_fire_extinguisher_01"
   },
-  "v": "ce65b5a024"
+  "v": "591c7b9c8f"
  },
  "ladder": {
   "id": "wooden_ladder",
@@ -1777,7 +1823,7 @@
     "size": [
      0.485,
      1.215,
-     0.497
+     0.496
     ],
     "center": [
      0.237,
@@ -1800,17 +1846,17 @@
    }
   ],
   "srcTris": 8492,
-  "tris": 2499,
-  "trisLo": 1454,
-  "bytes": 169816,
-  "bytesLo": 63248,
+  "tris": 1653,
+  "trisLo": 1450,
+  "bytes": 161368,
+  "bytesLo": 63184,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
+   "tris": 1500,
    "id": "wooden_ladder"
   },
-  "v": "f1fb926645"
+  "v": "2cec4721bc"
  },
  "handTruck": {
   "id": "hand_truck",
@@ -1877,17 +1923,18 @@
    }
   ],
   "srcTris": 844,
-  "tris": 844,
-  "trisLo": 800,
-  "bytes": 61788,
-  "bytesLo": 29816,
+  "tris": 800,
+  "trisLo": 318,
+  "bytes": 61532,
+  "bytesLo": 25092,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2000,
-   "id": "cement_bag"
+   "tris": 800,
+   "id": "cement_bag",
+   "error": 0.02
   },
-  "v": "d2d4aa0671"
+  "v": "de9c9f32bd"
  },
  "trashBag": {
   "id": "trashbag",
@@ -1895,37 +1942,38 @@
   "page": "https://polyhaven.com/a/trashbag",
   "license": "CC0 1.0",
   "size": [
-   0.528,
-   0.575,
+   0.524,
+   0.573,
    0.463
   ],
   "nodes": [
    {
     "name": "trashbag",
     "size": [
-     0.528,
-     0.575,
+     0.524,
+     0.573,
      0.463
     ],
     "center": [
      0,
-     0.287,
+     0.286,
      0
     ]
    }
   ],
   "srcTris": 4482,
-  "tris": 2500,
-  "trisLo": 1000,
-  "bytes": 138596,
-  "bytesLo": 55736,
+  "tris": 1500,
+  "trisLo": 600,
+  "bytes": 129768,
+  "bytesLo": 51852,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2500,
-   "id": "trashbag"
+   "tris": 1500,
+   "id": "trashbag",
+   "error": 0.02
   },
-  "v": "c2ac89c250"
+  "v": "148dd10e5d"
  },
  "tyre": {
   "id": "old_tyre",
@@ -1953,17 +2001,18 @@
    }
   ],
   "srcTris": 2880,
-  "tris": 2880,
-  "trisLo": 1200,
-  "bytes": 148292,
-  "bytesLo": 48356,
+  "tris": 1500,
+  "trisLo": 600,
+  "bytes": 134628,
+  "bytesLo": 41976,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
-   "id": "old_tyre"
+   "tris": 1500,
+   "id": "old_tyre",
+   "error": 0.02
   },
-  "v": "e1cb73977c"
+  "v": "c010432c53"
  },
  "wheelRim": {
   "id": "rusted_wheel_rim_01",
@@ -1991,17 +2040,18 @@
    }
   ],
   "srcTris": 16440,
-  "tris": 2500,
-  "trisLo": 1000,
-  "bytes": 73208,
-  "bytesLo": 31616,
+  "tris": 1198,
+  "trisLo": 544,
+  "bytes": 56628,
+  "bytesLo": 24480,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2500,
-   "id": "rusted_wheel_rim_01"
+   "tris": 1200,
+   "id": "rusted_wheel_rim_01",
+   "error": 0.02
   },
-  "v": "0a828fd00b"
+  "v": "242f26b6ca"
  },
  "canRusted": {
   "id": "can_rusted",
@@ -2009,7 +2059,7 @@
   "page": "https://polyhaven.com/a/can_rusted",
   "license": "CC0 1.0",
   "size": [
-   0.125,
+   0.123,
    0.151,
    0.124
   ],
@@ -2017,7 +2067,7 @@
    {
     "name": "can_rusted",
     "size": [
-     0.125,
+     0.123,
      0.151,
      0.124
     ],
@@ -2029,17 +2079,18 @@
    }
   ],
   "srcTris": 3520,
-  "tris": 800,
-  "trisLo": 320,
-  "bytes": 46668,
-  "bytesLo": 16360,
+  "tris": 400,
+  "trisLo": 160,
+  "bytes": 42888,
+  "bytesLo": 14764,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 800,
-   "id": "can_rusted"
+   "tris": 400,
+   "id": "can_rusted",
+   "error": 0.02
   },
-  "v": "f336fc16d9"
+  "v": "fbabc40df8"
  },
  "foodCans": {
   "id": "russian_food_cans_01",
@@ -2093,17 +2144,18 @@
    }
   ],
   "srcTris": 1348,
-  "tris": 1348,
-  "trisLo": 598,
-  "bytes": 40828,
-  "bytesLo": 21544,
+  "tris": 796,
+  "trisLo": 319,
+  "bytes": 39700,
+  "bytesLo": 18620,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1500,
-   "id": "russian_food_cans_01"
+   "tris": 800,
+   "id": "russian_food_cans_01",
+   "error": 0.02
   },
-  "v": "9c44310a1e"
+  "v": "c25a409cf5"
  },
  "bottles": {
   "id": "wine_bottles_01",
@@ -2159,7 +2211,7 @@
     "name": "wine_bottles_01_champagne",
     "size": [
      0.081,
-     0.316,
+     0.313,
      0.08
     ],
     "center": [
@@ -2170,17 +2222,18 @@
    }
   ],
   "srcTris": 28848,
-  "tris": 2834,
-  "trisLo": 1080,
-  "bytes": 104032,
-  "bytesLo": 55236,
+  "tris": 1590,
+  "trisLo": 603,
+  "bytes": 92452,
+  "bytesLo": 50024,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "wine_bottles_01"
+   "tris": 1200,
+   "id": "wine_bottles_01",
+   "error": 0.02
   },
-  "v": "a54830e089"
+  "v": "7496d68641"
  },
  "sprayCans": {
   "id": "spray_paint_bottles",
@@ -2188,16 +2241,16 @@
   "page": "https://polyhaven.com/a/spray_paint_bottles",
   "license": "CC0 1.0",
   "size": [
-   0.158,
-   0.229,
+   0.157,
+   0.228,
    0.065
   ],
   "nodes": [
    {
     "name": "spray_paint_bottles",
     "size": [
-     0.065,
-     0.229,
+     0.064,
+     0.228,
      0.065
     ],
     "center": [
@@ -2209,7 +2262,7 @@
    {
     "name": "spray_paint_bottles_dirty",
     "size": [
-     0.065,
+     0.064,
      0.228,
      0.065
     ],
@@ -2221,17 +2274,18 @@
    }
   ],
   "srcTris": 5040,
-  "tris": 2000,
-  "trisLo": 798,
-  "bytes": 64388,
-  "bytesLo": 28884,
+  "tris": 798,
+  "trisLo": 319,
+  "bytes": 51756,
+  "bytesLo": 23116,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "spray_paint_bottles"
+   "tris": 800,
+   "id": "spray_paint_bottles",
+   "error": 0.02
   },
-  "v": "4e0803a8c8"
+  "v": "88f6a12433"
  },
  "oilCan": {
   "id": "oil_tin",
@@ -2241,7 +2295,7 @@
   "size": [
    0.114,
    0.205,
-   0.154
+   0.153
   ],
   "nodes": [
    {
@@ -2249,7 +2303,7 @@
     "size": [
      0.114,
      0.205,
-     0.154
+     0.153
     ],
     "center": [
      0,
@@ -2262,27 +2316,28 @@
     "size": [
      0.039,
      0.008,
-     0.076
+     0.075
     ],
     "center": [
      -0.009,
      0.195,
-     -0.008
+     -0.007
     ]
    }
   ],
   "srcTris": 2834,
-  "tris": 1198,
-  "trisLo": 478,
-  "bytes": 48744,
-  "bytesLo": 20264,
+  "tris": 598,
+  "trisLo": 236,
+  "bytes": 42676,
+  "bytesLo": 17568,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1200,
-   "id": "oil_tin"
+   "tris": 600,
+   "id": "oil_tin",
+   "error": 0.02
   },
-  "v": "88410b0c2b"
+  "v": "134428a83d"
  },
  "medBox": {
   "id": "medical_box",
@@ -2337,7 +2392,7 @@
    {
     "name": "medical_box",
     "size": [
-     0.517,
+     0.511,
      0.077,
      0.344
     ],
@@ -2362,17 +2417,18 @@
    }
   ],
   "srcTris": 3718,
-  "tris": 1496,
-  "trisLo": 606,
-  "bytes": 62508,
-  "bytesLo": 31384,
+  "tris": 796,
+  "trisLo": 427,
+  "bytes": 54884,
+  "bytesLo": 29060,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1500,
-   "id": "medical_box"
+   "tris": 800,
+   "id": "medical_box",
+   "error": 0.02
   },
-  "v": "02bffe2d30"
+  "v": "b3d7851283"
  },
  "gasMask": {
   "id": "old_gas_mask",
@@ -2380,17 +2436,17 @@
   "page": "https://polyhaven.com/a/old_gas_mask",
   "license": "CC0 1.0",
   "size": [
-   0.211,
+   0.208,
    1.124,
-   0.309
+   0.308
   ],
   "nodes": [
    {
     "name": "old_gas_mask",
     "size": [
-     0.211,
+     0.208,
      1.124,
-     0.309
+     0.308
     ],
     "center": [
      0,
@@ -2400,17 +2456,18 @@
    }
   ],
   "srcTris": 18900,
-  "tris": 2499,
-  "trisLo": 1314,
-  "bytes": 68400,
-  "bytesLo": 37588,
+  "tris": 1499,
+  "trisLo": 1249,
+  "bytes": 58208,
+  "bytesLo": 36752,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2500,
-   "id": "old_gas_mask"
+   "tris": 1500,
+   "id": "old_gas_mask",
+   "error": 0.02
   },
-  "v": "f08c3048ac"
+  "v": "22dde164ef"
  },
  "broom": {
   "id": "plastic_broom",
@@ -2420,7 +2477,7 @@
   "size": [
    0.416,
    1.197,
-   0.566
+   0.565
   ],
   "nodes": [
    {
@@ -2428,7 +2485,7 @@
     "size": [
      0.416,
      1.197,
-     0.566
+     0.565
     ],
     "center": [
      0,
@@ -2438,17 +2495,18 @@
    }
   ],
   "srcTris": 18736,
-  "tris": 3915,
-  "trisLo": 599,
-  "bytes": 91652,
-  "bytesLo": 27348,
+  "tris": 998,
+  "trisLo": 398,
+  "bytes": 44064,
+  "bytesLo": 21456,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1500,
-   "id": "plastic_broom"
+   "tris": 1000,
+   "id": "plastic_broom",
+   "error": 0.02
   },
-  "v": "d808c8803e"
+  "v": "1e5cb4d1f5"
  },
  "wetSign": {
   "id": "WetFloorSign_01",
@@ -2483,7 +2541,7 @@
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1500,
+   "tris": 600,
    "id": "WetFloorSign_01"
   },
   "v": "932e1155b5"
@@ -2669,17 +2727,17 @@
    }
   ],
   "srcTris": 60928,
-  "tris": 2000,
-  "trisLo": 798,
-  "bytes": 154388,
-  "bytesLo": 41320,
+  "tris": 1500,
+  "trisLo": 596,
+  "bytes": 149876,
+  "bytesLo": 39264,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 2000,
+   "tris": 1500,
    "id": "concrete_road_barrier"
   },
-  "v": "318248ab3b"
+  "v": "23d23b6d68"
  },
  "manhole": {
   "id": "water_manhole_cover",
@@ -2720,17 +2778,17 @@
    }
   ],
   "srcTris": 6301,
-  "tris": 1575,
-  "trisLo": 893,
-  "bytes": 162724,
-  "bytesLo": 63248,
+  "tris": 1125,
+  "trisLo": 889,
+  "bytes": 157012,
+  "bytesLo": 63172,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 1500,
+   "tris": 1000,
    "id": "water_manhole_cover"
   },
-  "v": "182e1b07df"
+  "v": "ee0e2e6375"
  },
  "utilityBox": {
   "id": "utility_box_02",
@@ -2739,16 +2797,16 @@
   "license": "CC0 1.0",
   "size": [
    0.92,
-   1.119,
-   0.432
+   1.12,
+   0.431
   ],
   "nodes": [
    {
     "name": "utility_box_02",
     "size": [
      0.92,
-     1.119,
-     0.432
+     1.12,
+     0.431
     ],
     "center": [
      0,
@@ -2758,17 +2816,17 @@
    }
   ],
   "srcTris": 6268,
-  "tris": 3000,
-  "trisLo": 1199,
-  "bytes": 117364,
-  "bytesLo": 50772,
+  "tris": 2000,
+  "trisLo": 800,
+  "bytes": 107292,
+  "bytesLo": 44228,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "utility_box_02"
   },
-  "v": "4fedebea24"
+  "v": "0226b42bb6"
  },
  "powerBox": {
   "id": "power_box_01",
@@ -2809,17 +2867,17 @@
    }
   ],
   "srcTris": 21272,
-  "tris": 4077,
-  "trisLo": 3953,
-  "bytes": 168856,
-  "bytesLo": 111416,
+  "tris": 3991,
+  "trisLo": 3933,
+  "bytes": 167640,
+  "bytesLo": 111152,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "power_box_01"
   },
-  "v": "6889bf50b3"
+  "v": "94ec9268f3"
  },
  "aircon": {
   "id": "exterior_aircon_unit",
@@ -2828,7 +2886,7 @@
   "license": "CC0 1.0",
   "size": [
    1.796,
-   0.928,
+   0.923,
    0.374
   ],
   "nodes": [
@@ -2836,12 +2894,12 @@
     "name": "exterior_aircon_unit",
     "size": [
      0.796,
-     0.928,
+     0.923,
      0.374
     ],
     "center": [
      -0.5,
-     0.464,
+     0.461,
      0
     ]
    },
@@ -2849,28 +2907,28 @@
     "name": "exterior_aircon_unit_rusted",
     "size": [
      0.796,
-     0.928,
+     0.923,
      0.374
     ],
     "center": [
      0.5,
-     0.464,
+     0.461,
      0
     ]
    }
   ],
   "srcTris": 18986,
-  "tris": 4024,
-  "trisLo": 1614,
-  "bytes": 502636,
-  "bytesLo": 153216,
+  "tris": 3036,
+  "trisLo": 1566,
+  "bytes": 496224,
+  "bytesLo": 153024,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 3000,
    "id": "exterior_aircon_unit"
   },
-  "v": "8861c54513"
+  "v": "b6053a4c46"
  },
  "securityCam": {
   "id": "security_camera_01",
@@ -2892,23 +2950,24 @@
     ],
     "center": [
      0,
-     0.142,
+     0.143,
      0
     ]
    }
   ],
   "srcTris": 13571,
-  "tris": 2000,
-  "trisLo": 797,
-  "bytes": 59980,
-  "bytesLo": 28224,
+  "tris": 996,
+  "trisLo": 676,
+  "bytes": 46584,
+  "bytesLo": 26484,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "security_camera_01"
+   "tris": 1000,
+   "id": "security_camera_01",
+   "error": 0.02
   },
-  "v": "171ac57df8"
+  "v": "bcdac18624"
  },
  "fireAlarm": {
   "id": "fire_alarm",
@@ -2916,21 +2975,21 @@
   "page": "https://polyhaven.com/a/fire_alarm",
   "license": "CC0 1.0",
   "size": [
-   0.099,
-   0.144,
+   0.098,
+   0.142,
    0.026
   ],
   "nodes": [
    {
     "name": "fire_alarm",
     "size": [
-     0.099,
-     0.144,
+     0.098,
+     0.142,
      0.026
     ],
     "center": [
      0,
-     0.072,
+     0.071,
      0
     ]
    },
@@ -2943,23 +3002,24 @@
     ],
     "center": [
      0,
-     0.066,
+     0.065,
      0.004
     ]
    }
   ],
   "srcTris": 2705,
-  "tris": 1275,
-  "trisLo": 915,
-  "bytes": 58812,
-  "bytesLo": 32864,
+  "tris": 931,
+  "trisLo": 851,
+  "bytes": 55244,
+  "bytesLo": 31832,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1200,
-   "id": "fire_alarm"
+   "tris": 600,
+   "id": "fire_alarm",
+   "error": 0.02
   },
-  "v": "fcc3985965"
+  "v": "37fdd04d55"
  },
  "coveredCar": {
   "id": "covered_car",
@@ -3077,17 +3137,18 @@
    }
   ],
   "srcTris": 9530,
-  "tris": 2506,
-  "trisLo": 1320,
-  "bytes": 95884,
-  "bytesLo": 46924,
+  "tris": 1764,
+  "trisLo": 1198,
+  "bytes": 85880,
+  "bytesLo": 45288,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "hanging_industrial_lamp"
+   "tris": 1500,
+   "id": "hanging_industrial_lamp",
+   "error": 0.02
   },
-  "v": "5a642b9a62"
+  "v": "c2ad5d5b62"
  },
  "lampCaged": {
   "id": "caged_hanging_light",
@@ -3115,17 +3176,17 @@
    }
   ],
   "srcTris": 22893,
-  "tris": 1991,
-  "trisLo": 1513,
-  "bytes": 86592,
-  "bytesLo": 44944,
+  "tris": 1650,
+  "trisLo": 1508,
+  "bytes": 80576,
+  "bytesLo": 44932,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
+   "tris": 1500,
    "id": "caged_hanging_light"
   },
-  "v": "3ba01be277"
+  "v": "3d8b4fe0f1"
  },
  "lampWall": {
   "id": "industrial_wall_lamp",
@@ -3153,17 +3214,18 @@
    }
   ],
   "srcTris": 4446,
-  "tris": 1998,
-  "trisLo": 790,
-  "bytes": 85492,
-  "bytesLo": 38640,
+  "tris": 998,
+  "trisLo": 396,
+  "bytes": 74952,
+  "bytesLo": 32740,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
-   "id": "industrial_wall_lamp"
+   "tris": 1000,
+   "id": "industrial_wall_lamp",
+   "error": 0.02
   },
-  "v": "56a6bbf454"
+  "v": "c251faae97"
  },
  "fluorescent": {
   "id": "mounted_fluorescent_lights",
@@ -3269,17 +3331,17 @@
    }
   ],
   "srcTris": 17820,
-  "tris": 2482,
-  "trisLo": 1511,
-  "bytes": 85552,
-  "bytesLo": 56424,
+  "tris": 2058,
+  "trisLo": 1473,
+  "bytes": 79512,
+  "bytesLo": 55840,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2500,
+   "tris": 2000,
    "id": "mounted_fluorescent_lights"
   },
-  "v": "623b455e5d"
+  "v": "d91526f174"
  },
  "securityLight": {
   "id": "security_light",
@@ -3320,17 +3382,17 @@
    }
   ],
   "srcTris": 4668,
-  "tris": 2095,
-  "trisLo": 826,
-  "bytes": 79416,
-  "bytesLo": 35480,
+  "tris": 1643,
+  "trisLo": 711,
+  "bytes": 74436,
+  "bytesLo": 33552,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2000,
+   "tris": 1500,
    "id": "security_light"
   },
-  "v": "760f09d1e8"
+  "v": "a666229341"
  },
  "streetLamp": {
   "id": "street_lamp_02",
@@ -3339,36 +3401,36 @@
   "license": "CC0 1.0",
   "size": [
    0.385,
-   1.674,
-   0.806
+   1.671,
+   0.805
   ],
   "nodes": [
    {
     "name": "street_lamp_02",
     "size": [
      0.385,
-     1.674,
-     0.806
+     1.671,
+     0.805
     ],
     "center": [
      0,
-     0.837,
+     0.836,
      0
     ]
    }
   ],
   "srcTris": 20338,
-  "tris": 4179,
-  "trisLo": 1727,
-  "bytes": 122724,
-  "bytesLo": 53152,
+  "tris": 3189,
+  "trisLo": 1329,
+  "bytes": 112748,
+  "bytesLo": 48240,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 3000,
    "id": "street_lamp_02"
   },
-  "v": "616a46fa76"
+  "v": "a603bbad42"
  },
  "tv": {
   "id": "Television_01",
@@ -3397,16 +3459,16 @@
   ],
   "srcTris": 1918,
   "tris": 1918,
-  "trisLo": 1200,
+  "trisLo": 800,
   "bytes": 106408,
-  "bytesLo": 46540,
+  "bytesLo": 42508,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "Television_01"
   },
-  "v": "3a18eb3f5e"
+  "v": "d1062281e9"
  },
  "radio": {
   "id": "boombox",
@@ -3414,37 +3476,38 @@
   "page": "https://polyhaven.com/a/boombox",
   "license": "CC0 1.0",
   "size": [
-   0.724,
-   0.47,
+   0.723,
+   0.406,
    0.186
   ],
   "nodes": [
    {
     "name": "boombox",
     "size": [
-     0.724,
-     0.47,
+     0.723,
+     0.406,
      0.186
     ],
     "center": [
      0,
-     0.235,
+     0.203,
      0
     ]
    }
   ],
   "srcTris": 10168,
-  "tris": 3055,
-  "trisLo": 1284,
-  "bytes": 104728,
-  "bytesLo": 43232,
+  "tris": 1587,
+  "trisLo": 1245,
+  "bytes": 89872,
+  "bytesLo": 42528,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 3000,
-   "id": "boombox"
+   "tris": 1500,
+   "id": "boombox",
+   "error": 0.02
   },
-  "v": "c9f9bbc9f3"
+  "v": "6ee37e4242"
  },
  "register": {
   "id": "CashRegister_01",
@@ -3452,7 +3515,7 @@
   "page": "https://polyhaven.com/a/CashRegister_01",
   "license": "CC0 1.0",
   "size": [
-   0.598,
+   0.594,
    0.62,
    0.623
   ],
@@ -3460,7 +3523,7 @@
    {
     "name": "CashRegister_01_body",
     "size": [
-     0.598,
+     0.594,
      0.62,
      0.435
     ],
@@ -3478,24 +3541,24 @@
      0.327
     ],
     "center": [
-     -0.058,
+     -0.056,
      0.073,
      0.148
     ]
    }
   ],
   "srcTris": 9927,
-  "tris": 3186,
-  "trisLo": 1791,
-  "bytes": 188732,
-  "bytesLo": 95372,
+  "tris": 2501,
+  "trisLo": 1790,
+  "bytes": 179052,
+  "bytesLo": 95380,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "CashRegister_01"
   },
-  "v": "b92c6eba5e"
+  "v": "589951d2e1"
  },
  "microwave": {
   "id": "vintage_microwave",
@@ -3503,7 +3566,7 @@
   "page": "https://polyhaven.com/a/vintage_microwave",
   "license": "CC0 1.0",
   "size": [
-   1.073,
+   1.071,
    0.526,
    0.745
   ],
@@ -3511,7 +3574,7 @@
    {
     "name": "vintage_microwave",
     "size": [
-     1.073,
+     1.071,
      0.526,
      0.745
     ],
@@ -3523,17 +3586,18 @@
    }
   ],
   "srcTris": 8120,
-  "tris": 2498,
-  "trisLo": 998,
-  "bytes": 56000,
-  "bytesLo": 27772,
+  "tris": 1499,
+  "trisLo": 576,
+  "bytes": 46324,
+  "bytesLo": 23416,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 2500,
-   "id": "vintage_microwave"
+   "tris": 1500,
+   "id": "vintage_microwave",
+   "error": 0.02
   },
-  "v": "653097a944"
+  "v": "5f9e2f2922"
  },
  "wallClock": {
   "id": "wall_clock",
@@ -3541,7 +3605,7 @@
   "page": "https://polyhaven.com/a/wall_clock",
   "license": "CC0 1.0",
   "size": [
-   0.32,
+   0.319,
    0.32,
    0.047
   ],
@@ -3554,7 +3618,7 @@
      0
     ],
     "center": [
-     0.041,
+     0.042,
      0.186,
      0.006
     ]
@@ -3564,12 +3628,12 @@
     "size": [
      0.03,
      0.161,
-     0.006
+     0.005
     ],
     "center": [
      0.008,
      0.108,
-     0.005
+     0.004
     ]
    },
    {
@@ -3588,7 +3652,7 @@
    {
     "name": "wall_clock",
     "size": [
-     0.32,
+     0.319,
      0.32,
      0.047
     ],
@@ -3600,17 +3664,18 @@
    }
   ],
   "srcTris": 3658,
-  "tris": 1211,
-  "trisLo": 651,
-  "bytes": 49872,
-  "bytesLo": 28880,
+  "tris": 694,
+  "trisLo": 518,
+  "bytes": 42940,
+  "bytesLo": 26936,
   "tex": 256,
   "opts": {
    "tex": 256,
-   "tris": 1200,
-   "id": "wall_clock"
+   "tris": 600,
+   "id": "wall_clock",
+   "error": 0.02
   },
-  "v": "e3b21447c0"
+  "v": "1a41d20989"
  },
  "logDead": {
   "id": "dead_tree_trunk",
@@ -3618,37 +3683,37 @@
   "page": "https://polyhaven.com/a/dead_tree_trunk",
   "license": "CC0 1.0",
   "size": [
-   3.05,
-   0.288,
-   0.277
+   3.046,
+   0.287,
+   0.275
   ],
   "nodes": [
    {
     "name": "dead_tree_trunk",
     "size": [
-     3.05,
-     0.288,
-     0.277
+     3.046,
+     0.287,
+     0.275
     ],
     "center": [
      0,
-     0.144,
+     0.143,
      0
     ]
    }
   ],
   "srcTris": 101802,
-  "tris": 4000,
-  "trisLo": 1600,
-  "bytes": 212652,
-  "bytesLo": 65320,
+  "tris": 2500,
+  "trisLo": 996,
+  "bytes": 199360,
+  "bytesLo": 59636,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 2500,
    "id": "dead_tree_trunk"
   },
-  "v": "8590063a89"
+  "v": "45d07b137c"
  },
  "branches": {
   "id": "dry_branches_medium_01",
@@ -3656,7 +3721,7 @@
   "page": "https://polyhaven.com/a/dry_branches_medium_01",
   "license": "CC0 1.0",
   "size": [
-   1.058,
+   1.056,
    0.34,
    1.296
   ],
@@ -3664,20 +3729,20 @@
    {
     "name": "dry_branches_medium_01_c",
     "size": [
-     0.13,
-     0.143,
-     0.775
+     0.125,
+     0.142,
+     0.777
     ],
     "center": [
-     0.464,
-     0.082,
-     -0.025
+     0.466,
+     0.083,
+     -0.026
     ]
    },
    {
     "name": "dry_branches_medium_01_b",
     "size": [
-     0.149,
+     0.147,
      0.14,
      1.039
     ],
@@ -3695,24 +3760,24 @@
      1.296
     ],
     "center": [
-     -0.368,
+     -0.367,
      0.17,
      0
     ]
    }
   ],
   "srcTris": 16803,
-  "tris": 3201,
-  "trisLo": 2681,
-  "bytes": 266956,
-  "bytesLo": 114064,
+  "tris": 2877,
+  "trisLo": 2689,
+  "bytes": 263732,
+  "bytesLo": 114104,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "dry_branches_medium_01"
   },
-  "v": "c914be342f"
+  "v": "078a3944f4"
  },
  "rocks": {
   "id": "rock_moss_set_01",
@@ -3780,13 +3845,13 @@
    {
     "name": "rock_moss_set_01_rock05",
     "size": [
-     1.814,
-     1.201,
+     1.811,
+     1.199,
      2.997
     ],
     "center": [
-     0.111,
-     0.688,
+     0.109,
+     0.687,
      1.973
     ]
    },
@@ -3795,7 +3860,7 @@
     "size": [
      2.126,
      1.248,
-     2.737
+     2.736
     ],
     "center": [
      2.574,
@@ -3805,17 +3870,17 @@
    }
   ],
   "srcTris": 63127,
-  "tris": 4864,
-  "trisLo": 1718,
-  "bytes": 164024,
-  "bytesLo": 58968,
+  "tris": 4580,
+  "trisLo": 1490,
+  "bytes": 161512,
+  "bytesLo": 56804,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 4000,
+   "tris": 3000,
    "id": "rock_moss_set_01"
   },
-  "v": "f6aae5235c"
+  "v": "6b29eded8f"
  },
  "nettle": {
   "id": "nettle_plant",
@@ -3897,7 +3962,7 @@
     "name": "nettle_plant_tall_b_LOD0",
     "size": [
      0.082,
-     0.191,
+     0.192,
      0.095
     ],
     "center": [
@@ -3908,17 +3973,17 @@
    }
   ],
   "srcTris": 31304,
-  "tris": 4727,
-  "trisLo": 4243,
-  "bytes": 190792,
-  "bytesLo": 118856,
+  "tris": 4710,
+  "trisLo": 4239,
+  "bytes": 190584,
+  "bytesLo": 118780,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2500,
    "id": "nettle_plant"
   },
-  "v": "a77a2f9e67"
+  "v": "d160e0e9e2"
  },
  "weeds": {
   "id": "weed_plant_02",
@@ -3927,7 +3992,7 @@
   "license": "CC0 1.0",
   "size": [
    2.125,
-   0.075,
+   0.074,
    0.291
   ],
   "nodes": [
@@ -3949,7 +4014,7 @@
     "size": [
      0.187,
      0.067,
-     0.199
+     0.198
     ],
     "center": [
      -0.459,
@@ -3998,17 +4063,17 @@
    }
   ],
   "srcTris": 11116,
-  "tris": 2994,
-  "trisLo": 1229,
-  "bytes": 151420,
-  "bytesLo": 60100,
+  "tris": 1994,
+  "trisLo": 1099,
+  "bytes": 138396,
+  "bytesLo": 58004,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "weed_plant_02"
   },
-  "v": "e7de059feb"
+  "v": "1fe21fd160"
  },
  "grassTuft": {
   "id": "grass_medium_01",
@@ -4025,37 +4090,37 @@
     "name": "grass_medium_01_small_a_LOD0",
     "size": [
      0.138,
-     0.139,
+     0.122,
      0.142
     ],
     "center": [
      -0.26,
-     0.09,
+     0.082,
      -0.017
     ]
    },
    {
     "name": "grass_medium_01_large_b_LOD0",
     "size": [
-     0.248,
-     0.143,
-     0.248
+     0.215,
+     0.12,
+     0.235
     ],
     "center": [
-     -2.239,
-     0.076,
-     -0.008
+     -2.24,
+     0.064,
+     -0.001
     ]
    },
    {
     "name": "grass_medium_01_mid_b_LOD0",
     "size": [
-     0.176,
+     0.171,
      0.173,
      0.2
     ],
     "center": [
-     -1.026,
+     -1.027,
      0.106,
      0.008
     ]
@@ -4065,12 +4130,12 @@
     "size": [
      0.132,
      0.285,
-     0.118
+     0.101
     ],
     "center": [
      0.937,
      0.163,
-     0.003
+     0.012
     ]
    },
    {
@@ -4078,37 +4143,37 @@
     "size": [
      0.161,
      0.321,
-     0.154
+     0.11
     ],
     "center": [
      0.552,
      0.178,
-     0.001
+     -0.011
     ]
    },
    {
     "name": "grass_medium_01_tall_c_LOD0",
     "size": [
      0.142,
-     0.234,
-     0.11
+     0.231,
+     0.118
     ],
     "center": [
      1.366,
-     0.136,
-     0.017
+     0.137,
+     0.013
     ]
    },
    {
     "name": "grass_medium_01_small_b_LOD0",
     "size": [
      0.152,
-     0.087,
+     0.085,
      0.155
     ],
     "center": [
      0.135,
-     0.06,
+     0.061,
      -0.026
     ]
    },
@@ -4244,17 +4309,17 @@
    }
   ],
   "srcTris": 24730,
-  "tris": 3010,
-  "trisLo": 1192,
-  "bytes": 276700,
-  "bytesLo": 115408,
+  "tris": 2017,
+  "trisLo": 794,
+  "bytes": 251928,
+  "bytesLo": 102656,
   "tex": 512,
   "opts": {
    "tex": 512,
-   "tris": 3000,
+   "tris": 2000,
    "id": "grass_medium_01",
    "error": 0.05
   },
-  "v": "3a41c9e43d"
+  "v": "597ba676b0"
  }
 }
