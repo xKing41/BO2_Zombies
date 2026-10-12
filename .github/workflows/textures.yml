@@ -1,7 +1,9 @@
-# Texturen aus freien CC0-Sammlungen (ambientCG, Poly Haven):
+# Texturen und 3D-Modelle aus freien CC0-Sammlungen (ambientCG, Poly Haven):
 #  1. Katalog: Übersichtsbilder je Kategorie → Release „textur-auswahl“ (nur zum Aussuchen)
 #  2. Laden: die in scripts/assets/textures.json gewählten Texturen herunterladen,
 #     verkleinern, komprimieren und nach public/tex/ committen
+#  3. Modelle: die in scripts/assets/models.json gewählten Modelle herunterladen,
+#     vereinfachen, komprimieren (GLB, WebP, Meshopt) und nach public/models/ committen
 # Läuft bei Änderungen in scripts/assets/ und lässt sich von Hand starten.
 name: Texturen
 
@@ -22,7 +24,7 @@ concurrency:
 jobs:
   textures:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,21 +35,22 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Bildwerkzeug holen
-        run: npm i --no-save --no-audit --no-fund sharp@0.35.5
+      - name: Bild- und Modellwerkzeuge holen
+        run: npm i --no-save --no-audit --no-fund sharp@0.35.5 @gltf-transform/core@4.5.1 @gltf-transform/extensions@4.5.1 @gltf-transform/functions@4.5.1 meshoptimizer@1.2.0
 
       - name: Was ist zu tun?
         id: what
         run: |
           BEFORE="${{ github.event.before }}"
           if [ "${{ github.event_name }}" != "push" ] || [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            CH="scripts/assets/catalog-request.json scripts/assets/textures.json"
+            CH="scripts/assets/catalog-request.json scripts/assets/textures.json scripts/assets/models.json"
           else
             CH="$(git diff --name-only "$BEFORE" "${{ github.sha }}" || echo scripts/assets/catalog-request.json)"
           fi
           echo "$CH"
-          if echo "$CH" | grep -qE 'scripts/assets/catalog|workflows/textures'; then echo "catalog=1" >> "$GITHUB_OUTPUT"; fi
+          if echo "$CH" | grep -qE 'scripts/assets/catalog'; then echo "catalog=1" >> "$GITHUB_OUTPUT"; fi
           if [ -f scripts/assets/textures.json ] && echo "$CH" | grep -qE 'scripts/assets/(textures\.json|fetch\.mjs)|workflows/textures'; then echo "fetch=1" >> "$GITHUB_OUTPUT"; fi
+          if [ -f scripts/assets/models.json ] && echo "$CH" | grep -qE 'scripts/assets/(models\.json|fetch-models\.mjs)|workflows/textures'; then echo "models=1" >> "$GITHUB_OUTPUT"; fi
 
       - name: Katalog und Übersichtsbilder
         if: steps.what.outputs.catalog == '1'
@@ -70,13 +73,18 @@ jobs:
         if: steps.what.outputs.fetch == '1'
         run: node scripts/assets/fetch.mjs
 
+      - name: Gewählte Modelle laden und aufbereiten
+        if: steps.what.outputs.models == '1'
+        run: node scripts/assets/fetch-models.mjs
+
       - name: Ergebnis committen
-        if: steps.what.outputs.fetch == '1'
+        if: steps.what.outputs.fetch == '1' || steps.what.outputs.models == '1'
         run: |
-          git add -A public/tex
-          if git diff --cached --quiet; then echo "Keine Änderungen an public/tex"; exit 0; fi
+          mkdir -p public/tex public/models
+          git add -A public/tex public/models
+          if git diff --cached --quiet; then echo "Keine Änderungen an public/tex und public/models"; exit 0; fi
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Texturen: CC0-Texturen geladen und aufbereitet (automatisch)"
+            commit -m "Assets: CC0-Texturen und -Modelle geladen und aufbereitet (automatisch)"
           for i in 1 2 3; do
             git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
             sleep $((i * 5))
